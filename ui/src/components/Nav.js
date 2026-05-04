@@ -24,7 +24,14 @@ const s = {
   },
 };
 
-const labels = { landing: 'Home', questionnaire: 'Questionnaire', plan: 'Study plan' };
+const labels = {
+  landing:       'Home',
+  questionnaire: 'Questionnaire',
+  plan:          'Study plan',
+  running:       'Running sessions',
+  results:       'Session results',
+  report:        'Research report',
+};
 
 export default function Nav({ page, goTo }) {
   return (

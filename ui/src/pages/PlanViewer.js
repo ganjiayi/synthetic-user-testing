@@ -19,7 +19,7 @@ function TBtn({ label, onClick, primary }) {
 }
 
 /* ── Section content ── */
-function SectionContent({ id, editable }) {
+function SectionContent({ id, editable, goTo }) {
   const F = (props) => <PlanField {...props} editable={editable} />;
 
   if (id === 'ctx') return (
@@ -30,7 +30,7 @@ function SectionContent({ id, editable }) {
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.75)' }}>5 personas · 3 tasks · High-fidelity artefact · Astro.com.my</div>
         </div>
         <button style={{ padding: '0.6rem 1.5rem', background: '#fff', color: 'var(--teal)', border: 'none', borderRadius: '7px', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
-          onClick={() => alert('Launching research sessions…')}>▶  Run research</button>
+          onClick={() => goTo('running')}>▶  Run research</button>
       </div>
       <F label="Product lifecycle phase" value="Live — mature / optimising" />
       <F label="Design thinking phase" value="Test — validating with real designs" />
@@ -230,7 +230,7 @@ export default function PlanViewer({ goTo }) {
           <TBtn label={editMode ? '✎ Editing…' : '✎ Edit'} onClick={() => setEditMode(e => !e)} />
           <TBtn label="↓ Download DOCX" onClick={() => alert('Downloading research plan as DOCX…')} />
           <TBtn label="✓ Save" onClick={() => alert('Plan saved')} />
-          <TBtn label="▶  Run research" onClick={() => alert('Launching synthetic research sessions…')} primary />
+          <TBtn label="▶  Run research" onClick={() => goTo('running')} primary />
         </div>
       </div>
 
@@ -275,7 +275,7 @@ export default function PlanViewer({ goTo }) {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: '26px', color: 'var(--ink)', marginBottom: '1.75rem' }}>
             {current?.label}
           </h2>
-          <SectionContent id={activeSection} editable={editMode} />
+          <SectionContent id={activeSection} editable={editMode} goTo={goTo} />
         </div>
       </div>
     </div>
