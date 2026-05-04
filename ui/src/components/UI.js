@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 
 /* ── SelectCard ── */
 export function SelectCard({ icon, name, desc, badge, badgeType, selected, onClick }) {
@@ -140,6 +140,156 @@ export function Tag({ label, type = 'blue' }) {
     <span style={{ padding: '0.2rem 0.7rem', borderRadius: '12px', fontSize: '11px', fontWeight: 500, background: c.bg, color: c.color }}>
       {label}
     </span>
+  );
+}
+
+/* ── UploadZone ── */
+export function UploadZone({ value, onChange }) {
+  const { files = [], urls = [] } = value || {};
+  const [dragging, setDragging]   = useState(false);
+  const [urlInput, setUrlInput]   = useState('');
+  const inputRef                  = useRef(null);
+
+  const addFiles = (incoming) => {
+    const next = Array.from(incoming).map(f => ({
+      name:    f.name,
+      type:    f.type,
+      preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
+    }));
+    onChange({ files: [...files, ...next], urls });
+  };
+
+  const removeFile = (i) => onChange({ files: files.filter((_, j) => j !== i), urls });
+  const removeUrl  = (i) => onChange({ files, urls: urls.filter((_, j) => j !== i) });
+
+  const addUrl = () => {
+    const u = urlInput.trim();
+    if (!u) return;
+    onChange({ files, urls: [...urls, u] });
+    setUrlInput('');
+  };
+
+  const isFigma = (u) => u.includes('figma.com');
+  const isImg   = (f) => f.type?.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(f.name);
+
+  return (
+    <div>
+      {/* Drop zone */}
+      <div
+        onClick={() => inputRef.current.click()}
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={e => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}
+        style={{
+          border: `2px dashed ${dragging ? 'var(--blue)' : 'var(--border-md)'}`,
+          borderRadius: 'var(--radius-md)',
+          padding: '1.75rem 1.25rem',
+          textAlign: 'center', cursor: 'pointer',
+          background: dragging ? 'var(--blue-lt)' : '#FAFAF9',
+          transition: 'all .15s',
+          marginBottom: '0.75rem',
+        }}
+      >
+        <div style={{ fontSize: '22px', marginBottom: '0.4rem', opacity: .5 }}>↑</div>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: dragging ? 'var(--blue)' : 'var(--ink)', marginBottom: '0.2rem' }}>
+          Drop files here, or click to browse
+        </div>
+        <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
+          PNG · JPG · PDF · DOCX — upload screenshots, Figma exports, or documents
+        </div>
+        <input
+          ref={inputRef} type="file" multiple
+          accept="image/png,image/jpeg,image/jpg,application/pdf,.docx"
+          style={{ display: 'none' }}
+          onChange={e => addFiles(e.target.files)}
+        />
+      </div>
+
+      {/* URL input row */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.875rem' }}>
+        <input
+          type="text"
+          placeholder="Paste a Figma prototype link, staging URL, or live URL…"
+          value={urlInput}
+          onChange={e => setUrlInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addUrl()}
+          style={{
+            flex: 1, padding: '0.6rem 0.875rem',
+            border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
+            fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--ink)', background: '#fff',
+            outline: 'none',
+          }}
+        />
+        <button
+          onClick={addUrl}
+          style={{
+            padding: '0.6rem 1rem', border: '1px solid var(--border-md)',
+            borderRadius: 'var(--radius-sm)', background: '#fff',
+            fontFamily: 'var(--sans)', fontSize: '12px', cursor: 'pointer', color: 'var(--ink)',
+            whiteSpace: 'nowrap',
+          }}
+        >Add link</button>
+      </div>
+
+      {/* Preview area */}
+      {(files.length > 0 || urls.length > 0) && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          {files.map((f, i) => (
+            isImg(f) ? (
+              <div key={i} style={{ position: 'relative', width: '72px', height: '72px', flexShrink: 0 }}>
+                <img
+                  src={f.preview} alt={f.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '7px', border: '1px solid var(--border)', display: 'block' }}
+                />
+                <button
+                  onClick={() => removeFile(i)}
+                  style={{
+                    position: 'absolute', top: '-5px', right: '-5px',
+                    width: '17px', height: '17px', borderRadius: '50%',
+                    background: 'var(--ink)', color: '#fff', border: 'none',
+                    fontSize: '10px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >×</button>
+              </div>
+            ) : (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                padding: '0.35rem 0.75rem',
+                background: 'var(--cream)', borderRadius: '20px',
+                border: '1px solid var(--border)', fontSize: '12px', color: 'var(--ink)',
+                maxWidth: '220px',
+              }}>
+                <span style={{ opacity: .6 }}>📄</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {f.name.length > 22 ? f.name.slice(0, 20) + '…' : f.name}
+                </span>
+                <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '15px', lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+              </div>
+            )
+          ))}
+
+          {urls.map((u, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.35rem 0.75rem',
+              background: isFigma(u) ? 'var(--blue-lt)' : 'var(--cream)',
+              borderRadius: '20px',
+              border: `1px solid ${isFigma(u) ? 'var(--blue-md)' : 'var(--border)'}`,
+              fontSize: '12px',
+              color: isFigma(u) ? 'var(--blue)' : 'var(--ink)',
+              maxWidth: '280px',
+            }}>
+              <span style={{ fontSize: '11px', opacity: .7 }}>{isFigma(u) ? '◈' : '🔗'}</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {u.replace(/^https?:\/\//, '').slice(0, 36)}{u.replace(/^https?:\/\//, '').length > 36 ? '…' : ''}
+              </span>
+              <button onClick={() => removeUrl(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '15px', lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { STEPS, PRODUCTS, PERSONAS } from '../data/questionnaire';
-import { SelectCard, PersonaCard, Pill, AutofillNotice, FieldGroup, TextInput } from '../components/UI';
+import { SelectCard, PersonaCard, Pill, AutofillNotice, FieldGroup, TextInput, UploadZone } from '../components/UI';
 
 /* ── Shared style helpers ── */
 const grid3 = { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '1.25rem' };
@@ -41,13 +41,12 @@ function StepProduct({ form, setForm }) {
 
 function StepContext({ form, setForm }) {
   const lifecycle = ['Pre-launch','Public beta','Live — scaling','Live — mature'];
-  const phases = ['Empathise','Define','Ideate','Prototype','Test','Post-launch'];
-  const formats = ['Screenshot sequence','Figma URL','Live URL','Description only'];
-  const fidelity = ['Wireframe','Mid-fidelity','High-fidelity','Production'];
+  const phases    = ['Empathise','Define','Ideate','Prototype','Test','Post-launch'];
+  const fidelity  = ['Wireframe','Mid-fidelity','High-fidelity','Production'];
 
   const calMap = {
-    'Pre-launch':     'High tolerance — agent accepts significant friction',
-    'Public beta':    'Moderate tolerance — agent flags high-friction patterns',
+    'Pre-launch':          'High tolerance — agent accepts significant friction',
+    'Public beta':         'Moderate tolerance — agent flags high-friction patterns',
     'Live — scaling': 'Low tolerance — agent escalates friction more readily',
     'Live — mature':  'Minimal tolerance — agent treats friction as production issues',
   };
@@ -67,6 +66,7 @@ function StepContext({ form, setForm }) {
           </div>
         )}
       </FieldGroup>
+
       <FieldGroup label="Design thinking phase">
         <div style={pillRow}>
           {phases.map(p => (
@@ -75,29 +75,31 @@ function StepContext({ form, setForm }) {
           ))}
         </div>
       </FieldGroup>
-      <FieldGroup label="Artefact input format">
-        <div style={grid2}>
-          {formats.map(f => (
-            <SelectCard key={f} name={f} selected={form.artefactFormat === f}
-              onClick={() => setForm(fm => ({ ...fm, artefactFormat: f }))} />
-          ))}
-        </div>
+
+      <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
+
+      <FieldGroup
+        label="Test materials"
+        hint="Upload Figma JPEG exports, screenshots, or documents — or paste a Figma prototype link, staging URL, or any live URL. Add as many files and links as needed."
+      >
+        <UploadZone
+          value={form.testMaterials}
+          onChange={v => setForm(f => ({ ...f, testMaterials: v }))}
+        />
       </FieldGroup>
+
       <FieldGroup label="Fidelity level">
         <div style={pillRow}>
-          {fidelity.map(f => (
-            <Pill key={f} label={f} selected={form.fidelity === f}
-              onClick={() => setForm(fm => ({ ...fm, fidelity: f }))} />
+          {fidelity.map(fi => (
+            <Pill key={fi} label={fi} selected={form.fidelity === fi}
+              onClick={() => setForm(f => ({ ...f, fidelity: fi }))} />
           ))}
         </div>
       </FieldGroup>
-      <FieldGroup label="Artefact link or reference">
-        <TextInput placeholder="Paste Figma URL, staging URL, or write 'See attached screenshots'"
-          value={form.artefactLink || ''}
-          onChange={e => setForm(f => ({ ...f, artefactLink: e.target.value }))} />
-      </FieldGroup>
-      <FieldGroup label="Additional artefact notes">
-        <TextInput rows={2} placeholder="e.g. Mobile screens only. Bahasa Malaysia version not yet available."
+
+      <FieldGroup label="Additional notes about the test material">
+        <TextInput rows={2}
+          placeholder="e.g. Mobile screens only. Bahasa Malaysia version not yet available. Covers homepage and pack page only."
           value={form.artefactNotes || ''}
           onChange={e => setForm(f => ({ ...f, artefactNotes: e.target.value }))} />
       </FieldGroup>
