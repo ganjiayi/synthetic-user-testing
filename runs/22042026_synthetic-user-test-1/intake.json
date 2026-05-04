@@ -1,0 +1,213 @@
+{
+  "meta": {
+    "researcher_name": "Jia Yi Gan",
+    "product_project": "Project Boxless Homepage",
+    "date_submitted": "21042026",
+    "urgency": "immediate",
+    "run_id": "22042026_synthetic-user-test-1"
+  },
+  "q1_lifecycle_phase": {
+    "phase": "pre_launch",
+    "phase_context": "We are planning to launch a new boxless product to provide users with more flexibility.",
+    "agent_calibration": "high_tolerance"
+  },
+  "q2_design_phase": {
+    "phase": "test",
+    "research_focus": "Usability validation — agent should score task completion and friction signals"
+  },
+  "q3_artefact": {
+    "input_format": "screenshot_sequence",
+    "fidelity_level": "high_fidelity",
+    "artefact_link": "See attached screenshot.",
+    "artefact_notes": "Screens are mobile only. Bahasa Malaysia version is not yet available. This is the homepage flow. User arrives on the homepage, explores the TV packs, and based on selected packs there is a checkout flow.",
+    "api_mode": "image_sequence",
+    "friction_sensitivity": "high"
+  },
+  "q4_core_question": {
+    "main_question": "Which action would you most likely take and why? What actions does this page encourage you to take? Is anything surprising or unclear?",
+    "good_answer_looks_like": "4 out of 5 personas name the same primary action as the one they'd most likely take. ≥80% of users correctly identify the intended primary action. Users identify no more than 1 secondary action as also encouraged. Users describe a clear priority hierarchy (e.g. 'This is the main one, these are optional'). If 4 out of 5 personas complete the activation flow without a stuck-loop and friction scores stay below 4 at every step, there is enough signal to proceed to launch.",
+    "insight_type": "mixed"
+  },
+  "q5_product_context": {
+    "product_name": "Astro",
+    "product_category": "Paid TV Packs",
+    "feature_under_test": "Greenfield homepage conversion page",
+    "target_market": "Malaysian household",
+    "why_this_why_now": "We are launching a new boxless product to provide users with more flexibility. We want to validate the UI and UX before launch and detect any drop-off points along the flow that would decrease conversion."
+  },
+  "q6_research_questions": {
+    "primary_rq": "What are the main friction points that prevent users from completing the checkout flow without assistance? At what point, if any, did users feel confident that this product would actually solve their problem? What information, if any, was missing that would have helped users decide faster? Was there a moment where confidence in the product dropped, and what caused it?",
+    "secondary_rqs": [
+      "Where are the friction points?",
+      "Why are the friction points happening?",
+      "What is the severity of each friction point — is it a momentary hesitation or a true blocker?",
+      "When and why are users seeking help?"
+    ],
+    "decision_to_support": "Is the current product breadth helping or overwhelming users? Are the product names intuitive or do they require explanation? Does the value proposition on the homepage match what users were hoping to find? Is the checkout flow or account creation creating drop-off? How does the product offering fare overall?"
+  },
+  "q7_personas": {
+    "segments": [
+      {
+        "name": "Hakim",
+        "context": "Spontaneous Traditionalist — primary target for this study",
+        "priority": "primary",
+        "include": true,
+        "persona_library_ref": "v4_spontaneous_traditionalist"
+      },
+      {
+        "name": "Syafiqah",
+        "context": "Progressive Influencer",
+        "priority": "secondary",
+        "include": true,
+        "persona_library_ref": "v4_progressive_influencer"
+      },
+      {
+        "name": "Puan Rohani",
+        "context": "Family-Centric Devotee — priority segment for this study",
+        "priority": "primary",
+        "include": true,
+        "persona_library_ref": "v4_family_centric_devotee"
+      },
+      {
+        "name": "Marcus",
+        "context": "Trendsetter Explorer",
+        "priority": "secondary",
+        "include": true,
+        "persona_library_ref": "v4_trendsetter_explorer"
+      },
+      {
+        "name": "David",
+        "context": "Routine Conservative",
+        "priority": "secondary",
+        "include": true,
+        "persona_library_ref": "v4_routine_conservative"
+      }
+    ],
+    "priority_segment": "Puan Rohani"
+  },
+  "q8_tasks": {
+    "session_config": {
+      "entry_point": "User starts on Astro ACM Homepage",
+      "max_turns": 20,
+      "stuck_loop_threshold": 3,
+      "session_mode": "exploratory"
+    },
+    "scenarios": [
+      {
+        "task_id": "T1",
+        "task_name": "Homepage",
+        "instruction": "You've just heard about Astro from a friend who mentioned they use it to watch sports and local dramas. You decide to check it out for the first time. This is the first page you land on. Look around this page. Take as long as you need. When you're ready, tell us: what do you understand about what Astro offers? Is there anything you'd want to do or look at next — and why?",
+        "success_condition": "User correctly identifies that Astro offers TV/streaming content or subscription packs without being told. User expresses curiosity or intent to explore further unprompted. User can name at least one specific thing they would click or do next.",
+        "abandon_condition": "User cannot articulate what Astro does or who it's for after viewing the page. User feels the page doesn't speak to them or their situation. User has no clear next action — feels stuck or indifferent. User's understanding of the product is significantly wrong."
+      },
+      {
+        "task_id": "T2",
+        "task_name": "TV Pack Page",
+        "instruction": "You're looking for a TV subscription for your household. You watch a mix of sports, movies, and local content. You've landed on this page. Browse through what's available here. Tell us what stands out, what's confusing, and what — if anything — would make you want to take action. If nothing appeals to you, explain what's missing or holding you back.",
+        "success_condition": "User can distinguish between packs without needing external help. User identifies at least one pack that feels relevant to their household. User expresses enough confidence to consider purchasing or shortlisting a pack. User understands what they're getting before committing.",
+        "abandon_condition": "User cannot tell the packs apart. User feels no pack is relevant to them. User has too many unanswered questions to consider committing."
+      }
+    ]
+  },
+  "q9_eval_metrics": {
+    "default_eval_keys": [
+      "task_completion",
+      "friction_score",
+      "confusion_signal",
+      "abandon_trigger",
+      "trust_signal",
+      "persona_alignment"
+    ],
+    "custom_eval_keys": [
+      {
+        "key": "brand_comprehension",
+        "description": "Did the user correctly understand what Astro offers",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "value_proposition_clarity",
+        "description": "Could the user articulate why Astro is relevant to them",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "visual_hierarchy_effectiveness",
+        "description": "What did the user notice first — was it the intended element",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "information_gaps",
+        "description": "What questions were left unanswered by the page",
+        "signal_type": "qualitative"
+      },
+      {
+        "key": "pack_differentiation_clarity",
+        "description": "Could the user tell the packs apart and understand the differences",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "personal_relevance",
+        "description": "Did at least one pack feel relevant to the user's household",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "purchase_intent",
+        "description": "Would the user buy, consider, or reject — and why",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "decision_friction",
+        "description": "Were there moments of hesitation, doubt, or needing more info",
+        "signal_type": "categorical"
+      }
+    ],
+    "friction_signals": [
+      "label / copy misunderstanding",
+      "price or value friction",
+      "too many steps / cognitive load",
+      "missing information"
+    ],
+    "primary_metric": "pack_differentiation_clarity on T2 — direct proxy for product-market fit signal"
+  },
+  "q10_hypotheses": {
+    "hypotheses": [
+      {
+        "id": "H1",
+        "statement": "If users can distinguish between packs clearly, they will select one without requiring external help or additional information."
+      }
+    ],
+    "known_ux_risks": "Low conversion at the TV pack screen. Low conversion to the homepage.",
+    "forbidden_assumptions": "That users already know what Astro is or what it offers. That users evaluate packs rationally — relevance and emotion drive selection more than feature comparison. That the user's stated reason for hesitation is their real reason — probe beneath the first answer.",
+    "risk_severity_threshold": "p2_and_above"
+  },
+  "q11_output": {
+    "primary_audience": ["product_team"],
+    "output_formats": ["docx_research_plan"],
+    "turnaround": "immediate",
+    "escalation_threshold": "p2_and_above",
+    "additional_notes": ""
+  },
+  "_derived": {
+    "parsed_at": "2026-04-22T00:00:00.000Z",
+    "source_file": "Test 1 Questionnaire.docx",
+    "validation_status": "valid",
+    "warnings": [],
+    "active_personas": ["Hakim", "Syafiqah", "Puan Rohani", "Marcus", "David"],
+    "active_tasks": ["T1", "T2"],
+    "all_eval_keys": [
+      "task_completion",
+      "friction_score",
+      "confusion_signal",
+      "abandon_trigger",
+      "trust_signal",
+      "persona_alignment",
+      "brand_comprehension",
+      "value_proposition_clarity",
+      "visual_hierarchy_effectiveness",
+      "information_gaps",
+      "pack_differentiation_clarity",
+      "personal_relevance",
+      "purchase_intent",
+      "decision_friction"
+    ]
+  }
+}

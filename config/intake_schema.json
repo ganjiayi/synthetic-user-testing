@@ -1,0 +1,344 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Synthetic UX Study Intake",
+  "description": "Validated intake config produced by parseIntake.js from a filled questionnaire docx",
+  "type": "object",
+  "required": [
+    "meta",
+    "q1_lifecycle_phase",
+    "q2_design_phase",
+    "q3_artefact",
+    "q4_core_question",
+    "q5_product_context",
+    "q6_research_questions",
+    "q7_personas",
+    "q8_tasks",
+    "q9_eval_metrics",
+    "q10_hypotheses",
+    "q11_output"
+  ],
+  "properties": {
+
+    "meta": {
+      "type": "object",
+      "required": ["researcher_name", "product_project", "date_submitted"],
+      "properties": {
+        "researcher_name":  { "type": "string", "minLength": 1 },
+        "product_project":  { "type": "string", "minLength": 1 },
+        "date_submitted":   { "type": "string", "pattern": "^\\d{2}\\d{2}\\d{4}$", "description": "DDMMYYYY" },
+        "urgency": {
+          "type": "string",
+          "enum": ["immediate", "24h", "48h", "end_of_sprint", ""],
+          "default": ""
+        },
+        "run_id": { "type": "string", "description": "Auto-generated: DDMMYYYY_study-slug" }
+      }
+    },
+
+    "q1_lifecycle_phase": {
+      "type": "object",
+      "required": ["phase"],
+      "properties": {
+        "phase": {
+          "type": "string",
+          "enum": [
+            "pre_launch",
+            "private_beta",
+            "public_beta",
+            "live_early_growth",
+            "live_scaling",
+            "live_mature",
+            "sunset",
+            "not_sure"
+          ]
+        },
+        "phase_context": { "type": "string", "default": "" },
+        "agent_calibration": {
+          "type": "string",
+          "description": "Auto-derived: friction tolerance level for this lifecycle phase",
+          "enum": ["high_tolerance", "moderate_tolerance", "low_tolerance", "minimal_tolerance"]
+        }
+      }
+    },
+
+    "q2_design_phase": {
+      "type": "object",
+      "required": ["phase"],
+      "properties": {
+        "phase": {
+          "type": "string",
+          "enum": [
+            "empathise",
+            "define",
+            "ideate",
+            "prototype",
+            "test",
+            "post_launch"
+          ]
+        },
+        "research_focus": {
+          "type": "string",
+          "description": "Auto-derived: what the agent should focus on given design phase"
+        }
+      }
+    },
+
+    "q3_artefact": {
+      "type": "object",
+      "required": ["input_format", "fidelity_level"],
+      "properties": {
+        "input_format": {
+          "type": "string",
+          "enum": [
+            "screenshot_sequence",
+            "figma_url",
+            "live_url",
+            "description_only"
+          ]
+        },
+        "fidelity_level": {
+          "type": "string",
+          "enum": [
+            "wireframe",
+            "mid_fidelity",
+            "high_fidelity",
+            "production"
+          ]
+        },
+        "artefact_link": { "type": "string", "default": "" },
+        "artefact_notes": { "type": "string", "default": "" },
+        "api_mode": {
+          "type": "string",
+          "description": "Auto-derived from input_format",
+          "enum": [
+            "image_sequence",
+            "url_fetch",
+            "live_url",
+            "description_only"
+          ]
+        },
+        "friction_sensitivity": {
+          "type": "string",
+          "description": "Auto-derived from fidelity_level",
+          "enum": ["low", "moderate", "high", "production_grade"]
+        }
+      }
+    },
+
+    "q4_core_question": {
+      "type": "object",
+      "required": ["main_question"],
+      "properties": {
+        "main_question":        { "type": "string", "minLength": 10 },
+        "good_answer_looks_like": { "type": "string", "default": "" },
+        "insight_type": {
+          "type": "string",
+          "enum": ["qualitative", "quantitative", "mixed", ""],
+          "default": ""
+        }
+      }
+    },
+
+    "q5_product_context": {
+      "type": "object",
+      "required": ["product_name", "feature_under_test"],
+      "properties": {
+        "product_name":      { "type": "string", "minLength": 1 },
+        "product_category":  { "type": "string", "default": "" },
+        "feature_under_test":{ "type": "string", "minLength": 1 },
+        "target_market":     { "type": "string", "default": "" },
+        "why_this_why_now":  { "type": "string", "default": "" }
+      }
+    },
+
+    "q6_research_questions": {
+      "type": "object",
+      "required": ["primary_rq"],
+      "properties": {
+        "primary_rq": { "type": "string", "minLength": 10 },
+        "secondary_rqs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 5 },
+          "default": []
+        },
+        "decision_to_support": { "type": "string", "default": "" }
+      }
+    },
+
+    "q7_personas": {
+      "type": "object",
+      "required": ["segments"],
+      "properties": {
+        "segments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "priority", "include"],
+            "properties": {
+              "name":     { "type": "string", "minLength": 1 },
+              "context":  { "type": "string", "default": "" },
+              "priority": {
+                "type": "string",
+                "enum": ["primary", "secondary", "optional"]
+              },
+              "include":  { "type": "boolean" },
+              "persona_library_ref": { "type": "string", "default": "" }
+            }
+          }
+        },
+        "priority_segment": { "type": "string", "default": "" }
+      }
+    },
+
+    "q8_tasks": {
+      "type": "object",
+      "required": ["session_config", "scenarios"],
+      "properties": {
+        "session_config": {
+          "type": "object",
+          "properties": {
+            "entry_point":           { "type": "string", "default": "" },
+            "max_turns":             { "type": "integer", "minimum": 1, "default": 20 },
+            "stuck_loop_threshold":  { "type": "integer", "minimum": 1, "default": 3 },
+            "session_mode": {
+              "type": "string",
+              "enum": ["single_pass", "multi_turn", "exploratory", ""],
+              "default": ""
+            }
+          }
+        },
+        "scenarios": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["task_id", "task_name", "instruction"],
+            "properties": {
+              "task_id":          { "type": "string" },
+              "task_name":        { "type": "string", "minLength": 1 },
+              "instruction":      { "type": "string", "minLength": 5 },
+              "success_condition":{ "type": "string", "default": "" },
+              "abandon_condition":{ "type": "string", "default": "" }
+            }
+          }
+        }
+      }
+    },
+
+    "q9_eval_metrics": {
+      "type": "object",
+      "properties": {
+        "default_eval_keys": {
+          "type": "array",
+          "description": "Always active — added automatically by parser",
+          "items": { "type": "string" },
+          "default": [
+            "task_completion",
+            "friction_score",
+            "confusion_signal",
+            "abandon_trigger",
+            "trust_signal",
+            "persona_alignment"
+          ]
+        },
+        "custom_eval_keys": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key":         { "type": "string" },
+              "description": { "type": "string" },
+              "signal_type": {
+                "type": "string",
+                "enum": ["binary", "numeric", "qualitative", "categorical", "scored", ""]
+              }
+            }
+          },
+          "default": []
+        },
+        "friction_signals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "primary_metric": { "type": "string", "default": "" }
+      }
+    },
+
+    "q10_hypotheses": {
+      "type": "object",
+      "properties": {
+        "hypotheses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id":        { "type": "string" },
+              "statement": { "type": "string", "minLength": 5 }
+            }
+          },
+          "default": []
+        },
+        "known_ux_risks":         { "type": "string", "default": "" },
+        "forbidden_assumptions":  { "type": "string", "default": "" },
+        "risk_severity_threshold":{ "type": "string", "default": "" }
+      }
+    },
+
+    "q11_output": {
+      "type": "object",
+      "properties": {
+        "primary_audience": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "product_team", "design_team", "engineering",
+              "leadership", "marketing", "investors",
+              "client_external", "all"
+            ]
+          },
+          "default": []
+        },
+        "output_formats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "json_eval_log", "markdown_summary",
+              "html_report_card", "docx_research_plan",
+              "slide_deck", "verbal_debrief", "all"
+            ]
+          },
+          "default": []
+        },
+        "turnaround": {
+          "type": "string",
+          "enum": ["immediate", "24h", "48h", "end_of_sprint", ""],
+          "default": ""
+        },
+        "escalation_threshold": {
+          "type": "string",
+          "enum": ["p0_only", "p1_and_above", "p2_and_above", "all_findings", ""],
+          "default": ""
+        },
+        "additional_notes": { "type": "string", "default": "" }
+      }
+    },
+
+    "_derived": {
+      "type": "object",
+      "description": "Auto-populated by parseIntake.js — do not edit manually",
+      "properties": {
+        "parsed_at":         { "type": "string" },
+        "source_file":       { "type": "string" },
+        "validation_status": { "type": "string", "enum": ["valid", "valid_with_warnings", "invalid"] },
+        "warnings":          { "type": "array", "items": { "type": "string" } },
+        "active_personas":   { "type": "array", "items": { "type": "string" } },
+        "active_tasks":      { "type": "array", "items": { "type": "string" } },
+        "all_eval_keys":     { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

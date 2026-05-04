@@ -1,0 +1,49 @@
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Tokens ── */
+:root {
+  --ink:        #0D1117;
+  --paper:      #F7F4EF;
+  --cream:      #EDE9E0;
+  --steel:      #2A3142;
+  --blue:       #1B4FD8;
+  --blue-lt:    #EEF3FF;
+  --blue-md:    #BFCFFA;
+  --teal:       #0F8A6E;
+  --teal-lt:    #E6F5F1;
+  --amber:      #C97B2F;
+  --amber-lt:   #FDF3E7;
+  --red:        #C42B2B;
+  --red-lt:     #FEE2E2;
+  --border:     rgba(13,17,23,.1);
+  --border-md:  rgba(13,17,23,.18);
+  --serif:      'DM Serif Display', serif;
+  --sans:       'DM Sans', sans-serif;
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--cream); border-radius: 3px; }
+
+/* ── Typography ── */
+h1, h2, h3 { font-family: var(--serif); }
+
+/* ── Focus ── */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}

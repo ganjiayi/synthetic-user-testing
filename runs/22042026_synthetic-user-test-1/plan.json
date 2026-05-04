@@ -1,0 +1,236 @@
+{
+  "study_context": {
+    "product_phase": {
+      "lifecycle": "pre_launch",
+      "phase_context": "We are planning to launch a new boxless product to provide users with more flexibility.",
+      "agent_calibration": "high_tolerance"
+    },
+    "design_phase": {
+      "phase": "test",
+      "research_focus": "Usability validation — agent should score task completion and friction signals"
+    },
+    "artefact_config": {
+      "input_format": "screenshot_sequence",
+      "fidelity_level": "high_fidelity",
+      "api_mode": "image_sequence",
+      "friction_sensitivity": "high",
+      "artefact_link": "See attached screenshot.",
+      "artefact_notes": "Screens are mobile only. Bahasa Malaysia version is not yet available. This is the homepage flow. User arrives on the homepage, explores the TV packs, and based on selected packs there is a checkout flow."
+    }
+  },
+  "research_goals": {
+    "core_question": "Which action would you most likely take and why? What actions does this page encourage you to take? Is anything surprising or unclear?",
+    "good_answer_looks_like": "4 out of 5 personas name the same primary action as the one they'd most likely take. ≥80% of users correctly identify the intended primary action. Users identify no more than 1 secondary action as also encouraged. Users describe a clear priority hierarchy (e.g. 'This is the main one, these are optional'). If 4 out of 5 personas complete the activation flow without a stuck-loop and friction scores stay below 4 at every step, there is enough signal to proceed to launch.",
+    "insight_type": "mixed",
+    "product_name": "Astro",
+    "product_category": "Paid TV Packs",
+    "feature_under_test": "Greenfield homepage conversion page",
+    "target_market": "Malaysian household",
+    "why_this_why_now": "We are launching a new boxless product to provide users with more flexibility. We want to validate the UI and UX before launch and detect any drop-off points along the flow that would decrease conversion.",
+    "primary_rq": "What are the main friction points that prevent users from completing the checkout flow without assistance? At what point, if any, did users feel confident that this product would actually solve their problem? What information, if any, was missing that would have helped users decide faster? Was there a moment where confidence in the product dropped, and what caused it?",
+    "secondary_rqs": [
+      "Where are the friction points?",
+      "Why are the friction points happening?",
+      "What is the severity of each friction point — is it a momentary hesitation or a true blocker?",
+      "When and why are users seeking help?"
+    ],
+    "decision_to_support": "Is the current product breadth helping or overwhelming users? Are the product names intuitive or do they require explanation? Does the value proposition on the homepage match what users were hoping to find? Is the checkout flow or account creation creating drop-off? How does the product offering fare overall?"
+  },
+  "user_segments": {
+    "segments": [
+      {
+        "name": "Hakim",
+        "context": "Spontaneous Traditionalist — primary target for this study",
+        "priority": "primary",
+        "persona_library_ref": "v4_spontaneous_traditionalist"
+      },
+      {
+        "name": "Syafiqah",
+        "context": "Progressive Influencer",
+        "priority": "secondary",
+        "persona_library_ref": "v4_progressive_influencer"
+      },
+      {
+        "name": "Puan Rohani",
+        "context": "Family-Centric Devotee — priority segment for this study",
+        "priority": "primary",
+        "persona_library_ref": "v4_family_centric_devotee"
+      },
+      {
+        "name": "Marcus",
+        "context": "Trendsetter Explorer",
+        "priority": "secondary",
+        "persona_library_ref": "v4_trendsetter_explorer"
+      },
+      {
+        "name": "David",
+        "context": "Routine Conservative",
+        "priority": "secondary",
+        "persona_library_ref": "v4_routine_conservative"
+      }
+    ],
+    "priority_segment": "Puan Rohani"
+  },
+  "test_scenarios": {
+    "session_config": {
+      "entry_point": "User starts on Astro ACM Homepage",
+      "max_turns": 20,
+      "stuck_loop_threshold": 3,
+      "session_mode": "exploratory"
+    },
+    "scenarios": [
+      {
+        "task_id": "T1",
+        "task_name": "Homepage",
+        "instruction": "You've just heard about Astro from a friend who mentioned they use it to watch sports and local dramas. You decide to check it out for the first time. This is the first page you land on. Look around this page. Take as long as you need. When you're ready, tell us: what do you understand about what Astro offers? Is there anything you'd want to do or look at next — and why?",
+        "success_condition": "User correctly identifies that Astro offers TV/streaming content or subscription packs without being told. User expresses curiosity or intent to explore further unprompted. User can name at least one specific thing they would click or do next.",
+        "abandon_condition": "User cannot articulate what Astro does or who it's for after viewing the page. User feels the page doesn't speak to them or their situation. User has no clear next action — feels stuck or indifferent. User's understanding of the product is significantly wrong."
+      },
+      {
+        "task_id": "T2",
+        "task_name": "TV Pack Page",
+        "instruction": "You're looking for a TV subscription for your household. You watch a mix of sports, movies, and local content. You've landed on this page. Browse through what's available here. Tell us what stands out, what's confusing, and what — if anything — would make you want to take action. If nothing appeals to you, explain what's missing or holding you back.",
+        "success_condition": "User can distinguish between packs without needing external help. User identifies at least one pack that feels relevant to their household. User expresses enough confidence to consider purchasing or shortlisting a pack. User understands what they're getting before committing.",
+        "abandon_condition": "User cannot tell the packs apart. User feels no pack is relevant to them. User has too many unanswered questions to consider committing."
+      }
+    ]
+  },
+  "eval_metrics": {
+    "default_keys": [
+      "task_completion",
+      "friction_score",
+      "confusion_signal",
+      "abandon_trigger",
+      "trust_signal",
+      "persona_alignment"
+    ],
+    "custom_keys": [
+      {
+        "key": "brand_comprehension",
+        "description": "Did the user correctly understand what Astro offers",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "value_proposition_clarity",
+        "description": "Could the user articulate why Astro is relevant to them",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "visual_hierarchy_effectiveness",
+        "description": "What did the user notice first — was it the intended element",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "information_gaps",
+        "description": "What questions were left unanswered by the page",
+        "signal_type": "qualitative"
+      },
+      {
+        "key": "pack_differentiation_clarity",
+        "description": "Could the user tell the packs apart and understand the differences",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "personal_relevance",
+        "description": "Did at least one pack feel relevant to the user's household",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "purchase_intent",
+        "description": "Would the user buy, consider, or reject — and why",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "decision_friction",
+        "description": "Were there moments of hesitation, doubt, or needing more info",
+        "signal_type": "categorical"
+      }
+    ],
+    "all_keys": [
+      "task_completion",
+      "friction_score",
+      "confusion_signal",
+      "abandon_trigger",
+      "trust_signal",
+      "persona_alignment",
+      "brand_comprehension",
+      "value_proposition_clarity",
+      "visual_hierarchy_effectiveness",
+      "information_gaps",
+      "pack_differentiation_clarity",
+      "personal_relevance",
+      "purchase_intent",
+      "decision_friction"
+    ],
+    "friction_signals": [
+      "label / copy misunderstanding",
+      "price or value friction",
+      "too many steps / cognitive load",
+      "missing information"
+    ],
+    "primary_metric": "pack_differentiation_clarity on T2 — direct proxy for product-market fit signal"
+  },
+  "hypotheses": {
+    "list": [
+      {
+        "id": "H1",
+        "statement": "If users can distinguish between packs clearly, they will select one without requiring external help or additional information."
+      }
+    ],
+    "known_ux_risks": "Low conversion at the TV pack screen. Low conversion to the homepage.",
+    "forbidden_assumptions": "That users already know what Astro is or what it offers. That users evaluate packs rationally — relevance and emotion drive selection more than feature comparison. That the user's stated reason for hesitation is their real reason — probe beneath the first answer.",
+    "risk_severity_threshold": "p2_and_above"
+  },
+  "method": {
+    "orchestration": "The orchestrator should run five parallel agent sessions — one per active persona — using image_sequence api_mode to deliver the high-fidelity screenshot sequence as a base64-encoded image array. Each session operates in exploratory mode, meaning agents are not constrained to a linear task path but are expected to surface organic navigation behaviour and unprompted reactions. Sessions are capped at 20 turns with a stuck-loop detection threshold of 3 consecutive turns without meaningful progress before an early-exit flag is raised.",
+    "persona_loading": "Before each session begins, load the corresponding persona system prompt from the v4 persona library using the following persona_library_ref values: v4_spontaneous_traditionalist (Hakim), v4_progressive_influencer (Syafiqah), v4_family_centric_devotee (Puan Rohani), v4_trendsetter_explorer (Marcus), and v4_routine_conservative (David). Each agent must be fully initialised with its persona context — including household composition, content preferences, digital confidence level, and decision-making style — prior to artefact presentation. Priority persona Puan Rohani (v4_family_centric_devotee) should be validated first to confirm persona loading is functioning correctly before parallel sessions are launched.",
+    "session_flow": [
+      "Validate artefact link and confirm api_mode is image_sequence",
+      "Load persona system prompts for: Hakim, Syafiqah, Puan Rohani, Marcus, David",
+      "Encode screenshot sequence as base64 image array",
+      "Run parallel agent sessions — one per active persona",
+      "Execute 20 max turns per session with stuck-loop threshold of 3",
+      "Score each turn against eval keys: task_completion, friction_score, confusion_signal, abandon_trigger, trust_signal, persona_alignment, brand_comprehension, value_proposition_clarity, visual_hierarchy_effectiveness, information_gaps, pack_differentiation_clarity, personal_relevance, purchase_intent, decision_friction",
+      "Flag any turn where friction_score exceeds threshold per fidelity sensitivity: high",
+      "Run second-pass UX analyst synthesis across all session logs"
+    ],
+    "eval_approach": "Evaluation operates on two layers. In the first layer, turn-level scoring is applied in real time during each session: every agent turn is scored against all 14 eval keys (6 default + 8 custom), with friction signals flagged inline and stuck-loop counters incremented when no meaningful forward progress is detected. In the second layer, a UX analyst synthesis pass is run after all five sessions complete — this cross-persona pass identifies recurring friction patterns, validates or falsifies H1, produces a severity-ranked findings list against the p2_and_above escalation threshold, and generates a go/no-go signal against the launch readiness criteria defined in good_answer_looks_like.",
+    "limitations": "Because the artefact is a mobile-only screenshot sequence, synthetic agents cannot replicate touch-based interaction behaviours such as swipe gestures, scroll momentum, or tap target accuracy, which may mask friction that would surface on a real device. The Bahasa Malaysia localisation is not yet available in this artefact, meaning responses from personas whose natural language context is Bahasa Malaysia (notably Hakim and Puan Rohani) may not fully reflect how those users would respond to a localised experience. Additionally, high-fidelity static screenshots cannot capture loading states, animations, or real-time personalisation logic, so any friction arising from perceived performance or dynamic content will not be surfaced in this study."
+  },
+  "output_handoff": {
+    "primary_audience": [
+      "product_team"
+    ],
+    "output_formats": [
+      "docx_research_plan"
+    ],
+    "turnaround": "immediate",
+    "escalation_threshold": "p2_and_above",
+    "additional_notes": null,
+    "report_parts": [
+      "study_overview",
+      "key_insights_summary",
+      "hypothesis_verdict_table",
+      "per_persona_session_logs",
+      "friction_map",
+      "cross_persona_patterns",
+      "artefact_feedback",
+      "severity_ranked_findings",
+      "recommendations_by_team",
+      "go_no_go_signal",
+      "follow_up_research",
+      "open_questions",
+      "raw_eval_json"
+    ]
+  },
+  "_meta": {
+    "run_id": "22042026_synthetic-user-test-1",
+    "generated_at": "2026-04-26T08:53:42.035Z",
+    "model": "claude-sonnet-4-6",
+    "source_intake": "intake.json",
+    "researcher": "Jia Yi Gan",
+    "product": "Astro",
+    "feature": "Greenfield homepage conversion page",
+    "plan_version": "1.0"
+  }
+}

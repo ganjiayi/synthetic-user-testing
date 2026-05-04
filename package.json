@@ -1,0 +1,14 @@
+{
+  "name": "synthetic-user-testing",
+  "version": "1.0.0",
+  "description": "Synthetic UX research pipeline using Claude Code",
+  "private": true,
+  "scripts": {
+    "parse":    "node src/pipeline/parseIntake.js",
+    "plan":     "node src/pipeline/generatePlan.js",
+    "run-study":"node src/pipeline/runner.js"
+  },
+  "dependencies": {
+    "mammoth": "^1.8.0"
+  }
+}

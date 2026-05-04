@@ -1,0 +1,36 @@
+# Pipeline dependencies
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.local
+
+# Run outputs (large binary files)
+runs/**/report/*.pptx
+runs/**/report/*.xlsx
+runs/**/report/*.docx
+runs/**/sessions/session_log.json
+runs/**/sessions/eval_matrix.json
+
+# Keep run folder structure but ignore temp files
+runs/**/.DS_Store
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# UI build artifacts (Vercel builds from source)
+ui/build/
+ui/node_modules/
+
+# Editor
+.vscode/settings.json
+*.swp

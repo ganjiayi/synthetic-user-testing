@@ -1,0 +1,171 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Product Database Record",
+  "description": "Schema for a single product record in the synthetic UX research product database. One file per product in the products/ folder. File named by product slug (e.g. ACM.json).",
+  "type": "object",
+  "required": [
+    "_meta",
+    "section1_identity",
+    "section2_description",
+    "section3_flows",
+    "section5_pain_points",
+    "section6_agent_instructions",
+    "section7_language",
+    "section8_research_history"
+  ],
+  "properties": {
+
+    "_meta": {
+      "type": "object",
+      "required": ["product_id", "product_name", "slug", "version"],
+      "properties": {
+        "product_id":          { "type": "string", "description": "Short uppercase identifier e.g. ACM, MAA" },
+        "product_name":        { "type": "string" },
+        "slug":                { "type": "string", "description": "Matches the filename — used as database lookup key" },
+        "version":             { "type": "string" },
+        "prepared_by":         { "type": "string" },
+        "date_prepared":       { "type": "string", "description": "DDMMYYYY" },
+        "last_updated":        { "type": "string", "description": "DDMMYYYY" },
+        "schema_version":      { "type": "string" },
+        "database_gaps":       { "type": "array", "items": { "type": "string" }, "description": "Dot-path list of null fields requiring real data" },
+        "updatable_sections":  { "type": "array", "items": { "type": "string" }, "description": "Sections that can be updated from questionnaire data — never includes sections 1, 2, 6, or 7" },
+        "notes":               { "type": "string" }
+      }
+    },
+
+    "section1_identity": {
+      "type": "object",
+      "required": ["product_name", "product_id", "product_category", "platforms", "primary_market", "target_audience", "product_owner_team", "lifecycle_phase"],
+      "properties": {
+        "product_name":       { "type": "string" },
+        "product_id":         { "type": "string" },
+        "product_category":   { "type": "string" },
+        "platforms":          { "type": "array", "items": { "type": "string" } },
+        "primary_market":     { "type": "string" },
+        "target_audience":    { "type": "string" },
+        "product_owner_team": { "type": "string" },
+        "lifecycle_phase": {
+          "type": "string",
+          "enum": ["pre_launch", "private_beta", "public_beta", "live_early_growth", "live_scaling", "live_mature", "sunset", "not_sure"]
+        }
+      }
+    },
+
+    "section2_description": {
+      "type": "object",
+      "required": ["one_line_summary", "full_description"],
+      "properties": {
+        "one_line_summary":  { "type": "string", "minLength": 20 },
+        "full_description":  { "type": "string", "minLength": 100 },
+        "recent_changes":    { "type": "string", "default": "" }
+      }
+    },
+
+    "section3_flows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["flow_id", "flow_name", "entry_point", "testable"],
+        "properties": {
+          "flow_id":     { "type": "string" },
+          "flow_name":   { "type": "string" },
+          "description": { "type": "string", "default": "" },
+          "entry_point": { "type": "string" },
+          "testable":    { "type": "string", "enum": ["yes", "partial", "no"] }
+        }
+      }
+    },
+
+    "section4_performance": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "metric_name": { "type": "string" },
+              "value":       { "type": ["string", "null"] },
+              "trend":       { "type": ["string", "null"] },
+              "source":      { "type": ["string", "null"] },
+              "_gap":        { "type": "boolean", "description": "True when value is null — flags for updateProductDB.js" }
+            }
+          }
+        },
+        "known_dropoff_points":  { "type": ["string", "null"], "default": null },
+        "_dropoff_note":         { "type": "string" },
+        "nps": {
+          "type": "object",
+          "properties": {
+            "current_score":              { "type": ["string", "number", "null"] },
+            "score_trend":                { "type": ["string", "null"] },
+            "primary_driver_of_low_score":{ "type": ["string", "null"] },
+            "data_source":                { "type": ["string", "null"] },
+            "_gap":                       { "type": "boolean" }
+          }
+        }
+      }
+    },
+
+    "section5_pain_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "pain_point", "description", "severity"],
+        "properties": {
+          "id":            { "type": "string" },
+          "pain_point":    { "type": "string" },
+          "description":   { "type": "string" },
+          "affected_flows":{ "type": "array", "items": { "type": "string" } },
+          "severity":      { "type": "string", "enum": ["P0", "P1", "P2", "P3"] }
+        }
+      }
+    },
+
+    "section6_agent_instructions": {
+      "type": "object",
+      "required": ["always_know", "never_assume"],
+      "properties": {
+        "always_know":       { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "never_assume":      { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "competitor_context":{ "type": "string", "default": "" }
+      }
+    },
+
+    "section7_language": {
+      "type": "object",
+      "required": ["primary_language"],
+      "properties": {
+        "primary_language":     { "type": "string" },
+        "secondary_languages":  { "type": "string", "default": "" },
+        "localisation_status":  { "type": "string", "default": "" },
+        "key_local_terms":      { "type": "string", "default": "" },
+        "tone_of_voice":        { "type": "string", "default": "" },
+        "known_copy_issues":    { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+
+    "section8_research_history": {
+      "type": "object",
+      "properties": {
+        "prior_studies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "study_id":    { "type": "string" },
+              "date":        { "type": "string" },
+              "method":      { "type": "string" },
+              "key_finding": { "type": "string" },
+              "status":      { "type": "string" }
+            }
+          },
+          "default": []
+        },
+        "first_study_note": { "type": "string", "default": "" },
+        "open_questions":   { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    }
+  }
+}

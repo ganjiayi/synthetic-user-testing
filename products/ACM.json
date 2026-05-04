@@ -1,0 +1,251 @@
+{
+  "_meta": {
+    "product_id": "ACM",
+    "product_name": "Astro.com.my",
+    "slug": "ACM",
+    "version": "v1.0",
+    "prepared_by": "Jia Yi Gan",
+    "date_prepared": "04052026",
+    "last_updated": "04052026",
+    "schema_version": "1.0",
+    "database_gaps": [
+      "section4a.homepage_to_pack_ctr.value",
+      "section4a.homepage_to_pack_ctr.trend",
+      "section4a.homepage_to_pack_ctr.source",
+      "section4a.pack_page_bounce_rate.value",
+      "section4a.pack_page_bounce_rate.trend",
+      "section4a.pack_page_bounce_rate.source",
+      "section4a.checkout_dropoff.value",
+      "section4a.checkout_dropoff.trend",
+      "section4a.checkout_dropoff.source",
+      "section4a.mobile_traffic_share.value",
+      "section4a.mobile_traffic_share.trend",
+      "section4a.mobile_traffic_share.source",
+      "section4a.support_contact_rate.value",
+      "section4a.support_contact_rate.trend",
+      "section4a.support_contact_rate.source",
+      "section4c.nps_score",
+      "section4c.primary_driver_of_low_score",
+      "section4c.data_source"
+    ],
+    "updatable_sections": ["section4a", "section4b", "section4c", "section8"],
+    "notes": "Sections 4A and 4C contain null fields requiring internal analytics data. All other sections are complete. Do not overwrite sections 1, 2, 6, or 7 from questionnaire auto-population — these require manual review."
+  },
+
+  "section1_identity": {
+    "product_name": "Astro.com.my",
+    "product_id": "ACM",
+    "product_category": "Marketing and acquisition website — primary consumer digital storefront",
+    "platforms": ["Web — desktop browser", "Web — mobile browser"],
+    "primary_market": "Malaysia — national",
+    "target_audience": "Prospective new subscribers discovering Astro for the first time; existing Astro customers managing accounts or exploring upgrades; lapsed subscribers considering return.",
+    "product_owner_team": "Digital Business",
+    "lifecycle_phase": "live_mature"
+  },
+
+  "section2_description": {
+    "one_line_summary": "Astro.com.my is the primary marketing and acquisition website for Astro Malaysia Holdings, enabling prospective and existing customers to discover the Astro One product range, compare subscription packs, add streaming app bundles, and initiate or manage their subscriptions online.",
+
+    "full_description": "Astro.com.my is the main digital storefront for Astro Malaysia Holdings (MEASAT Broadcast Network Systems Sdn Bhd). It serves three primary functions: (1) Acquisition — introducing new customers to the Astro One product range, which now positions Astro as a streaming-first, boxless entertainment platform. The homepage leads with the Astro One brand and three core packs: Entertainment (RM49.99/mth), Sports (RM69.99/mth), and Epic (RM159.99/mth, promo from RM199.99). Streaming app bundles including Netflix, Disney+, Prime Video, iQIYI, HBO Max, Viu, WeTV, TVBAnywhere+, Sun NXT, Simply South, Zee5, and Qalbox are available as add-ons. (2) Self-service redirect — the site links existing customers to My Astro (myastro.astro.com.my) for account management, bill payment, and pack changes. Account management is not handled on astro.com.my itself. (3) Content discovery — the site features a content carousel surfacing current Astro Originals, live sports, and entertainment titles to inspire subscription intent. The site is navigated primarily via a top navigation bar with links to TV Packs, Products and Services, Content Guide, Promotions, My Account, and Support. The subscription journey flows from astro.com.my to product.astro.com.my/tv (pack listing) to shop.astro.com.my (checkout). These are treated as one end-to-end acquisition funnel by users even though they span multiple subdomains.",
+
+    "recent_changes": "Major brand transition underway: Astro is repositioning from a set-top box TV provider to a streaming-first platform under the Astro One brand. The homepage now leads with 'Easy streaming, endless entertainment for your whole family' and the Astro One logo, replacing prior set-top box-centric hero messaging. The three Astro One packs (Entertainment, Sports, Epic) are the primary products featured. The homepage prominently promotes streaming app add-ons (Netflix, Disney+, etc.) as a key value driver. The site explicitly answers 'Do I need to get an Ultra/Ulti Box?' in the FAQ section — indicating this is a primary customer confusion point. The Bahasa Malaysia version of the site lags the English version in content updates. The subscription journey now routes through shop.astro.com.my, which is a separate subdomain from the main marketing site."
+  },
+
+  "section3_flows": [
+    {
+      "flow_id": "F1",
+      "flow_name": "Homepage to Pack Selection",
+      "description": "User lands on astro.com.my, browses the Astro One hero section, reads pack features and pricing, clicks 'Get it now' or 'See all packs', and arrives at product.astro.com.my/tv.",
+      "entry_point": "astro.com.my homepage",
+      "testable": "yes"
+    },
+    {
+      "flow_id": "F2",
+      "flow_name": "Pack Comparison and Selection",
+      "description": "User views three Astro One packs side by side (Entertainment RM49.99, Sports RM69.99, Epic RM159.99), compares included features, selects preferred pack, and proceeds to shop.astro.com.my checkout.",
+      "entry_point": "product.astro.com.my/tv",
+      "testable": "yes"
+    },
+    {
+      "flow_id": "F3",
+      "flow_name": "Streaming App Add-On Discovery",
+      "description": "User explores app add-on carousel on homepage or pack page, selects an app (e.g. Netflix +RM29.90/mth), and adds it to their pack selection in the shop flow.",
+      "entry_point": "Homepage app carousel or product.astro.com.my/tv",
+      "testable": "yes"
+    },
+    {
+      "flow_id": "F4",
+      "flow_name": "Existing Customer Pack Upgrade",
+      "description": "Existing subscriber clicks 'My Account', is directed to My Astro app download or myastro.astro.com.my login, then manages pack changes. Note: this flow leaves astro.com.my.",
+      "entry_point": "My Account nav link",
+      "testable": "partial"
+    },
+    {
+      "flow_id": "F5",
+      "flow_name": "Support and FAQ Navigation",
+      "description": "User has a question (e.g. 'do I need a box?'), navigates to Support via top nav or FAQ section at bottom of pack page, finds answer at support.astro.com.my.",
+      "entry_point": "Homepage or product.astro.com.my/tv",
+      "testable": "yes"
+    },
+    {
+      "flow_id": "F6",
+      "flow_name": "Content Discovery to Subscription Intent",
+      "description": "User browses content carousel (shows, sports, originals), clicks 'Explore more', arrives at content.astro.com.my, then follows CTA back to subscribe.",
+      "entry_point": "Homepage content carousel",
+      "testable": "yes"
+    }
+  ],
+
+  "section4_performance": {
+    "metrics": [
+      {
+        "metric_name": "Homepage to Pack Page CTR",
+        "value": null,
+        "trend": null,
+        "source": null,
+        "_gap": true
+      },
+      {
+        "metric_name": "Pack Page Bounce Rate",
+        "value": null,
+        "trend": null,
+        "source": null,
+        "_gap": true
+      },
+      {
+        "metric_name": "Checkout Drop-Off",
+        "value": null,
+        "trend": null,
+        "source": null,
+        "_gap": true
+      },
+      {
+        "metric_name": "Mobile Traffic Share",
+        "value": null,
+        "trend": null,
+        "source": null,
+        "_gap": true
+      },
+      {
+        "metric_name": "Support Contact Rate",
+        "value": null,
+        "trend": null,
+        "source": null,
+        "_gap": true
+      }
+    ],
+
+    "known_dropoff_points": "1. Homepage to pack page — only ~12% of homepage visitors proceed to the pack listing. The homepage content carousel and entertainment browsing section appears to absorb attention without driving subscription intent. 2. Plan comparison page — ~40% bounce rate. Users land on the three-pack comparison but leave without selecting. Likely causes: pricing sticker shock (RM159.99 Epic pack vs free YouTube), confusion about what is included in each pack, and uncertainty about whether a set-top box is required. 3. Payment confirmation step — ~28% drop-off at checkout. Users who have selected a pack abandon before completing payment. Likely causes: lack of clarity on total monthly cost when add-ons are included, uncertainty about contract terms, and friction in filling personal details on mobile. 4. Existing customer redirect — users clicking 'My Account' are bounced to a different subdomain (myastro.astro.com.my) or prompted to download the My Astro app, creating a jarring context switch that likely causes abandonment.",
+    "_dropoff_note": "Drop-off percentages in known_dropoff_points are estimates based on site structure analysis — not confirmed internal analytics. Replace with real funnel data when available.",
+
+    "nps": {
+      "current_score": null,
+      "score_trend": "Negative sentiment spike observed post-Astro One rebrand transition period (Jan–Mar 2026)",
+      "primary_driver_of_low_score": null,
+      "data_source": null,
+      "_gap": true
+    }
+  },
+
+  "section5_pain_points": [
+    {
+      "id": "PP1",
+      "pain_point": "Boxless messaging confusion",
+      "description": "Users do not understand that Astro One no longer requires a set-top box. The FAQ explicitly addresses 'Do I need to get an Ultra/Ulti Box?' — confirming this is a top user question. CX team reports elevated call volume about hardware requirements post-rebrand.",
+      "affected_flows": ["F1", "F2"],
+      "severity": "P0"
+    },
+    {
+      "id": "PP2",
+      "pain_point": "Pack pricing complexity",
+      "description": "Three packs with add-ons create a combinatorial pricing problem. Users cannot easily calculate their total monthly spend. Promotional pricing (e.g. Epic RM159.99 from RM199.99) adds confusion about whether prices are permanent.",
+      "affected_flows": ["F2"],
+      "severity": "P1"
+    },
+    {
+      "id": "PP3",
+      "pain_point": "Subdomain fragmentation",
+      "description": "The user journey spans astro.com.my, product.astro.com.my, shop.astro.com.my, and myastro.astro.com.my — four different domains. Users may feel they have left Astro or lost context, especially on mobile.",
+      "affected_flows": ["F1", "F2", "F3", "F4", "F5", "F6"],
+      "severity": "P1"
+    },
+    {
+      "id": "PP4",
+      "pain_point": "Content carousel vs conversion",
+      "description": "The homepage content carousel (shows, sports, originals) absorbs user attention but does not directly drive pack selection. Users browse content without connecting it to a subscription action.",
+      "affected_flows": ["F1"],
+      "severity": "P2"
+    },
+    {
+      "id": "PP5",
+      "pain_point": "Mobile checkout friction",
+      "description": "The checkout flow on shop.astro.com.my is not optimised for mobile-first users. Form fields, address entry, and payment confirmation create drop-off on smaller screens.",
+      "affected_flows": ["F2"],
+      "severity": "P1"
+    },
+    {
+      "id": "PP6",
+      "pain_point": "App add-on decision fatigue",
+      "description": "12 streaming app add-ons are available. Users face decision fatigue when choosing which apps to add and calculating incremental cost vs standalone app subscriptions.",
+      "affected_flows": ["F3"],
+      "severity": "P2"
+    },
+    {
+      "id": "PP7",
+      "pain_point": "Existing vs new customer path ambiguity",
+      "description": "The homepage and navigation do not clearly differentiate journeys for new subscribers vs existing customers. Existing customers clicking 'My Account' are routed off-site to the My Astro app.",
+      "affected_flows": ["F4"],
+      "severity": "P2"
+    }
+  ],
+
+  "section6_agent_instructions": {
+    "always_know": [
+      "Astro.com.my is a marketing and acquisition website — not a self-service portal. Account management requires the My Astro app or myastro.astro.com.my.",
+      "The three core Astro One packs are: Entertainment (RM49.99/mth), Sports (RM69.99/mth), and Epic (RM159.99/mth promo from RM199.99). All packs allow streaming on Astro GO app without a set-top box. At any one time, there may be promotions that affect the pack pricing.",
+      "Streaming app add-ons available: Netflix (+RM29.90), Disney+ (+RM18.30), Prime Video (+RM25.00), iQIYI (+RM8.90), HBO Max (+RM24.90), Viu (+RM4.99), WeTV (+RM10.50), TVBAnywhere+ (+RM9.90), Sun NXT (+RM25.00), Simply South (+RM10.80), Zee5 (+RM10.80), Qalbox (+RM9.50). Prices are subject to change.",
+      "All prices are in Malaysian Ringgit (MYR).",
+      "The user journey spans multiple subdomains — users will experience navigation across astro.com.my, product.astro.com.my, shop.astro.com.my. This is normal.",
+      "WhatsApp (+603 9543 3838) is a primary support and sales channel and is prominently featured on the site.",
+      "Primary competitor context: Netflix (RM17–54/mth standalone), YouTube (free), Unifi TV (RM30–80/mth), Disney+ (RM29.90/mth standalone). Competitor prices are also subject to change with different pricing tiers and content packages."
+    ],
+    "never_assume": [
+      "Do NOT assume users know that Astro One does not require a set-top box. This is the single most important knowledge gap to probe.",
+      "Do NOT assume users understand the difference between Astro GO (the streaming app) and the main Astro TV subscription.",
+      "Do NOT assume users will read the FAQ section — most will not scroll to the bottom of the page.",
+      "Do NOT assume users understand what is included in each pack without reading the details — pack names (Entertainment, Sports, Epic) do not communicate content clearly to all segments.",
+      "Do NOT assume users can calculate their total monthly spend including add-ons without explicit help.",
+      "Do NOT assume users have a stable broadband connection — some segments in East Malaysia and rural areas have connectivity constraints.",
+      "Do NOT assume the Bahasa Malaysia version of the site is fully up to date — it may lag the English version.",
+      "Do NOT assume users who are existing Astro customers know they need the My Astro app to manage their account — the path is not obvious from the main site."
+    ],
+    "competitor_context": "Primary streaming competitors: Netflix (RM17–54/mth depending on plan — most users reference the standard plan at ~RM33/mth), YouTube Premium (RM17.90/mth but most users use the free ad-supported version), Disney+ Hotstar (RM29.90/mth standalone, available for less via Astro bundle at RM18.30/mth). Secondary competitors: Unifi TV (RM30–80/mth, similar pay-TV positioning), HBO Max (RM24.90/mth standalone). Key behavioural pattern: Malaysian consumers frequently compare Astro's total monthly cost (base pack + add-ons) against the cost of subscribing to Netflix + YouTube Premium independently. The Spontaneous Traditionalist and Routine Conservative personas are most likely to anchor on YouTube as the free baseline. The Progressive Influencer and Trendsetter Explorer personas are most likely to already have Netflix and question whether Astro adds sufficient value. The Family-Centric Devotee is most influenced by local content (Astro Originals, MFL, Gegar Vaganza) that is not available on competitor platforms."
+  },
+
+  "section7_language": {
+    "primary_language": "English — primary navigation, pack names, pricing, and CTAs",
+    "secondary_languages": "Bahasa Malaysia — available as language toggle. Mandarin and Tamil content available in the content guide but not in site navigation.",
+    "localisation_status": "BM version available but lags English version in content updates. Pack and pricing pages are generally in sync. Promotional and campaign pages may be English-only.",
+    "key_local_terms": "'Pakej' for pack/plan. 'Langgan' for subscribe. 'Tambah' for add-on. 'Astro Box' still used in support documentation even as marketing moves to boxless messaging — this inconsistency is a known source of confusion.",
+    "tone_of_voice": "Family-friendly, inclusive, moderately casual. English copy uses phrases like 'Easy streaming, endless entertainment for your whole family' and 'Made easy for you.' BM copy follows similar warm, accessible tone.",
+    "known_copy_issues": [
+      "'Box' terminology inconsistency: marketing copy says 'no box required' but support documentation, FAQs, and the My Astro app still reference 'Astro Box', 'Ultra Box', and 'Ulti Box'. Users encounter both messages in the same session and become uncertain.",
+      "'Add-on' vs 'Upgrade' used interchangeably: streaming app additions are called 'add-ons' in marketing but may appear as 'upgrades' in the billing system. This mismatch surfaces in support tickets.",
+      "'Astro GO' disambiguation: Astro GO refers to both the streaming app (included in all packs) and historically to an OTT-only subscription tier. Users may be confused about whether they need to pay separately for Astro GO.",
+      "Pack name clarity: 'Entertainment', 'Sports', and 'Epic' do not communicate content composition clearly. Users cannot predict what 'Epic' includes without reading details.",
+      "Concurrent stream limits: '2 devices' for Entertainment and Sports packs, '4 devices' for Epic pack — this information is critical for family decision-making but is presented in small text below the main pack price."
+    ]
+  },
+
+  "section8_research_history": {
+    "prior_studies": [],
+    "first_study_note": "This is the first synthetic study for Astro.com.my. All findings are new baseline data.",
+    "open_questions": [
+      "Do users understand the boxless product positioning from the homepage alone, without reading the FAQ?",
+      "Can users accurately calculate their total monthly cost when selecting a pack plus add-ons?",
+      "Do users understand the difference between streaming via Astro GO (no box) vs traditional satellite TV (requires box)?",
+      "How do Malay-language-first users (Spontaneous Traditionalist, Routine Conservative segments) navigate the English-primary site?",
+      "At what point in the acquisition journey do users disengage and switch to calling the WhatsApp support line instead of completing online?"
+    ]
+  }
+}
