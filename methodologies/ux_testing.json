@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "methodology_id": "ux_testing",
+    "display_name": "UX Testing",
+    "version": "v1.0",
+    "compatible_with_synthetic_personas": true,
+    "runner_type": "task_based"
+  },
+  "description": "Personas evaluate the holistic experience — not just task completion but comprehension of the product proposition, emotional response, and perceived value. Best for assessing whether a design communicates its intent across the full journey.",
+  "eval_metrics": [
+    { "key": "task_completion",      "type": "binary",       "description": "Did the persona reach the defined success condition?" },
+    { "key": "friction_score",       "type": "numeric_0_10", "description": "Aggregate friction signals per turn" },
+    { "key": "comprehension_signal", "type": "qualitative",  "description": "Did the persona understand what was offered without external explanation?" },
+    { "key": "trust_signal",         "type": "qualitative",  "description": "Expressions of trust or distrust toward the product" },
+    { "key": "value_perception",     "type": "qualitative",  "description": "Does the persona see the product as relevant and valuable to them?" },
+    { "key": "abandon_trigger",      "type": "categorical",  "description": "What caused the persona to exit the task early" }
+  ],
+  "eval_schema": {
+    "fields": [
+      "action",
+      "screen_or_step",
+      "inner_monologue",
+      "friction_score",
+      "comprehension_signal",
+      "trust_signal",
+      "value_perception",
+      "task_completion",
+      "abandon_trigger",
+      "persona_alignment_note"
+    ],
+    "persona_instructions": "At each turn, navigate the UI as this persona would. In addition to reporting your actions and friction score, specifically report whether you understand what this product is offering and whether it feels relevant and valuable to you personally."
+  },
+  "planner_guidance": "Focus the plan on whether the product communicates its value proposition clearly across the full experience — not just task completion but comprehension at each stage. Define what 'understood the product' looks like for each persona. The primary metric is comprehension signal strength. Hypotheses should challenge whether the design communicates intent without external explanation.",
+  "report_sections": {
+    "section_03_label": "Methodology",
+    "section_03_content": [
+      "method_description",
+      "session_config",
+      "tasks_run",
+      "comprehension_checkpoints",
+      "hypotheses"
+    ],
+    "section_04_label": "Key Findings — Comprehension & Value Perception",
+    "section_04_content": [
+      "comprehension_map",
+      "value_perception_signals",
+      "trust_signals",
+      "friction_map",
+      "task_completion_rates"
+    ],
+    "hypothesis_focus": "Challenge whether the design communicates its core proposition clearly to each persona segment without external prompting."
+  }
+}

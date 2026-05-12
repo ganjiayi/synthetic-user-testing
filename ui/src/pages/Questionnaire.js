@@ -111,19 +111,6 @@ function StepGoals({ form, setForm }) {
   const insightOpts = ['Qualitative','Quantitative','Mixed'];
   return (
     <>
-      <FieldGroup label="Core research question *"
-        hint="One question only. Everything else in the study organises around answering this.">
-        <TextInput rows={2}
-          placeholder="e.g. Does the new homepage clearly communicate that Astro no longer requires a set-top box?"
-          value={form.coreQuestion || ''}
-          onChange={e => setForm(f => ({ ...f, coreQuestion: e.target.value }))} />
-      </FieldGroup>
-      <FieldGroup label="What a good answer looks like">
-        <TextInput rows={2}
-          placeholder="e.g. If 4 out of 5 personas correctly identify the boxless product without reading the FAQ, we can proceed."
-          value={form.goodAnswer || ''}
-          onChange={e => setForm(f => ({ ...f, goodAnswer: e.target.value }))} />
-      </FieldGroup>
       <FieldGroup label="Insight type">
         <div style={pillRow}>
           {insightOpts.map(o => (
@@ -132,7 +119,6 @@ function StepGoals({ form, setForm }) {
           ))}
         </div>
       </FieldGroup>
-      <div style={{ height: '1px', background: 'var(--border)', margin: '1.5rem 0' }} />
       <FieldGroup label="Feature or flow under test">
         <TextInput placeholder="e.g. Homepage revamp — new boxless product line messaging"
           value={form.feature || ''}
@@ -152,11 +138,11 @@ function StepGoals({ form, setForm }) {
       </FieldGroup>
       <FieldGroup label="Secondary research questions">
         <TextInput rows={3}
-          placeholder={"RQ2: How do different persona segments respond to the 'Easy streaming, endless entertainment' messaging?\nRQ3: What is the primary drop-off point in the homepage-to-pack-selection flow?"}
+          placeholder={"RQ2: How do different persona segments respond to the messaging?\nRQ3: What is the primary drop-off point in the flow?"}
           value={form.secondaryRQs || ''}
           onChange={e => setForm(f => ({ ...f, secondaryRQs: e.target.value }))} />
       </FieldGroup>
-      <FieldGroup label="Decision this research must support">
+      <FieldGroup label="Decision this research must support" hint="Optional">
         <TextInput rows={2}
           placeholder="e.g. Whether to proceed with the homepage launch on the scheduled date or return to design for one more sprint."
           value={form.decisionToSupport || ''}
@@ -192,65 +178,89 @@ function StepPersonas({ form, setForm }) {
 }
 
 function StepTasks({ form, setForm }) {
-  const modes = ['Single-pass','Multi-turn','Exploratory'];
-  const tasks = form.tasks || [
-    { name: '', instruction: '', success: '' },
-    { name: '', instruction: '', success: '' },
-    { name: '', instruction: '', success: '' },
+  const methodologies = [
+    { id: 'Usability Testing',  desc: 'Task-based — where do users get stuck or abandon?' },
+    { id: 'UX Testing',         desc: 'Holistic — does the design communicate its intent?' },
+    { id: 'Concept Testing',    desc: 'Reaction-based — is the concept clear and appealing?' },
+    { id: 'Desirability Testing', desc: 'Impression-based — does the design resonate emotionally?' },
   ];
+
+  const tasks = form.tasks || [
+    { name: '', instruction: '' },
+    { name: '', instruction: '' },
+    { name: '', instruction: '' },
+  ];
+
   const updateTask = (i, field, val) => {
     const next = tasks.map((t, idx) => idx === i ? { ...t, [field]: val } : t);
     setForm(f => ({ ...f, tasks: next }));
   };
 
+  const addTask = () => setForm(f => ({ ...f, tasks: [...tasks, { name: '', instruction: '' }] }));
+
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem', marginBottom: '1.25rem' }}>
-        <FieldGroup label="Entry point">
-          <TextInput placeholder="e.g. astro.com.my homepage"
-            value={form.entryPoint || ''}
-            onChange={e => setForm(f => ({ ...f, entryPoint: e.target.value }))} />
-        </FieldGroup>
-        <FieldGroup label="Session mode">
-          <div style={pillRow}>
-            {modes.map(m => (
-              <Pill key={m} label={m} selected={form.sessionMode === m}
-                onClick={() => setForm(f => ({ ...f, sessionMode: m }))} />
-            ))}
-          </div>
-        </FieldGroup>
-        <FieldGroup label="Max turns per session">
-          <TextInput placeholder="20 (recommended)"
-            value={form.maxTurns || ''}
-            onChange={e => setForm(f => ({ ...f, maxTurns: e.target.value }))} />
-        </FieldGroup>
-        <FieldGroup label="Stuck-loop threshold">
-          <TextInput placeholder="3 (recommended)"
-            value={form.stuckLoop || ''}
-            onChange={e => setForm(f => ({ ...f, stuckLoop: e.target.value }))} />
-        </FieldGroup>
-      </div>
-
-      <div style={{ height: '1px', background: 'var(--border)', margin: '0 0 1.25rem' }} />
-
-      <div style={{ display: 'grid', gridTemplateColumns: '36px 1fr 1fr 1fr', gap: '8px', marginBottom: '6px' }}>
-        <div />
-        {['Task name','Agent instruction','Success condition'].map(h => (
-          <div key={h} style={{ fontSize: '10px', color: '#9CA3AF', fontWeight: 500 }}>{h}</div>
-        ))}
-      </div>
-
-      {tasks.map((task, i) => (
-        <div key={i} style={taskGrid}>
-          <div style={{ fontSize: '12px', fontWeight: 500, color: '#9CA3AF', textAlign: 'center', paddingTop: '0.625rem' }}>T{i + 1}</div>
-          <TextInput placeholder={i === 0 ? 'Homepage orientation' : i === 1 ? 'Pack selection' : 'Add task…'}
-            value={task.name} onChange={e => updateTask(i, 'name', e.target.value)} />
-          <TextInput placeholder={i === 0 ? "Visit the site and tell me what you understand about how Astro works now." : i === 1 ? "Find a plan that suits your family." : ''}
-            value={task.instruction} onChange={e => updateTask(i, 'instruction', e.target.value)} />
-          <TextInput placeholder={i === 0 ? 'Correctly identifies boxless' : i === 1 ? 'Reaches checkout' : ''}
-            value={task.success} onChange={e => updateTask(i, 'success', e.target.value)} />
+      {/* Research Methodology — single select */}
+      <FieldGroup label="Research methodology" hint="Select one. This determines which eval metrics, scoring schema, and report sections are used.">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '1.1rem' }}>
+          {methodologies.map(m => (
+            <div
+              key={m.id}
+              onClick={() => setForm(f => ({ ...f, methodology: m.id }))}
+              style={{
+                padding: '0.875rem 1rem',
+                border: form.methodology === m.id ? '2px solid var(--blue)' : '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                background: form.methodology === m.id ? 'var(--blue-lt)' : '#fff',
+                cursor: 'pointer', transition: 'all .15s', userSelect: 'none',
+              }}
+            >
+              <div style={{ fontSize: '13px', fontWeight: 500, color: form.methodology === m.id ? 'var(--blue)' : 'var(--ink)', marginBottom: '0.2rem' }}>{m.id}</div>
+              <div style={{ fontSize: '11px', color: '#6B7280', lineHeight: 1.4 }}>{m.desc}</div>
+            </div>
+          ))}
         </div>
-      ))}
+      </FieldGroup>
+
+      <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
+
+      {/* Tasks table */}
+      <FieldGroup label="Tasks">
+        <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr', gap: '8px', marginBottom: '6px' }}>
+          {['Task', 'Top task', 'Task instruction for synthetic users'].map(h => (
+            <div key={h} style={{ fontSize: '10px', color: '#9CA3AF', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</div>
+          ))}
+        </div>
+
+        {tasks.map((task, i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr', gap: '8px', marginBottom: '8px', alignItems: 'start' }}>
+            <div style={{
+              fontSize: '12px', fontWeight: 600, color: 'var(--blue)',
+              fontFamily: 'monospace', paddingTop: '0.65rem', textAlign: 'center',
+            }}>T{i + 1}</div>
+            <TextInput
+              placeholder={i === 0 ? 'e.g. Find warranty information' : i === 1 ? 'e.g. Compare subscription plans' : 'Type of task…'}
+              value={task.name}
+              onChange={e => updateTask(i, 'name', e.target.value)}
+            />
+            <TextInput
+              placeholder={i === 0 ? 'Type task instruction here' : i === 1 ? 'Type task instruction here' : ''}
+              value={task.instruction}
+              onChange={e => updateTask(i, 'instruction', e.target.value)}
+            />
+          </div>
+        ))}
+
+        <button
+          onClick={addTask}
+          style={{
+            marginTop: '4px', padding: '0.45rem 1rem',
+            border: '1px dashed var(--border-md)', borderRadius: 'var(--radius-sm)',
+            background: 'transparent', fontFamily: 'var(--sans)',
+            fontSize: '12px', color: '#6B7280', cursor: 'pointer', width: '100%',
+          }}
+        >+ Add task</button>
+      </FieldGroup>
     </>
   );
 }
@@ -295,25 +305,12 @@ function StepHypotheses({ form, setForm }) {
 function StepOutput({ form, setForm }) {
   const audiences = ['Product team','Design team','Engineering','Marketing','Leadership','Investors'];
   const formats   = ['JSON eval log','Markdown summary','HTML report card','DOCX research plan','Slide deck'];
-  const turns     = ['Immediate','Within 24 hours','Within 48 hours','End of sprint'];
-  const sevs      = ['P0 only','P1 and above','P2 and above','All findings'];
 
   const toggle = (field, val) => {
     const cur = form[field] || [];
     const next = cur.includes(val) ? cur.filter(v => v !== val) : [...cur, val];
     setForm(f => ({ ...f, [field]: next }));
   };
-
-  const checklist = [
-    'Product selected from database',
-    'Lifecycle and design phase confirmed',
-    'Artefact link or reference provided',
-    'Core research question written in plain language',
-    'At least two personas selected',
-    'At least two task scenarios with success conditions',
-    'Forbidden assumptions list populated',
-    'Output format and turnaround confirmed',
-  ];
 
   return (
     <>
@@ -335,37 +332,11 @@ function StepOutput({ form, setForm }) {
           ))}
         </div>
       </FieldGroup>
-      <FieldGroup label="Turnaround needed">
-        <div style={pillRow}>
-          {turns.map(t => (
-            <Pill key={t} label={t} selected={form.turnaround === t}
-              onClick={() => setForm(f => ({ ...f, turnaround: t }))} />
-          ))}
-        </div>
-      </FieldGroup>
-      <FieldGroup label="Severity threshold for escalation">
-        <div style={pillRow}>
-          {sevs.map(s => (
-            <Pill key={s} label={s} selected={form.escalation === s}
-              onClick={() => setForm(f => ({ ...f, escalation: s }))} />
-          ))}
-        </div>
-      </FieldGroup>
       <FieldGroup label="Anything else the agent should know">
         <TextInput rows={3}
           placeholder="e.g. Must complete before the board presentation on Friday. Flag any finding touching the onboarding flow."
           value={form.additionalNotes || ''} onChange={e => setForm(f => ({ ...f, additionalNotes: e.target.value }))} />
       </FieldGroup>
-
-      <div style={{ background: 'var(--cream)', borderRadius: 'var(--radius-md)', padding: '1.1rem 1.25rem', border: '1px solid var(--border)' }}>
-        <div style={{ fontSize: '12px', fontWeight: 500, marginBottom: '0.875rem' }}>Submission checklist</div>
-        {checklist.map((item, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem', fontSize: '12px', color: '#4A5568' }}>
-            <div style={{ width: '13px', height: '13px', border: '1px solid var(--border-md)', borderRadius: '3px', background: '#fff', flexShrink: 0 }} />
-            {item}
-          </div>
-        ))}
-      </div>
     </>
   );
 }

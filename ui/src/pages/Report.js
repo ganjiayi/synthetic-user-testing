@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { Tag } from '../components/UI';
 
 const SECTIONS = [
-  { id: 'summary',  label: 'Executive summary',   dot: '#1B4FD8' },
-  { id: 'verdict',  label: 'H1 verdict',           dot: '#C42B2B' },
-  { id: 'friction', label: 'Friction map',          dot: '#C97B2F' },
-  { id: 'personas', label: 'Persona findings',      dot: '#534AB7' },
-  { id: 'actions',  label: 'Recommended actions',   dot: '#0F8A6E' },
+  { id: 'summary',         label: 'Executive summary',       dot: '#1B4FD8' },
+  { id: 'background',      label: 'Background & goals',      dot: '#534AB7' },
+  { id: 'methodology',     label: 'Methodology',              dot: '#6B7280' },
+  { id: 'findings',        label: 'Key findings & insights',  dot: '#C97B2F' },
+  { id: 'recommendations', label: 'Recommendations',          dot: '#0F8A6E' },
+  { id: 'appendix',        label: 'Next steps & appendix',   dot: '#9CA3AF' },
 ];
 
-/* ── Toolbar button ── */
+/* ── Shared helpers ── */
 function TBtn({ label, onClick, primary }) {
   return (
     <button onClick={onClick} style={{
@@ -24,17 +25,50 @@ function TBtn({ label, onClick, primary }) {
   );
 }
 
-function frictionColor(n) {
-  return n >= 7 ? 'var(--red)' : n >= 4 ? 'var(--amber)' : 'var(--teal)';
-}
-function frictionBg(n) {
-  return n >= 7 ? 'var(--red-lt)' : n >= 4 ? 'var(--amber-lt)' : 'var(--teal-lt)';
+function SectionLabel({ text }) {
+  return (
+    <div style={{ fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>
+      {text}
+    </div>
+  );
 }
 
-/* ── Executive Summary ── */
+/* Citation tag — every finding must be traceable to a source session */
+function Cite({ children }) {
+  return (
+    <span style={{
+      fontSize: '10px', color: '#9CA3AF', fontFamily: 'monospace',
+      marginLeft: '0.5rem', whiteSpace: 'nowrap',
+    }}>({children})</span>
+  );
+}
+
+/* Shown when data is absent or insufficient to conclude */
+function InsufficientData({ message }) {
+  return (
+    <div style={{
+      padding: '0.75rem 1rem', marginBottom: '0.5rem',
+      background: 'var(--cream)', borderRadius: 'var(--radius-sm)',
+      border: '1px solid var(--border)',
+      fontSize: '12px', color: '#6B7280', fontStyle: 'italic',
+      display: 'flex', alignItems: 'center', gap: '0.5rem',
+    }}>
+      <span style={{ opacity: .5 }}>⚠</span>
+      {message}
+    </div>
+  );
+}
+
+function frictionColor(n) { return n >= 7 ? 'var(--red)' : n >= 4 ? 'var(--amber)' : 'var(--teal)'; }
+function frictionBg(n)    { return n >= 7 ? 'var(--red-lt)' : n >= 4 ? 'var(--amber-lt)' : 'var(--teal-lt)'; }
+
+/* ══════════════════════════════════════════════════════
+   Section 01 — Executive Summary
+═══════════════════════════════════════════════════════ */
 function Summary() {
   return (
     <>
+      {/* Overall signal */}
       <div style={{
         padding: '1.25rem 1.5rem', marginBottom: '1.75rem',
         background: 'var(--red-lt)', borderRadius: 'var(--radius-md)',
@@ -46,7 +80,7 @@ function Summary() {
             No Go — return to design
           </div>
           <div style={{ fontSize: '12px', color: '#92400E' }}>
-            0/5 converted · 1/5 conditional · avg friction 5.2 / 10
+            0 of 5 personas converted · 1 of 5 conditional · average friction 5.2 / 10
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
@@ -55,114 +89,269 @@ function Summary() {
         </div>
       </div>
 
+      {/* Top findings — each cited */}
+      <SectionLabel text="Key findings from this study" />
       {[
-        { label: 'Critical',        type: 'red',   text: 'Homepage "cancel anytime" messaging directly contradicts the 12-month contract on the pack page. Puan Rohani identified this contradiction immediately, triggering trust collapse and abandonment.' },
-        { label: 'High friction',   type: 'amber', text: '"Entertainment Zero" and pack name number suffixes (12, 24) are opaque to all personas. No persona predicted pack content from the name alone — all required the hidden channel list.' },
-        { label: 'Near-conversion', type: 'teal',  text: 'David (Routine Conservative) shortlisted Entertainment 12 at RM39.99 — the only near-conversion. Making the channel list visible inline and offering a trial period would likely convert him.' },
-        { label: 'Support cost',    type: 'blue',  text: 'Puan Rohani and Hakim both indicated they would contact WhatsApp support rather than self-serve. Current page design systematically drives support volume.' },
+        {
+          type: 'red', label: 'Critical',
+          text: 'The homepage "cancel anytime" claim directly contradicts the 12-month contract shown on the pack page. This was identified as a trust-breaking contradiction.',
+          cite: 'Puan Rohani · T2',
+        },
+        {
+          type: 'amber', label: 'High friction',
+          text: '"Entertainment Zero" and pack name number suffixes (12, 24) were opaque to all five personas. No persona predicted pack content from the name alone.',
+          cite: 'Hakim · T1, Syafiqah · T1, Marcus · T2, Puan Rohani · T1',
+        },
+        {
+          type: 'teal', label: 'Near-conversion',
+          text: 'Entertainment 12 at RM39.99 was shortlisted as genuinely competitive against a current Astro legacy bill of ~RM90/month. Channel list visibility would likely convert.',
+          cite: 'David · T2',
+        },
+        {
+          type: 'blue', label: 'Support cost risk',
+          text: 'Two personas stated they would contact WhatsApp support rather than self-serve. Current page design systematically drives avoidable support volume.',
+          cite: 'Hakim · T1, Puan Rohani · T2',
+        },
       ].map((f, i) => (
         <div key={i} style={{
           display: 'flex', alignItems: 'flex-start', gap: '0.875rem',
           padding: '0.875rem 1rem', marginBottom: '0.625rem',
-          background: '#fff', borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--border)',
+          background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
         }}>
           <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={f.label} type={f.type} /></div>
-          <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.65, margin: 0 }}>{f.text}</p>
+          <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.65, margin: 0 }}>
+            {f.text}<Cite>{f.cite}</Cite>
+          </p>
         </div>
       ))}
+
+      <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '11px', color: '#6B7280' }}>
+        All findings above are drawn directly from synthetic user session data. Citations reference the persona and task that produced each signal. See Section 04 for full data and Section 06 for session log references.
+      </div>
     </>
   );
 }
 
-/* ── H1 Verdict ── */
-function Verdict() {
+/* ══════════════════════════════════════════════════════
+   Section 02 — Background & Goals
+═══════════════════════════════════════════════════════ */
+function Background() {
+  const F = ({ label, value }) => (
+    <div style={{ marginBottom: '1rem' }}>
+      <SectionLabel text={label} />
+      <div style={{ fontSize: '13px', color: '#374151', lineHeight: 1.7, padding: '0.625rem 0.875rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(13,17,23,.06)' }}>
+        {value}
+      </div>
+    </div>
+  );
+
   return (
     <>
+      <F label="Product" value="Astro.com.my — Marketing and acquisition website. Primary consumer digital storefront for Astro Malaysia Holdings." />
+      <F label="Feature under test" value="Homepage revamp — Astro One boxless product positioning and pack selection flow" />
+      <F label="Why this, why now" value="Major brand transition from set-top box TV to streaming-first platform. The homepage is the primary conversion surface for new subscribers. Go/no-go decision on launch date required." />
+      <F label="Primary research question" value="What elements of the revamped homepage do target users fail to correctly interpret as describing a boxless product experience?" />
+      <F label="Secondary research questions" value={"RQ2: How do different persona segments respond to the 'Easy streaming, endless entertainment' messaging?\nRQ3: What is the primary drop-off point in the homepage-to-pack-selection flow?"} />
+      <F label="Decision this study must support" value="Go / no-go on proceeding with the homepage launch on the scheduled date vs. returning to design for one more sprint." />
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   Section 03 — Methodology
+═══════════════════════════════════════════════════════ */
+function Methodology() {
+  return (
+    <>
+      {/* Method */}
+      <div style={{ padding: '1rem 1.25rem', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
+        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '0.25rem' }}>Usability Testing — Synthetic Persona Sessions</div>
+        <div style={{ fontSize: '12px', color: '#4A5568', lineHeight: 1.7 }}>
+          Five synthetic personas from the v4 Malaysian consumer library were run in parallel sessions against two tasks on the Astro.com.my homepage and TV pack page. Sessions were scored turn by turn using the usability testing eval schema. All sessions were completed in a single pass.
+        </div>
+      </div>
+
+      {/* Session config */}
+      <SectionLabel text="Session configuration" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
+        {[
+          { label: 'Personas', value: '5' },
+          { label: 'Tasks', value: '2' },
+          { label: 'Total sessions', value: '10' },
+          { label: 'Mode', value: 'Single-pass' },
+        ].map((s, i) => (
+          <div key={i} style={{ padding: '0.875rem', background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--serif)', fontSize: '22px', color: 'var(--ink)', lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: '10px', color: '#9CA3AF', marginTop: '0.25rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tasks */}
+      <SectionLabel text="Tasks run" />
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '1.5rem' }}>
         <thead>
-          <tr>{['Hypothesis', 'Verdict', 'Evidence'].map(h => (
+          <tr>{['ID','Task','Success condition','Abandon condition'].map(h => (
+            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+          ))}</tr>
+        </thead>
+        <tbody>
+          {[
+            ['T1', 'Homepage orientation', 'Correctly identifies boxless product without reading FAQ', '3 turns without comprehension signal'],
+            ['T2', 'Pack selection', 'Reaches pack page and shortlists a plan', 'Exits to WhatsApp support or abandons without shortlisting'],
+          ].map(([id, name, succ, aban], i) => (
+            <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
+              <td style={{ padding: '0.75rem', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace' }}>{id}</td>
+              <td style={{ padding: '0.75rem', fontWeight: 500 }}>{name}</td>
+              <td style={{ padding: '0.75rem', color: 'var(--teal)', fontSize: '11px' }}>{succ}</td>
+              <td style={{ padding: '0.75rem', color: 'var(--red)', fontSize: '11px' }}>{aban}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Hypotheses */}
+      <SectionLabel text="Hypotheses tested" />
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+        <thead>
+          <tr>{['ID','Hypothesis statement'].map(h => (
+            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+          ))}</tr>
+        </thead>
+        <tbody>
+          {[
+            ['H1', 'If the homepage leads with boxless streaming messaging, users will understand they do not need a set-top box without reading the FAQ.'],
+            ['H2', 'If pack names are shown with descriptions, users will identify the right plan for their household without calling support.'],
+          ].map(([id, stmt], i) => (
+            <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
+              <td style={{ padding: '0.75rem', fontWeight: 600, color: 'var(--red)', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{id}</td>
+              <td style={{ padding: '0.75rem', color: '#4A5568', lineHeight: 1.6 }}>{stmt}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   Section 04 — Key Findings & Insights
+═══════════════════════════════════════════════════════ */
+function Findings() {
+  return (
+    <>
+      {/* H1/H2 verdict */}
+      <SectionLabel text="Hypothesis verdicts" />
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '1.5rem' }}>
+        <thead>
+          <tr>{['Hypothesis','Verdict','Evidence'].map(h => (
             <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
           ))}</tr>
         </thead>
         <tbody>
           {[
             {
-              hyp: 'H1: Homepage boxless messaging enables comprehension without reading FAQ',
-              verdict: 'Falsified (4/5)', type: 'red',
-              evidence: 'Only David partially confirmed. Hakim, Syafiqah, Marcus, and Puan Rohani all required FAQ or external confirmation to understand the boxless proposition.',
+              id: 'H1', verdict: 'Falsified', type: 'red',
+              evidence: '4 of 5 personas could not identify the boxless proposition without reading the FAQ. Only David partially confirmed.',
+              cite: 'Hakim · T1, Syafiqah · T1, Marcus · T1, Puan Rohani · T1',
             },
             {
-              hyp: 'H2: Pack names enable self-service selection without support',
-              verdict: 'Falsified (5/5)', type: 'red',
-              evidence: 'No persona matched themselves to a pack from name and price alone. All required the channel list, which is gated behind "View more".',
+              id: 'H2', verdict: 'Falsified', type: 'red',
+              evidence: '5 of 5 personas could not match themselves to a pack from the name and price alone. All required the channel list, which is gated behind View more.',
+              cite: 'All personas · T2',
             },
           ].map((row, i) => (
             <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
-              <td style={{ padding: '0.875rem 0.75rem', fontWeight: 500, color: 'var(--ink)', lineHeight: 1.5 }}>{row.hyp}</td>
-              <td style={{ padding: '0.875rem 0.75rem', whiteSpace: 'nowrap' }}>
-                <Tag label={row.verdict} type={row.type} />
+              <td style={{ padding: '0.75rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--red)' }}>{row.id}</td>
+              <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}><Tag label={row.verdict} type={row.type} /></td>
+              <td style={{ padding: '0.75rem', color: '#4A5568', lineHeight: 1.6, fontSize: '12px' }}>
+                {row.evidence}<Cite>{row.cite}</Cite>
               </td>
-              <td style={{ padding: '0.875rem 0.75rem', color: '#4A5568', lineHeight: 1.6 }}>{row.evidence}</td>
             </tr>
           ))}
         </tbody>
       </table>
-    </>
-  );
-}
 
-/* ── Friction Map ── */
-function FrictionMap() {
-  const rows = [
-    { persona: 'Hakim',       T1: 4, T2: 6, avg: 5.0, signal: 'no_go' },
-    { persona: 'Syafiqah',    T1: 4, T2: 6, avg: 5.0, signal: 'no_go' },
-    { persona: 'Marcus',      T1: 4, T2: 7, avg: 5.5, signal: 'no_go' },
-    { persona: 'Puan Rohani', T1: 6, T2: 8, avg: 7.0, signal: 'no_go' },
-    { persona: 'David',       T1: 3, T2: 4, avg: 3.5, signal: 'conditional' },
-  ];
-
-  return (
-    <>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '1.5rem' }}>
+      {/* Friction map */}
+      <SectionLabel text="Friction map — per persona per task" />
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '0.5rem' }}>
         <thead>
-          <tr>{['Persona', 'T1: Homepage', 'T2: TV Pack Page', 'Avg', 'Signal'].map(h => (
+          <tr>{['Persona', 'T1: Homepage', 'T2: TV Pack Page', 'Avg', 'Outcome'].map(h => (
             <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
           ))}</tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => (
+          {[
+            { name: 'Hakim',       T1: 4, T2: 6, avg: 5.0, outcome: 'Abandoned', type: 'red' },
+            { name: 'Syafiqah',    T1: 4, T2: 6, avg: 5.0, outcome: 'Abandoned', type: 'red' },
+            { name: 'Marcus',      T1: 4, T2: 7, avg: 5.5, outcome: 'Abandoned', type: 'red' },
+            { name: 'Puan Rohani', T1: 6, T2: 8, avg: 7.0, outcome: 'Abandoned', type: 'red' },
+            { name: 'David',       T1: 3, T2: 4, avg: 3.5, outcome: 'Shortlisted', type: 'teal' },
+          ].map((row, i) => (
             <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
-              <td style={{ padding: '0.75rem', fontWeight: 500 }}>{row.persona}</td>
-              {[row.T1, row.T2, row.avg].map((score, j) => (
+              <td style={{ padding: '0.75rem', fontWeight: 500 }}>{row.name}</td>
+              {[row.T1, row.T2, row.avg].map((n, j) => (
                 <td key={j} style={{ padding: '0.75rem' }}>
-                  <span style={{
-                    display: 'inline-block', padding: '0.2rem 0.65rem',
-                    background: frictionBg(score), color: frictionColor(score),
-                    borderRadius: '5px', fontWeight: 600, fontSize: '12px',
-                  }}>{score}</span>
+                  <span style={{ display: 'inline-block', padding: '0.2rem 0.65rem', background: frictionBg(n), color: frictionColor(n), borderRadius: '5px', fontWeight: 600 }}>{n}</span>
                 </td>
               ))}
-              <td style={{ padding: '0.75rem' }}>
-                <Tag label={row.signal === 'no_go' ? 'No Go' : 'Conditional'} type={row.signal === 'no_go' ? 'red' : 'amber'} />
-              </td>
+              <td style={{ padding: '0.75rem' }}><Tag label={row.outcome} type={row.type} /></td>
             </tr>
           ))}
         </tbody>
       </table>
+      <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '1.5rem' }}>
+        Friction scored 0–10 per session. Average calculated across T1 and T2 for each persona. Source: 10 sessions across 5 personas.
+      </div>
 
-      <div style={{ padding: '1rem 1.1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-        <div style={{ fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.6rem' }}>Top friction themes across all sessions</div>
+      {/* Task completion */}
+      <SectionLabel text="Task completion rates" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
         {[
-          ['P0', 'Contract contradiction: homepage vs pack page terms',         'red'],
-          ['P0', 'Boxless messaging not comprehensible without FAQ',             'red'],
-          ['P1', '"Entertainment Zero" and pack number suffix naming opaque',   'amber'],
-          ['P1', 'Channel list hidden behind View more on all packs',           'amber'],
-          ['P2', 'No Bahasa Malaysia or local drama content visible',           'gray'],
-        ].map(([sev, text, type], i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: i < 4 ? '0.5rem' : 0 }}>
-            <Tag label={sev} type={type} />
-            <span style={{ fontSize: '12px', color: '#4A5568' }}>{text}</span>
+          { task: 'T1 — Homepage', rate: '5/5', note: 'All personas completed T1 with friction. None abandoned.', type: 'amber' },
+          { task: 'T2 — TV Pack Page', rate: '0/5', note: '4 of 5 abandoned. 1 of 5 shortlisted (David). 0 converted.', type: 'red' },
+        ].map((t, i) => (
+          <div key={i} style={{ padding: '1rem', background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '11px', color: '#6B7280', marginBottom: '0.25rem' }}>{t.task}</div>
+            <div style={{ fontFamily: 'var(--serif)', fontSize: '28px', color: frictionColor(i === 0 ? 4 : 7), lineHeight: 1, marginBottom: '0.25rem' }}>{t.rate}</div>
+            <div style={{ fontSize: '11px', color: '#4A5568' }}>{t.note}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Confusion signals */}
+      <SectionLabel text="Confusion signals — cited to source" />
+      {[
+        { signal: 'Contract contradiction: homepage says "cancel anytime" but pack page shows 12-month contract. Identified as a trust failure.', cite: 'Puan Rohani · T2', severity: 'P0', type: 'red' },
+        { signal: '"Entertainment Zero" communicates nothing about content. Interpreted as a free or reduced tier by multiple personas.', cite: 'Hakim · T1, Syafiqah · T1, Puan Rohani · T1', severity: 'P0', type: 'red' },
+        { signal: 'Pack number suffixes (12, 24) not explained. Personas read these as product variants, not contract length indicators.', cite: 'Syafiqah · T2, Marcus · T2', severity: 'P1', type: 'amber' },
+        { signal: 'Channel list gated behind "View more". All personas who shortlisted required this information before committing.', cite: 'Hakim · T2, David · T2', severity: 'P1', type: 'amber' },
+        { signal: 'No visible Bahasa Malaysia or local drama content. Family-oriented persona could not identify relevant content.', cite: 'Puan Rohani · T1, T2', severity: 'P2', type: 'gray' },
+      ].map((s, i) => (
+        <div key={i} style={{
+          display: 'flex', alignItems: 'flex-start', gap: '0.875rem',
+          padding: '0.75rem 1rem', marginBottom: '0.5rem',
+          background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+        }}>
+          <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={s.severity} type={s.type} /></div>
+          <div style={{ fontSize: '12px', color: '#4A5568', lineHeight: 1.6 }}>
+            {s.signal}<Cite>{s.cite}</Cite>
+          </div>
+        </div>
+      ))}
+
+      {/* Abandon triggers */}
+      <div style={{ marginTop: '1.25rem' }}>
+        <SectionLabel text="Abandon triggers — T2 only" />
+        {[
+          { trigger: '24-month contract on Epic 24 combined with existing brand trust deficit from Astro Fibre pause.', cite: 'Marcus · T2' },
+          { trigger: 'Contract contradiction (homepage vs pack page terms) eroded trust before any pack could be evaluated.', cite: 'Puan Rohani · T2' },
+          { trigger: 'No pack relevant to solo young viewer. No lite or social-first tier available.', cite: 'Syafiqah · T2' },
+          { trigger: 'No local drama or BM content visible on pack page. Could not match any pack to household needs.', cite: 'Hakim · T2' },
+        ].map((t, i) => (
+          <div key={i} style={{ display: 'flex', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid rgba(13,17,23,.05)', fontSize: '12px', color: '#4A5568' }}>
+            <span style={{ color: 'var(--red)', fontWeight: 600, flexShrink: 0 }}>✗</span>
+            <span>{t.trigger}<Cite>{t.cite}</Cite></span>
           </div>
         ))}
       </div>
@@ -170,77 +359,10 @@ function FrictionMap() {
   );
 }
 
-/* ── Persona Findings ── */
-function PersonaFindings() {
-  const [active, setActive] = useState('P01');
-
-  const findings = {
-    P01: {
-      name: 'Hakim', arch: 'Spontaneous Traditionalist', signal: 'no_go',
-      text: 'Hakim understood the product category but was blocked by his inability to confirm the boxless setup from the homepage alone. He navigated methodically and read all visible text, but the "No box required" claim in the feature bullets did not register as a definitive answer to his central question. He would have called the WhatsApp line before converting. The "Entertainment Zero" name caused confusion — he interpreted "Zero" as a reduced or free tier. Trust was neutral throughout; no red flags, but no strong reasons to commit.',
-    },
-    P02: {
-      name: 'Syafiqah', arch: 'Progressive Influencer', signal: 'no_go',
-      text: 'Syafiqah disengaged early because no pack matched her profile. She is a solo young viewer who wants K-drama and creator-relevant content — none of which was surfaced on either page. The pack naming (Entertainment 12, Sports 12) was opaque to her. She identified Epic 24 as the only potentially interesting option but rejected it on contract length. She described the page as "designed for parents, not for me." She would crowdsource opinions via TikTok before returning.',
-    },
-    P03: {
-      name: 'Marcus', arch: 'Trendsetter Explorer', signal: 'no_go',
-      text: 'Marcus is the most analytically rigorous evaluator. He immediately benchmarked Astro pricing against his current Netflix (RM54.90) + Disney+ (RM29.90) spend. Epic 24 at RM159.99 failed the cost test — it costs more than his current stack and adds a 24-month lock-in. His pre-existing brand distrust (Astro Fibre rollout pause) amplified his resistance to any long-term commitment. He noted that "Still unsure?" appearing twice on the homepage read as low product confidence from the team itself.',
-    },
-    P04: {
-      name: 'Puan Rohani', arch: 'Family-Centric Devotee', signal: 'no_go',
-      text: 'Highest friction of all personas (avg 7.0). The contract contradiction between the homepage ("cancel anytime") and the pack page (12-month contract) was a critical trust failure. She also found no visible Bahasa Malaysia or local drama content. The 2-device limit on the homepage was noticed early and already felt inadequate for a family household. She would not decide without her husband and would escalate to WhatsApp customer service — representing a high support cost risk for this segment.',
-    },
-    P05: {
-      name: 'David', arch: 'Routine Conservative', signal: 'conditional',
-      text: 'David is the strongest near-conversion signal. Entertainment 12 at RM39.99 was genuinely competitive against his current Astro legacy bill (~RM90/month), and the monthly billing structure matched his preference for predictable costs. He shortlisted the pack but required the channel list to be visible before committing, and explicitly said he needed 48 hours to consider. The Netflix bundling question on Epic 24 — specifically whether his existing profile and watchlist would carry over — is a real and specific blocker for that tier.',
-    },
-  };
-
-  const personaList = [
-    { id: 'P01', name: 'Hakim' },
-    { id: 'P02', name: 'Syafiqah' },
-    { id: 'P03', name: 'Marcus' },
-    { id: 'P04', name: 'Puan Rohani' },
-    { id: 'P05', name: 'David' },
-  ];
-
-  const f = findings[active];
-
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '1.25rem' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        {personaList.map(p => (
-          <div
-            key={p.id}
-            onClick={() => setActive(p.id)}
-            style={{
-              padding: '0.5rem 0.75rem', borderRadius: '7px', cursor: 'pointer',
-              fontSize: '13px',
-              background: active === p.id ? '#fff' : 'transparent',
-              border: active === p.id ? '1px solid var(--border)' : '1px solid transparent',
-              fontWeight: active === p.id ? 500 : 400,
-              color: active === p.id ? 'var(--ink)' : '#6B7280',
-              transition: 'all .12s',
-            }}
-          >{p.name}</div>
-        ))}
-      </div>
-
-      <div style={{ background: '#fff', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', padding: '1.25rem 1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.875rem', flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'var(--serif)', fontSize: '20px', color: 'var(--ink)' }}>{f.name}</span>
-          <span style={{ fontSize: '12px', color: '#6B7280' }}>{f.arch}</span>
-          <Tag label={f.signal === 'no_go' ? 'No Go' : 'Conditional'} type={f.signal === 'no_go' ? 'red' : 'amber'} />
-        </div>
-        <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.8, margin: 0 }}>{f.text}</p>
-      </div>
-    </div>
-  );
-}
-
-/* ── Recommended Actions ── */
-function Actions() {
+/* ══════════════════════════════════════════════════════
+   Section 05 — Recommendations
+═══════════════════════════════════════════════════════ */
+function Recommendations() {
   const [generating, setGenerating] = useState(false);
   const [generated,  setGenerated]  = useState(false);
 
@@ -251,16 +373,41 @@ function Actions() {
 
   return (
     <>
-      <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.75, marginBottom: '1.5rem' }}>
-        Based on research findings, the following changes are recommended before the homepage launch proceeds. All P0 items must be resolved; P1 items should be addressed in the same sprint.
-      </p>
+      <div style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.75, marginBottom: '1.5rem' }}>
+        All recommendations below are derived directly from signals recorded in synthetic user sessions. Each item is cited to the session(s) that produced the finding. Severity is rated P0 (critical, blocks launch) to P2 (improvement, address in next sprint).
+      </div>
 
       {[
-        { p: 'P0',  type: 'red',   title: 'Resolve contract contradiction',         desc: 'Align messaging across all pages. If "cancel anytime" is the positioning, remove the 12-month contract from the pack page — or clearly separate the two plan types with distinct labels.' },
-        { p: 'P0',  type: 'red',   title: 'Surface channel list without clicks',     desc: 'The channel list must be visible inline, not behind "View more". This is the single biggest conversion blocker identified across all five personas.' },
-        { p: 'P1',  type: 'amber', title: 'Rename "Entertainment Zero"',             desc: 'The name communicates nothing about content value. Rename to reflect what is included — e.g. "Entertainment Flex" or "Astro Essentials".' },
-        { p: 'P1',  type: 'amber', title: 'Separate pack contract term from name',   desc: '"Entertainment 12" embeds the contract length in the product name. Surface the term as a secondary label (e.g. "12-month plan"), not as part of the product name.' },
-        { p: 'P2',  type: 'gray',  title: 'Add Bahasa Malaysia content signals',     desc: 'Puan Rohani could not identify any local drama content. BM and local content must be surfaced on the pack page, not buried in the content guide.' },
+        {
+          p: 'P0', type: 'red',
+          title: 'Resolve the contract contradiction across all pages',
+          desc: 'The homepage states "cancel anytime." The pack page shows a 12-month contract. These messages appeared in the same session and caused immediate trust collapse. Align the terms or clearly separate the two plan types with distinct labels before launch.',
+          cite: 'Puan Rohani · T2',
+        },
+        {
+          p: 'P0', type: 'red',
+          title: 'Surface the channel list inline — remove the View more gate',
+          desc: 'Every persona who shortlisted a pack required the channel list before committing. Gating this behind a click creates an evaluation dead end. The channel list must be visible without interaction.',
+          cite: 'Hakim · T2, David · T2',
+        },
+        {
+          p: 'P1', type: 'amber',
+          title: 'Rename "Entertainment Zero" to communicate content value',
+          desc: '"Zero" was interpreted as free, reduced, or empty by multiple personas across both tasks. Rename to reflect what is included — e.g. Entertainment Flex or Astro Essentials.',
+          cite: 'Hakim · T1, Syafiqah · T1, Puan Rohani · T1',
+        },
+        {
+          p: 'P1', type: 'amber',
+          title: 'Separate contract term from the pack name',
+          desc: '"Entertainment 12" embeds the contract length in the product name, which was read as a product variant identifier rather than a duration. Surface the term as a secondary label.',
+          cite: 'Syafiqah · T2, Marcus · T2',
+        },
+        {
+          p: 'P2', type: 'gray',
+          title: 'Surface Bahasa Malaysia and local drama content on the pack page',
+          desc: 'The family-oriented persona could not identify any local content relevant to her household on either page. BM content must be visible on the pack page — not only in the content guide.',
+          cite: 'Puan Rohani · T1, T2',
+        },
       ].map((a, i) => (
         <div key={i} style={{
           display: 'flex', alignItems: 'flex-start', gap: '1rem',
@@ -268,14 +415,17 @@ function Actions() {
           background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
         }}>
           <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={a.p} type={a.type} /></div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '0.25rem' }}>{a.title}</div>
-            <div style={{ fontSize: '12px', color: '#4A5568', lineHeight: 1.6 }}>{a.desc}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '0.3rem' }}>{a.title}</div>
+            <div style={{ fontSize: '12px', color: '#4A5568', lineHeight: 1.6 }}>
+              {a.desc}
+            </div>
+            <div style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: 'monospace', marginTop: '0.4rem' }}>Source: {a.cite}</div>
           </div>
         </div>
       ))}
 
-      {/* PowerPoint CTA */}
+      {/* Generate PPT */}
       <div style={{
         marginTop: '1.75rem', padding: '1.5rem 1.75rem',
         background: 'linear-gradient(135deg, #1B4FD8 0%, #0A2E8A 100%)',
@@ -285,52 +435,87 @@ function Actions() {
           Generate a stakeholder presentation
         </div>
         <div style={{ fontSize: '13px', color: 'rgba(255,255,255,.75)', marginBottom: '1.25rem', lineHeight: 1.65 }}>
-          Convert this report into a PowerPoint deck — executive summary, friction map, H1 verdict, persona cards, and recommended actions. Ready to present.
+          Convert this report into a PowerPoint deck — executive summary, friction map, hypothesis verdicts, cited recommendations, and next steps.
         </div>
-
         {!generated ? (
-          <button
-            onClick={handlePPT}
-            disabled={generating}
-            style={{
-              padding: '0.75rem 1.75rem',
-              background: generating ? 'rgba(255,255,255,.6)' : '#fff',
-              color: 'var(--blue)', border: 'none', borderRadius: '8px',
-              fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500,
-              cursor: generating ? 'default' : 'pointer',
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-            }}
-          >
-            {generating
-              ? <><span style={{ animation: 'synthux-pulse 1.4s infinite', display: 'inline-block' }}>⟳</span> Generating…</>
-              : 'Generate PowerPoint →'}
+          <button onClick={handlePPT} disabled={generating} style={{
+            padding: '0.75rem 1.75rem', background: generating ? 'rgba(255,255,255,.6)' : '#fff',
+            color: 'var(--blue)', border: 'none', borderRadius: '8px',
+            fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: generating ? 'default' : 'pointer',
+          }}>
+            {generating ? '⟳ Generating…' : 'Generate PowerPoint →'}
           </button>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{
-              padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,.15)',
-              borderRadius: '8px', color: '#fff', fontSize: '13px',
-            }}>
+            <div style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,.15)', borderRadius: '8px', color: '#fff', fontSize: '13px' }}>
               ✓ Deck ready — <span style={{ fontWeight: 500 }}>Astro_Homepage_Research.pptx</span>
             </div>
-            <button
-              onClick={() => alert('Downloading PowerPoint…')}
-              style={{
-                padding: '0.75rem 1.25rem', background: '#fff', color: 'var(--blue)',
-                border: 'none', borderRadius: '8px',
-                fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-              }}
-            >↓ Download</button>
+            <button onClick={() => alert('Downloading…')} style={{
+              padding: '0.75rem 1.25rem', background: '#fff', color: 'var(--blue)',
+              border: 'none', borderRadius: '8px', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+            }}>↓ Download</button>
           </div>
         )}
       </div>
+    </>
+  );
+}
 
-      <style>{`
-        @keyframes synthux-pulse {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0.35; }
-        }
-      `}</style>
+/* ══════════════════════════════════════════════════════
+   Section 06 — Next Steps & Appendix
+═══════════════════════════════════════════════════════ */
+function Appendix() {
+  return (
+    <>
+      {/* Unanswered questions */}
+      <SectionLabel text="Questions this study did not answer" />
+      <div style={{ marginBottom: '1.5rem' }}>
+        {[
+          'Would David convert if the channel list for Entertainment 12 were visible inline and a trial period were offered?',
+          'Would boxless comprehension improve if a dedicated "No box required" callout appeared above the fold rather than in the feature list?',
+          'How do Malay-language-first users navigate if the Bahasa Malaysia toggle were more prominent in the hero section?',
+          'Would Epic 24 convert more users if Netflix account and profile portability were explicitly confirmed on the pack page?',
+          'What is the actual channel list for Entertainment 12? This was not available in the test materials and was the primary blocker for evaluation.',
+        ].map((q, i) => (
+          <div key={i} style={{ display: 'flex', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid rgba(13,17,23,.05)', fontSize: '12px', color: '#4A5568', lineHeight: 1.6 }}>
+            <span style={{ color: '#9CA3AF', flexShrink: 0 }}>{i + 1}.</span>
+            {q}
+          </div>
+        ))}
+      </div>
+
+      {/* Insufficient data flags */}
+      <SectionLabel text="Metrics with insufficient data to conclude" />
+      <div style={{ marginBottom: '1.5rem' }}>
+        <InsufficientData message="No conversion (task_completion: completed) recorded in T2 — insufficient data to measure what a successful pack selection flow looks like for this product." />
+        <InsufficientData message="Trust signal in T1 was neutral for all 5 personas — no strong positive trust signals recorded. Cannot conclude what would generate trust on the homepage from this study alone." />
+      </div>
+
+      {/* Session log references */}
+      <SectionLabel text="Session log references" />
+      <div style={{ padding: '1rem 1.1rem', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+        <div style={{ fontSize: '12px', color: '#4A5568', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+          All session data is stored in the run folder. Each file below corresponds to one synthetic user session. Friction scores, inner monologues, confusion signals, and turn-by-turn logs are available in full.
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {[
+            ['P01_hakim.json',   'Hakim · Spontaneous Traditionalist · age 42'],
+            ['P02_syafiqah.json','Syafiqah · Progressive Influencer · age 22'],
+            ['P03_marcus.json',  'Marcus · Trendsetter Explorer · age 27'],
+            ['P04_rohani.json',  'Puan Rohani · Family-Centric Devotee · age 47'],
+            ['P05_david.json',   'David · Routine Conservative · age 38'],
+          ].map(([file, desc], i) => (
+            <div key={i} style={{ display: 'flex', gap: '1rem', fontSize: '12px', padding: '0.4rem 0', borderBottom: i < 4 ? '1px solid rgba(13,17,23,.05)' : 'none' }}>
+              <span style={{ fontFamily: 'monospace', color: 'var(--blue)', flexShrink: 0 }}>{file}</span>
+              <span style={{ color: '#6B7280' }}>{desc}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '11px', color: '#6B7280' }}>
+        Run ID: 22042026_synthetic-user-test-1 · Model: claude-sonnet-4-6 · Methodology: Usability Testing · 5 personas · 2 tasks · 10 sessions
+      </div>
     </>
   );
 }
@@ -345,11 +530,12 @@ export default function Report({ goTo }) {
   const idx     = SECTIONS.findIndex(s => s.id === active);
 
   const renderSection = () => {
-    if (active === 'summary')  return <Summary />;
-    if (active === 'verdict')  return <Verdict />;
-    if (active === 'friction') return <FrictionMap />;
-    if (active === 'personas') return <PersonaFindings />;
-    if (active === 'actions')  return <Actions />;
+    if (active === 'summary')         return <Summary />;
+    if (active === 'background')      return <Background />;
+    if (active === 'methodology')     return <Methodology />;
+    if (active === 'findings')        return <Findings />;
+    if (active === 'recommendations') return <Recommendations />;
+    if (active === 'appendix')        return <Appendix />;
     return null;
   };
 
@@ -363,7 +549,7 @@ export default function Report({ goTo }) {
         background: 'var(--paper)', flexShrink: 0,
       }}>
         <div>
-          <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '0.1rem' }}>Research report</div>
+          <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '0.1rem' }}>Research report · Usability Testing</div>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: '20px', color: 'var(--ink)' }}>
             Astro.com.my — Homepage Revamp
           </h2>
@@ -372,7 +558,7 @@ export default function Report({ goTo }) {
           <TBtn label="↓ DOCX"  onClick={() => alert('Downloading as DOCX…')} />
           <TBtn label="↓ Excel" onClick={() => alert('Downloading as Excel…')} />
           <TBtn label="↓ PDF"   onClick={() => alert('Downloading as PDF…')} />
-          <TBtn label="⊞ Generate PowerPoint" onClick={() => setActive('actions')} primary />
+          <TBtn label="⊞ Generate PowerPoint" onClick={() => setActive('recommendations')} primary />
         </div>
       </div>
 
@@ -382,21 +568,17 @@ export default function Report({ goTo }) {
         {/* Side nav */}
         <div style={{ padding: '1.25rem 1rem', borderRight: '1px solid var(--border)', background: 'var(--cream)', overflowY: 'auto' }}>
           {SECTIONS.map(s => (
-            <div
-              key={s.id}
-              onClick={() => setActive(s.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.6rem',
-                padding: '0.5rem 0.75rem', borderRadius: '7px',
-                marginBottom: '2px', cursor: 'pointer',
-                background: s.id === active ? '#fff' : 'transparent',
-                border: s.id === active ? '1px solid var(--border)' : '1px solid transparent',
-                fontSize: '13px',
-                fontWeight: s.id === active ? 500 : 400,
-                color: s.id === active ? 'var(--ink)' : '#6B7280',
-                transition: 'all .12s',
-              }}
-            >
+            <div key={s.id} onClick={() => setActive(s.id)} style={{
+              display: 'flex', alignItems: 'center', gap: '0.6rem',
+              padding: '0.5rem 0.75rem', borderRadius: '7px',
+              marginBottom: '2px', cursor: 'pointer',
+              background: s.id === active ? '#fff' : 'transparent',
+              border: s.id === active ? '1px solid var(--border)' : '1px solid transparent',
+              fontSize: '13px',
+              fontWeight: s.id === active ? 500 : 400,
+              color: s.id === active ? 'var(--ink)' : '#6B7280',
+              transition: 'all .12s',
+            }}>
               <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
               {s.label}
             </div>
@@ -410,7 +592,7 @@ export default function Report({ goTo }) {
           </div>
         </div>
 
-        {/* Content area */}
+        {/* Content */}
         <div style={{ padding: '1.75rem 2.25rem', overflowY: 'auto', background: '#fff' }}>
           <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '0.4rem' }}>
             {String(idx + 1).padStart(2, '0')}

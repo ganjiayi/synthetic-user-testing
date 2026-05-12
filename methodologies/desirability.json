@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "methodology_id": "desirability",
+    "display_name": "Desirability Testing",
+    "version": "v1.0",
+    "compatible_with_synthetic_personas": true,
+    "runner_type": "impression_based"
+  },
+  "description": "Personas respond to a design or brand expression and report their emotional and aesthetic reaction in a single turn. No navigation required. Best for testing whether a visual language, tone of voice, or brand positioning resonates with the target segment.",
+  "eval_metrics": [
+    { "key": "emotional_response", "type": "qualitative",  "description": "How the persona feels about what they see — the emotional reaction in their own words" },
+    { "key": "appeal_rating",      "type": "numeric_0_10", "description": "Overall desirability rating from the perspective of this persona" },
+    { "key": "word_association",   "type": "qualitative",  "description": "3–5 words the persona associates with the stimulus" },
+    { "key": "fit_signal",         "type": "qualitative",  "description": "Does this feel like it was made for someone like this persona?" },
+    { "key": "preference_signal",  "type": "qualitative",  "description": "What would the persona keep or change about the stimulus?" }
+  ],
+  "eval_schema": {
+    "fields": [
+      "inner_monologue",
+      "emotional_response",
+      "appeal_rating",
+      "word_association",
+      "fit_signal",
+      "preference_signal",
+      "persona_alignment_note"
+    ],
+    "persona_instructions": "You are shown a design or brand stimulus. Do not navigate — report your immediate impression only, in a single response. What do you feel when you see this? Rate its appeal to you (0-10). Give 3-5 words you associate with it. Does it feel made for someone like you? What would you keep or change?"
+  },
+  "planner_guidance": "There are no tasks or navigation steps. Each scenario presents a stimulus — a visual, a piece of copy, or a brand expression — and asks the persona to report their immediate impression. Focus the plan on what emotional response and word associations are desirable for this product and segment. The primary metric is appeal rating and fit signal. Hypotheses should test whether the stimulus resonates with each persona's identity and values.",
+  "report_sections": {
+    "section_03_label": "Methodology",
+    "section_03_content": [
+      "method_description",
+      "stimuli_presented",
+      "impression_format",
+      "hypotheses"
+    ],
+    "section_04_label": "Key Findings — Desirability & Emotional Response",
+    "section_04_content": [
+      "desirability_map",
+      "word_association_clusters",
+      "fit_signals",
+      "emotional_responses",
+      "preference_signals"
+    ],
+    "hypothesis_focus": "Test whether the stimulus resonates with each persona's identity, values, and aesthetic expectations."
+  }
+}

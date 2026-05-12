@@ -15,9 +15,9 @@ export const PRODUCTS = [
 export const STEPS = [
   { section: 'Product', title: 'Select a product', sub: 'Product context, pain points, and agent instructions will auto-populate from the database.' },
   { section: 'Study context', title: 'Product and design phase', sub: 'The agent uses these to calibrate friction sensitivity and research focus for your sessions.' },
-  { section: 'Research goals', title: 'What must this study answer?', sub: 'Define the one question everything else organises around, then the research questions that support it.' },
+  { section: 'Research goals', title: 'What must this study answer?', sub: 'Define the feature under test, your research questions, and the decision this study needs to support.' },
   { section: 'Personas', title: 'Select persona segments', sub: 'Choose which synthetic agents run sessions. Select at least two — one primary, one secondary.' },
-  { section: 'Tasks', title: 'Test scenarios and tasks', sub: 'Define what each agent will attempt. Write agent instructions in plain language — no leading.' },
+  { section: 'UX Research Method', title: 'Research methodology and tasks', sub: 'Select your research methodology and define what each synthetic user will attempt.' },
   { section: 'Hypotheses', title: 'Hypotheses and known risks', sub: 'What you already suspect. Agents will challenge or confirm each hypothesis during sessions.' },
   { section: 'Output', title: 'Output and handoff', sub: 'Define who receives the findings, in what format, and what threshold triggers escalation.' },
 ];
