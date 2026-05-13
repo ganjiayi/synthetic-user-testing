@@ -3,51 +3,29 @@
 /**
  * evaluator.js
  *
- * Reads plan.json from a run folder, runs one Claude CLI session per
- * active persona, scores each turn against all eval keys, and writes:
+ * Reads plan.json from a run folder, runs one model session per active persona
+ * using the configured provider (Claude or OpenAI), scores each turn against
+ * all eval keys, and writes:
  *
  *   runs/<run>/sessions/session_log.json   — full turn-by-turn raw data
  *   runs/<run>/sessions/eval_matrix.json   — flattened scores for aggregator
  *
  * Usage:
- *   node src/pipeline/evaluator.js <run_folder>
+ *   node src/pipeline/evaluator.js <run_folder> [--model claude|openai]
  *
  * Example:
- *   node src/pipeline/evaluator.js runs/22042026_synthetic-user-test-1
+ *   node src/pipeline/evaluator.js runs/22042026_synthetic-user-test-1 --model openai
  */
 
-const fs             = require('fs');
-const path           = require('path');
-const { spawnSync }  = require('child_process');
-const os             = require('os');
-
-// ─── Config ──────────────────────────────────────────────────────────────────
-const MODEL = 'claude-sonnet-4-6';
+require('dotenv').config();
+const fs   = require('fs');
+const path = require('path');
 
 const PERSONA_PROMPT_PATH = path.join(__dirname, '../../personas/v4_system_prompts.md');
 const AGENT_PROMPT_PATH   = path.join(__dirname, '../../.claude/agents/simulation-runner.md');
 
-// ─── Find Claude CLI binary ───────────────────────────────────────────────────
-function findClaudeBinary() {
-  const fromPath = spawnSync('which', ['claude'], { encoding: 'utf8' });
-  if (fromPath.status === 0 && fromPath.stdout.trim()) return fromPath.stdout.trim();
-
-  const baseDir = path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude-code');
-  if (fs.existsSync(baseDir)) {
-    const versions = fs.readdirSync(baseDir).sort().reverse();
-    for (const v of versions) {
-      const bin = path.join(baseDir, v, 'claude.app', 'Contents', 'MacOS', 'claude');
-      if (fs.existsSync(bin)) return bin;
-    }
-  }
-  throw new Error('claude binary not found. Ensure Claude Code CLI is installed.');
-}
-
-// ─── Call Claude CLI (stateless, history folded into user message) ────────────
-function callClaude(systemPrompt, conversationHistory) {
-  const claudeBin = findClaudeBinary();
-
-  // Format full conversation history into a single user message
+// ─── Call model via provider (history folded into user message) ───────────────
+async function callModel(provider, systemPrompt, conversationHistory) {
   let userMessage;
   if (conversationHistory.length === 1) {
     userMessage = conversationHistory[0].content;
@@ -59,24 +37,8 @@ function callClaude(systemPrompt, conversationHistory) {
     const current = conversationHistory[conversationHistory.length - 1];
     userMessage = `[CONVERSATION HISTORY]\n${prior}\n\n---\n\n[CURRENT TURN]\n${current.content}`;
   }
-
-  const tmpSystem = path.join(os.tmpdir(), `evaluator-sys-${Date.now()}.txt`);
-  const tmpMsg    = path.join(os.tmpdir(), `evaluator-msg-${Date.now()}.txt`);
-  fs.writeFileSync(tmpSystem, systemPrompt, 'utf8');
-  fs.writeFileSync(tmpMsg,    userMessage,  'utf8');
-
-  let result;
-  try {
-    result = spawnSync(claudeBin, [
-      '--print', '--model', MODEL,
-      '--system-prompt', fs.readFileSync(tmpSystem, 'utf8'),
-      '--tools', '', '--no-session-persistence',
-      fs.readFileSync(tmpMsg, 'utf8'),
-    ], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, timeout: 180000 });
-  } finally {
-    try { fs.unlinkSync(tmpSystem); } catch {}
-    try { fs.unlinkSync(tmpMsg);    } catch {}
-  }
+  return await provider.call(systemPrompt, userMessage);
+}
 
   if (result.error) throw new Error(`Failed to spawn claude: ${result.error.message}`);
   if (result.status !== 0) throw new Error(`claude CLI exited with code ${result.status}:\n${result.stderr}`);
@@ -254,7 +216,7 @@ function parseTurnResponse(rawText, turnNumber, taskId, personaId) {
 }
 
 // ─── Run a single persona session ────────────────────────────────────────────
-async function runPersonaSession(persona, tasks, plan, personaLibrary, simulationPrompt) {
+async function runPersonaSession(provider, persona, tasks, plan, personaLibrary, simulationPrompt) {
   const personaId      = persona.persona_library_ref || persona.name.toLowerCase().replace(/\s+/g, '_');
   const artefactContext = buildArtefactContext(plan);
   const systemPrompt   = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt);
@@ -280,7 +242,7 @@ async function runPersonaSession(persona, tasks, plan, personaLibrary, simulatio
       conversationHistory.push({ role: 'user', content: userMessage });
 
       try {
-        const rawText = callClaude(systemPrompt, conversationHistory);
+        const rawText = await callModel(provider, systemPrompt, conversationHistory);
         const turn    = parseTurnResponse(rawText, turnNumber, task.task_id, personaId);
         sessionTurns.push(turn);
 
@@ -316,10 +278,10 @@ async function runPersonaSession(persona, tasks, plan, personaLibrary, simulatio
         }
 
       } catch (err) {
-        console.warn(`      ❌ CLI error on turn ${turnNumber}:`, err.message);
+        console.warn(`      ❌ Model error on turn ${turnNumber}:`, err.message);
         sessionTurns.push({
           turn_number: turnNumber, task_id: task.task_id, persona_id: personaId,
-          cli_error: err.message, eval_scores: { task_completion: 'in_progress' },
+          model_error: err.message, eval_scores: { task_completion: 'in_progress' },
         });
       }
 
@@ -427,7 +389,7 @@ function appendRunLog(runFolder, entry) {
 async function main() {
   const runFolder = process.argv[2];
   if (!runFolder) {
-    console.error('Usage: node src/pipeline/evaluator.js <run_folder>');
+    console.error('Usage: node src/pipeline/evaluator.js <run_folder> [--model claude|openai]');
     process.exit(1);
   }
 
@@ -435,6 +397,10 @@ async function main() {
   const plan         = loadPlan(absRunFolder);
   const personaLib   = loadPersonaPrompts();
   const simPrompt    = loadSimulationPrompt();
+
+  // Resolve model provider
+  const { getProvider } = require('../providers');
+  const provider = await getProvider();
 
   const activePersonas = (plan.user_segments?.segments || []).filter(s => s.include !== false);
   const activeTasks    = plan.test_scenarios?.scenarios || [];
@@ -445,13 +411,13 @@ async function main() {
   console.log(`   Personas:  ${activePersonas.map(p => p.name).join(', ')}`);
   console.log(`   Tasks:     ${activeTasks.map(t => t.task_id).join(', ')}`);
   console.log(`   Eval keys: ${allEvalKeys.join(', ')}`);
-  console.log(`   Model:     ${MODEL} (via Claude Code CLI)\n`);
+  console.log(`   Model:     ${provider.modelName} (${provider.id})\n`);
 
-  appendRunLog(absRunFolder, `evaluator started — ${activePersonas.length} personas, ${activeTasks.length} tasks`);
+  appendRunLog(absRunFolder, `evaluator started — provider: ${provider.id} — ${activePersonas.length} personas, ${activeTasks.length} tasks`);
 
   const sessions = [];
   for (const persona of activePersonas) {
-    const session = await runPersonaSession(persona, activeTasks, plan, personaLib, simPrompt);
+    const session = await runPersonaSession(provider, persona, activeTasks, plan, personaLib, simPrompt);
     sessions.push(session);
   }
 
@@ -459,7 +425,8 @@ async function main() {
     run_metadata: {
       run_id:             plan._meta?.run_id || path.basename(absRunFolder),
       generated_at:       new Date().toISOString(),
-      model:              MODEL,
+      provider:           provider.id,
+      model:              provider.modelName,
       product:            plan.research_goals?.product_name || '',
       feature:            plan.research_goals?.feature_under_test || '',
       personas_activated: activePersonas.map(p => p.name),

@@ -3,31 +3,28 @@
 /**
  * generatePlan.js
  *
- * Reads a validated intake.json from a run folder, calls the Claude API
- * using the research-planner agent system prompt, and writes a fully
- * populated plan.json into the same run folder.
+ * Reads a validated intake.json from a run folder, calls the configured
+ * model provider (Claude or OpenAI) using the research-planner agent system
+ * prompt, and writes a fully populated plan.json into the same run folder.
  *
  * Usage:
- *   node src/pipeline/generatePlan.js <run_folder>
+ *   node src/pipeline/generatePlan.js <run_folder> [--model claude|openai]
  *
  * Example:
- *   node src/pipeline/generatePlan.js runs/21042026_onboarding-activation
+ *   node src/pipeline/generatePlan.js runs/21042026_onboarding-activation --model openai
  *
  * Requires:
- *   - Claude Code CLI installed and authenticated (claude.ai subscription)
  *   - intake.json in the run folder (produced by parseIntake.js)
  *   - .claude/agents/research-planner.md (system prompt)
+ *   - For OpenAI: OPENAI_API_KEY in .env
  *
  * Output: runs/<run_folder>/plan.json
  */
 
-const fs             = require('fs');
-const os             = require('os');
-const path           = require('path');
-const { spawnSync }  = require('child_process');
+require('dotenv').config();
+const fs   = require('fs');
+const path = require('path');
 
-// ─── Config ──────────────────────────────────────────────────────────────────
-const MODEL          = 'claude-sonnet-4-6';
 const PLANNER_PROMPT = path.join(__dirname, '../../.claude/agents/research-planner.md');
 
 // ─── Load system prompt ───────────────────────────────────────────────────────
@@ -54,65 +51,14 @@ Generate a complete study plan as a single JSON object following the plan schema
 Respond with ONLY the JSON object — no preamble, no markdown fences, no explanation.`;
 }
 
-// ─── Find claude CLI binary ───────────────────────────────────────────────────
-function findClaudeBinary() {
-  // Check PATH first
-  const fromPath = spawnSync('which', ['claude'], { encoding: 'utf8' });
-  if (fromPath.status === 0 && fromPath.stdout.trim()) return fromPath.stdout.trim();
-
-  // macOS app install location — pick highest version
-  const baseDir = path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude-code');
-  if (fs.existsSync(baseDir)) {
-    const versions = fs.readdirSync(baseDir).sort().reverse();
-    for (const v of versions) {
-      const bin = path.join(baseDir, v, 'claude.app', 'Contents', 'MacOS', 'claude');
-      if (fs.existsSync(bin)) return bin;
-    }
-  }
-
-  throw new Error(
-    'claude binary not found. Ensure Claude Code is installed and authenticated.'
-  );
-}
-
-// ─── Call Claude via CLI ──────────────────────────────────────────────────────
-async function callPlannerAgent(systemPrompt, userMessage) {
-  const claudeBin = findClaudeBinary();
-
-  console.log(`   Calling ${MODEL} via claude CLI...`);
+// ─── Call model via provider abstraction ─────────────────────────────────────
+async function callPlannerAgent(provider, systemPrompt, userMessage) {
+  console.log(`   Calling ${provider.modelName} via ${provider.id} provider...`);
   const startTime = Date.now();
-
-  // Write system prompt to a temp file to avoid shell arg length limits
-  const tmpSystem = path.join(os.tmpdir(), `research-planner-${Date.now()}.txt`);
-  fs.writeFileSync(tmpSystem, systemPrompt, 'utf8');
-
-  let result;
-  try {
-    result = spawnSync(claudeBin, [
-      '--print',
-      '--model',          MODEL,
-      '--system-prompt',  fs.readFileSync(tmpSystem, 'utf8'),
-      '--tools',          '',
-      '--no-session-persistence',
-      userMessage,
-    ], {
-      encoding:  'utf8',
-      maxBuffer: 10 * 1024 * 1024,
-      timeout:   180000,
-    });
-  } finally {
-    fs.unlinkSync(tmpSystem);
-  }
-
-  if (result.error) throw new Error(`Failed to spawn claude: ${result.error.message}`);
-  if (result.status !== 0) {
-    throw new Error(`claude CLI exited with code ${result.status}:\n${result.stderr}`);
-  }
-
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  const response  = await provider.call(systemPrompt, userMessage);
+  const elapsed   = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log(`   Response received in ${elapsed}s`);
-
-  return result.stdout;
+  return response;
 }
 
 // ─── Parse and validate plan JSON ────────────────────────────────────────────
@@ -137,13 +83,15 @@ function parsePlanResponse(rawText, intake) {
   plan._meta = {
     run_id:          intake.meta.run_id,
     generated_at:    new Date().toISOString(),
-    model:           MODEL,
+    model:           plan._provider?.modelName || 'unknown',
+    provider:        plan._provider?.id        || 'unknown',
     source_intake:   'intake.json',
     researcher:      intake.meta.researcher_name,
     product:         intake.q5_product_context.product_name,
     feature:         intake.q5_product_context.feature_under_test,
     plan_version:    '1.0',
   };
+  delete plan._provider;
 
   return plan;
 }
@@ -203,8 +151,8 @@ function printPlanSummary(plan, intake) {
 async function main() {
   const runFolder = process.argv[2];
   if (!runFolder) {
-    console.error('Usage: node src/pipeline/generatePlan.js <run_folder>');
-    console.error('Example: node src/pipeline/generatePlan.js runs/21042026_onboarding-activation');
+    console.error('Usage: node src/pipeline/generatePlan.js <run_folder> [--model claude|openai]');
+    console.error('Example: node src/pipeline/generatePlan.js runs/21042026_onboarding-activation --model openai');
     process.exit(1);
   }
 
@@ -213,6 +161,11 @@ async function main() {
     console.error(`Run folder not found: ${absRunFolder}`);
     process.exit(1);
   }
+
+  // Resolve model provider
+  const { getProvider } = require('../providers');
+  const provider = await getProvider();
+  console.log(`\n🤖 Model: ${provider.modelName} (${provider.id})`);
 
   // Load intake.json
   const intakePath = path.join(absRunFolder, 'intake.json');
@@ -240,18 +193,20 @@ async function main() {
 
   // Load system prompt
   const systemPrompt = loadSystemPrompt();
-  console.log(`\n🤖 Loaded research-planner system prompt (${systemPrompt.length} chars)`);
+  console.log(`\n📋 Loaded research-planner system prompt (${systemPrompt.length} chars)`);
 
-  // Build message and call API
+  // Build message and call model
   const userMessage = buildUserMessage(intake);
   console.log('\n🚀 Generating study plan...');
 
-  appendRunLog(absRunFolder, `generatePlan started — intake: ${intakePath}`);
+  appendRunLog(absRunFolder, `generatePlan started — provider: ${provider.id} — model: ${provider.modelName}`);
 
-  const rawResponse = await callPlannerAgent(systemPrompt, userMessage);
+  const rawResponse = await callPlannerAgent(provider, systemPrompt, userMessage);
 
   // Parse plan
   const plan = parsePlanResponse(rawResponse, intake);
+  plan._meta.model    = provider.modelName;
+  plan._meta.provider = provider.id;
 
   // Write plan.json
   const planPath = writePlan(absRunFolder, plan);
@@ -261,7 +216,7 @@ async function main() {
   printPlanSummary(plan, intake);
 
   console.log(`\n✅ Plan written to: ${planPath}`);
-  console.log('\nNext step: node src/pipeline/runner.js ' + runFolder);
+  console.log('\nNext step: node src/pipeline/evaluator.js ' + runFolder);
 }
 
 main().catch(err => {

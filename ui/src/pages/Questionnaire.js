@@ -306,6 +306,27 @@ function StepOutput({ form, setForm }) {
   const audiences = ['Product team','Design team','Engineering','Marketing','Leadership','Investors'];
   const formats   = ['JSON eval log','Markdown summary','HTML report card','DOCX research plan','Slide deck'];
 
+  const models = [
+    {
+      id:    'claude',
+      name:  'Claude (Anthropic)',
+      model: 'claude-sonnet-4-6',
+      note:  'Uses your Claude Code subscription — no API key needed.',
+      color: '#D97706',
+      bg:    '#FDF3E7',
+      border:'rgba(217,119,6,.25)',
+    },
+    {
+      id:    'openai',
+      name:  'OpenAI',
+      model: 'gpt-4o',
+      note:  'Requires an OpenAI API key configured in the pipeline .env file.',
+      color: '#10A37F',
+      bg:    '#E6F5F1',
+      border:'rgba(16,163,127,.25)',
+    },
+  ];
+
   const toggle = (field, val) => {
     const cur = form[field] || [];
     const next = cur.includes(val) ? cur.filter(v => v !== val) : [...cur, val];
@@ -314,6 +335,40 @@ function StepOutput({ form, setForm }) {
 
   return (
     <>
+      {/* Model selector */}
+      <FieldGroup
+        label="AI model"
+        hint="Select which model runs the synthetic user sessions. Both produce the same output format."
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '0.5rem' }}>
+          {models.map(m => (
+            <div
+              key={m.id}
+              onClick={() => setForm(f => ({ ...f, modelProvider: m.id }))}
+              style={{
+                padding: '1rem 1.1rem', cursor: 'pointer', userSelect: 'none',
+                borderRadius: 'var(--radius-md)', transition: 'all .15s',
+                background: form.modelProvider === m.id ? m.bg : '#fff',
+                border: form.modelProvider === m.id ? `2px solid ${m.color}` : '1px solid var(--border)',
+              }}
+            >
+              <div style={{ fontSize: '13px', fontWeight: 500, color: form.modelProvider === m.id ? m.color : 'var(--ink)', marginBottom: '0.2rem' }}>
+                {m.name}
+              </div>
+              <div style={{ fontSize: '11px', color: '#6B7280', fontFamily: 'monospace', marginBottom: '0.35rem' }}>{m.model}</div>
+              <div style={{ fontSize: '11px', color: '#9CA3AF', lineHeight: 1.4 }}>{m.note}</div>
+            </div>
+          ))}
+        </div>
+        {!form.modelProvider && (
+          <div style={{ fontSize: '11px', color: 'var(--amber)', marginTop: '0.25rem' }}>
+            ⚠ No model selected — you will be prompted when the study runs.
+          </div>
+        )}
+      </FieldGroup>
+
+      <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
+
       <FieldGroup label="Primary audience">
         <div style={pillRow}>
           {audiences.map(a => (
