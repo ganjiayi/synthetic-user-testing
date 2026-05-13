@@ -66,67 +66,182 @@ function frictionBg(n)    { return n >= 7 ? 'var(--red-lt)' : n >= 4 ? 'var(--am
    Section 01 — Executive Summary
 ═══════════════════════════════════════════════════════ */
 function Summary() {
+  const Subsection = ({ title, children }) => (
+    <div style={{ marginBottom: '1.75rem' }}>
+      <div style={{ fontFamily: 'var(--serif)', fontSize: '16px', color: 'var(--ink)', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border)' }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+
   return (
     <>
-      {/* Overall signal */}
+      {/* Overall signal bar */}
       <div style={{
-        padding: '1.25rem 1.5rem', marginBottom: '1.75rem',
+        padding: '1rem 1.5rem', marginBottom: '2rem',
         background: 'var(--red-lt)', borderRadius: 'var(--radius-md)',
         border: '1px solid rgba(196,43,43,.2)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div>
-          <div style={{ fontFamily: 'var(--serif)', fontSize: '20px', color: 'var(--red)', marginBottom: '0.25rem' }}>
-            No Go — return to design
-          </div>
-          <div style={{ fontSize: '12px', color: '#92400E' }}>
-            0 of 5 personas converted · 1 of 5 conditional · average friction 5.2 / 10
-          </div>
+          <div style={{ fontFamily: 'var(--serif)', fontSize: '18px', color: 'var(--red)', marginBottom: '0.2rem' }}>No Go — return to design</div>
+          <div style={{ fontSize: '12px', color: '#92400E' }}>0 of 5 personas converted · 1 of 5 conditional · average friction 5.2 / 10</div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--serif)', fontSize: '32px', color: 'var(--red)', lineHeight: 1 }}>5.2</div>
+          <div style={{ fontFamily: 'var(--serif)', fontSize: '28px', color: 'var(--red)', lineHeight: 1 }}>5.2</div>
           <div style={{ fontSize: '10px', color: '#9CA3AF', marginTop: '2px' }}>avg friction</div>
         </div>
       </div>
 
-      {/* Top findings — each cited */}
-      <SectionLabel text="Key findings from this study" />
-      {[
-        {
-          type: 'red', label: 'Critical',
-          text: 'The homepage "cancel anytime" claim directly contradicts the 12-month contract shown on the pack page. This was identified as a trust-breaking contradiction.',
-          cite: 'Puan Rohani · T2',
-        },
-        {
-          type: 'amber', label: 'High friction',
-          text: '"Entertainment Zero" and pack name number suffixes (12, 24) were opaque to all five personas. No persona predicted pack content from the name alone.',
-          cite: 'Hakim · T1, Syafiqah · T1, Marcus · T2, Puan Rohani · T1',
-        },
-        {
-          type: 'teal', label: 'Near-conversion',
-          text: 'Entertainment 12 at RM39.99 was shortlisted as genuinely competitive against a current Astro legacy bill of ~RM90/month. Channel list visibility would likely convert.',
-          cite: 'David · T2',
-        },
-        {
-          type: 'blue', label: 'Support cost risk',
-          text: 'Two personas stated they would contact WhatsApp support rather than self-serve. Current page design systematically drives avoidable support volume.',
-          cite: 'Hakim · T1, Puan Rohani · T2',
-        },
-      ].map((f, i) => (
-        <div key={i} style={{
-          display: 'flex', alignItems: 'flex-start', gap: '0.875rem',
-          padding: '0.875rem 1rem', marginBottom: '0.625rem',
-          background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
-        }}>
-          <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={f.label} type={f.type} /></div>
-          <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.65, margin: 0 }}>
-            {f.text}<Cite>{f.cite}</Cite>
+      {/* 1. Study Aims & Objectives */}
+      <Subsection title="Study Aims & Objectives">
+        <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.75, margin: 0 }}>
+          This study was conducted to evaluate whether the revamped <strong>Astro.com.my</strong> homepage clearly communicates the Astro One boxless product proposition to prospective subscribers, and whether the pack selection page enables users to self-serve without contacting support. The study supports a go / no-go decision on the scheduled homepage launch date.
+        </p>
+      </Subsection>
+
+      {/* 2. Methodology */}
+      <Subsection title="Methodology">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.75rem', marginBottom: '0.875rem' }}>
+          {[
+            { label: 'Method', value: 'Usability Testing' },
+            { label: 'Synthetic users', value: '5 personas' },
+            { label: 'Tasks', value: '2 tasks · 10 sessions' },
+          ].map((s, i) => (
+            <div key={i} style={{ padding: '0.875rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.15rem' }}>{s.value}</div>
+              <div style={{ fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '.06em' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.65, margin: 0 }}>
+          Five synthetic Malaysian consumer personas — Spontaneous Traditionalist, Progressive Influencer, Trendsetter Explorer, Family-Centric Devotee, and Routine Conservative — were run in parallel sessions. Each persona completed T1 (Homepage orientation) and T2 (Pack selection) and was scored on friction, confusion signals, trust signals, and task completion.
+        </p>
+      </Subsection>
+
+      {/* 3. Key Findings */}
+      <Subsection title="Key Findings">
+        <div style={{ fontSize: '11px', color: '#6B7280', marginBottom: '0.875rem' }}>
+          Issues are ranked by impact. Successes are marked separately. All findings are cited to the session(s) that produced them.
+        </div>
+
+        {/* Issues */}
+        {[
+          {
+            type: 'red', label: 'Critical issue',
+            text: 'The homepage "cancel anytime" claim directly contradicts the 12-month contract shown on the pack page — identified as a trust-breaking contradiction that caused immediate abandonment.',
+            cite: 'Puan Rohani · T2',
+          },
+          {
+            type: 'red', label: 'Critical issue',
+            text: '"Entertainment Zero" communicates no content value. Pack name number suffixes (12, 24) were not understood as contract lengths by any persona.',
+            cite: 'Hakim · T1, Syafiqah · T1, Marcus · T2, Puan Rohani · T1',
+          },
+          {
+            type: 'amber', label: 'Significant issue',
+            text: 'The channel list is gated behind a "View more" interaction. All personas who shortlisted a pack required this information before committing — none were willing to proceed without it.',
+            cite: 'Hakim · T2, David · T2',
+          },
+          {
+            type: 'amber', label: 'Significant issue',
+            text: 'Two personas stated they would contact WhatsApp support rather than continue self-serving. The current design systematically routes users toward support before conversion.',
+            cite: 'Hakim · T1, Puan Rohani · T2',
+          },
+        ].map((f, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'flex-start', gap: '0.875rem',
+            padding: '0.75rem 1rem', marginBottom: '0.5rem',
+            background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+          }}>
+            <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={f.label} type={f.type} /></div>
+            <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.65, margin: 0 }}>
+              {f.text}<Cite>{f.cite}</Cite>
+            </p>
+          </div>
+        ))}
+
+        {/* Successes */}
+        <div style={{ marginTop: '0.875rem' }}>
+          {[
+            {
+              type: 'teal', label: 'Success',
+              text: 'All 5 personas correctly identified Astro.com.my as a streaming subscription service — brand category comprehension was achieved without confusion.',
+              cite: 'All personas · T1',
+            },
+            {
+              type: 'teal', label: 'Success',
+              text: 'Entertainment 12 at RM39.99 was shortlisted unprompted as genuinely competitive against a current legacy bill of ~RM90/month. Price-sensitive personas can self-shortlist when pricing is transparent.',
+              cite: 'David · T2',
+            },
+          ].map((f, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'flex-start', gap: '0.875rem',
+              padding: '0.75rem 1rem', marginBottom: '0.5rem',
+              background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+            }}>
+              <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={f.label} type={f.type} /></div>
+              <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.65, margin: 0 }}>
+                {f.text}<Cite>{f.cite}</Cite>
+              </p>
+            </div>
+          ))}
+        </div>
+      </Subsection>
+
+      {/* 4. Recommendations */}
+      <Subsection title="Recommendations">
+        {/* Severity legend */}
+        <div style={{ padding: '0.875rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '1rem' }}>
+          <div style={{ fontSize: '11px', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>Severity rubric</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            {[
+              { tag: 'P0', type: 'red',   desc: 'Critical — blocks launch. Must be resolved before go-live.' },
+              { tag: 'P1', type: 'amber', desc: 'Significant — high user impact. Resolve in the same sprint.' },
+              { tag: 'P2', type: 'gray',  desc: 'Improvement — address in the next sprint or backlog.' },
+            ].map((r, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '12px', color: '#4A5568' }}>
+                <Tag label={r.tag} type={r.type} />
+                {r.desc}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {[
+          { p: 'P0', type: 'red',   text: 'Resolve the contract contradiction — align "cancel anytime" with pack page terms before launch.', cite: 'Puan Rohani · T2' },
+          { p: 'P0', type: 'red',   text: 'Surface the channel list inline — remove the View more gate on all pack cards.', cite: 'Hakim · T2, David · T2' },
+          { p: 'P1', type: 'amber', text: 'Rename "Entertainment Zero" to communicate content value, not absence of it.', cite: 'Hakim · T1, Syafiqah · T1, Puan Rohani · T1' },
+          { p: 'P1', type: 'amber', text: 'Separate the contract duration from the pack name — surface it as a secondary label.', cite: 'Syafiqah · T2, Marcus · T2' },
+          { p: 'P2', type: 'gray',  text: 'Add visible Bahasa Malaysia and local drama content signals on the pack page.', cite: 'Puan Rohani · T1, T2' },
+        ].map((r, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'flex-start', gap: '0.875rem',
+            padding: '0.625rem 1rem', marginBottom: '0.4rem',
+            background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+          }}>
+            <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={r.p} type={r.type} /></div>
+            <div style={{ fontSize: '12px', color: '#4A5568', lineHeight: 1.6, flex: 1 }}>
+              {r.text}<Cite>{r.cite}</Cite>
+            </div>
+          </div>
+        ))}
+      </Subsection>
+
+      {/* 5. Overall Satisfaction */}
+      <Subsection title="Overall Satisfaction">
+        <div style={{ padding: '1rem 1.25rem', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '0.75rem' }}>
+          <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.75, margin: 0 }}>
+            Overall sentiment across the five synthetic user sessions was <strong>neutral to negative</strong>. No persona expressed strong positive sentiment toward the product or the page experience. The most positive signal came from David, who found the pricing competitive and described the experience as manageable — but still would not convert without additional information. <Cite>David · T2</Cite>
           </p>
         </div>
-      ))}
+        <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.75, margin: 0 }}>
+          The primary driver of dissatisfaction was not the product itself but the information architecture — personas who were open to subscribing could not get the information they needed to commit. Two personas exited to seek help elsewhere rather than abandon outright, indicating residual intent that the page failed to convert. <Cite>Hakim · T1, Puan Rohani · T2</Cite>
+        </p>
+      </Subsection>
 
-      <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '11px', color: '#6B7280' }}>
-        All findings above are drawn directly from synthetic user session data. Citations reference the persona and task that produced each signal. See Section 04 for full data and Section 06 for session log references.
+      <div style={{ padding: '0.75rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '11px', color: '#6B7280' }}>
+        All findings are drawn directly from synthetic user session data. Citations reference the persona and task that produced each signal. See Section 04 for full data and Section 06 for session log references.
       </div>
     </>
   );
