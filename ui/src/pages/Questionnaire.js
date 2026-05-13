@@ -434,6 +434,14 @@ export default function Questionnaire({ goTo, draft }) {
       setSubmitMsg('Creating study run…');
       await api.createRun(runId, intake);
 
+      // Upload any test material files
+      const filesToUpload = (form.testMaterials?.files || [])
+        .filter(f => f.file instanceof File);
+      if (filesToUpload.length > 0) {
+        setSubmitMsg(`Uploading ${filesToUpload.length} test material${filesToUpload.length > 1 ? 's' : ''}…`);
+        await api.uploadFiles(runId, filesToUpload.map(f => f.file));
+      }
+
       setSubmitMsg('Generating research plan…');
       await api.startPlan(runId);
 

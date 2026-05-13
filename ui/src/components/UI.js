@@ -187,6 +187,7 @@ export function UploadZone({ value, onChange }) {
       name:    f.name,
       type:    f.type,
       preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
+      file:    f,   // keep raw File object for upload at submit time
     }));
     onChange({ files: [...files, ...next], urls });
   };

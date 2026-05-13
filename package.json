@@ -4,16 +4,17 @@
   "description": "Synthetic UX research pipeline — pipeline + API server",
   "private": true,
   "scripts": {
-    "start":     "node src/server/index.js",
-    "parse":     "node src/pipeline/parseIntake.js",
-    "plan":      "node src/pipeline/generatePlan.js",
+    "start": "node src/server/index.js",
+    "parse": "node src/pipeline/parseIntake.js",
+    "plan": "node src/pipeline/generatePlan.js",
     "run-study": "node src/pipeline/evaluator.js"
   },
   "dependencies": {
-    "cors":    "^2.8.5",
-    "dotenv":  "^17.4.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^4.19.2",
     "mammoth": "^1.8.0",
-    "openai":  "^6.37.0"
+    "multer": "^2.1.1",
+    "openai": "^6.37.0"
   }
 }

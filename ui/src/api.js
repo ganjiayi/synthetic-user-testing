@@ -71,6 +71,22 @@ export const api = {
     return req('GET', `/api/runs/${runId}/status`);
   },
 
+  /* Upload test material files to Railway (one at a time) */
+  async uploadFiles(runId, files) {
+    const results = [];
+    for (const file of files) {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${BASE}/api/runs/${runId}/upload`, {
+        method: 'POST',
+        body:   form,
+      });
+      if (!res.ok) throw new Error(`Upload failed for ${file.name}`);
+      results.push(await res.json());
+    }
+    return results;
+  },
+
   /* Get a direct download URL for a report file */
   downloadUrl(runId, filename) {
     return `${BASE}/api/runs/${runId}/download/${filename}`;
@@ -108,7 +124,10 @@ export function buildIntake(form, runId) {
       design_phase:    form.designPhase || '',
       fidelity:        form.fidelity || '',
       artefact_notes:  form.artefactNotes || '',
-      test_materials:  form.testMaterials || { files: [], urls: [] },
+      test_materials: {
+      files: (form.testMaterials?.files || []).map(({ file, ...meta }) => meta),
+      urls:  form.testMaterials?.urls || [],
+    },
     },
     q3_goals: {
       insight_type:       form.insightType || '',

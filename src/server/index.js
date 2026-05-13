@@ -11,13 +11,21 @@ require('dotenv').config();
 
 const express    = require('express');
 const cors       = require('cors');
+const multer     = require('multer');
 const path       = require('path');
 const fs         = require('fs');
+const os         = require('os');
 const { spawn }  = require('child_process');
 
-const app     = express();
-const PORT    = process.env.PORT || 3001;
+const app      = express();
+const PORT     = process.env.PORT || 3001;
 const RUNS_DIR = path.join(__dirname, '../../runs');
+
+// ─── Multer — temporary upload storage ───────────────────────────────────────
+const upload = multer({
+  dest:   path.join(os.tmpdir(), 'synthux-uploads'),
+  limits: { fileSize: 15 * 1024 * 1024 },  // 15 MB per file
+});
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors());
@@ -125,6 +133,44 @@ app.get('/api/runs/:id/plan', (req, res) => {
   const planPath = path.join(RUNS_DIR, req.params.id, 'plan.json');
   if (!fs.existsSync(planPath)) return res.status(404).json({ error: 'Plan not found' });
   res.json(JSON.parse(fs.readFileSync(planPath, 'utf8')));
+});
+
+// POST /api/runs/:id/upload — upload a test material file
+app.post('/api/runs/:id/upload', upload.single('file'), (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.file) return res.status(400).json({ error: 'No file received' });
+
+    const runFolder    = path.join(RUNS_DIR, id);
+    const materialsDir = path.join(runFolder, 'materials');
+    fs.mkdirSync(materialsDir, { recursive: true });
+
+    // Sanitise filename and move from temp location
+    const safe = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const dest  = path.join(materialsDir, safe);
+    fs.renameSync(req.file.path, dest);
+
+    // Record in status so the evaluator can find materials
+    const statusPath = path.join(runFolder, 'status.json');
+    const status     = fs.existsSync(statusPath)
+      ? JSON.parse(fs.readFileSync(statusPath, 'utf8'))
+      : {};
+    if (!status.materials) status.materials = [];
+    if (!status.materials.includes(safe)) status.materials.push(safe);
+    fs.writeFileSync(statusPath, JSON.stringify(status, null, 2));
+
+    console.log(`[${id}] uploaded material: ${safe}`);
+    res.json({ filename: safe, url: `/api/runs/${id}/materials/${safe}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/runs/:id/materials/:file — serve a test material file
+app.get('/api/runs/:id/materials/:file', (req, res) => {
+  const filePath = path.join(RUNS_DIR, req.params.id, 'materials', req.params.file);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+  res.sendFile(filePath);
 });
 
 // POST /api/runs/:id/evaluate — run persona sessions (async)
