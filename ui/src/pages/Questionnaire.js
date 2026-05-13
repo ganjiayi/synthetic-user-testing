@@ -474,7 +474,7 @@ export default function Questionnaire({ goTo, draft }) {
           {STEPS.map((_, i) => (
             <div key={i} style={{
               height: '3px', flex: 1, borderRadius: '2px',
-              background: i < step ? 'var(--blue)' : i === step ? 'rgba(27,79,216,.35)' : 'var(--cream)',
+              background: i < step ? 'var(--primary)' : i === step ? 'var(--hairline)' : 'var(--cream)',
               cursor: i < step ? 'pointer' : 'default',
               transition: 'background .3s',
             }} onClick={() => i < step && setStep(i)} />

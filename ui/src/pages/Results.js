@@ -86,9 +86,11 @@ export default function Results({ goTo, runId }) {
     });
   }, [runId]);
 
-  const avgFriction = (SESSIONS.reduce((s, p) => s + p.friction.avg, 0) / SESSIONS.length).toFixed(1);
-  const noGo        = SESSIONS.filter(s => s.signal === 'no_go').length;
-  const conditional = SESSIONS.filter(s => s.signal === 'conditional').length;
+  const avgFriction = sessions.length
+    ? (sessions.reduce((s, p) => s + (p.friction?.avg ?? 0), 0) / sessions.length).toFixed(1)
+    : '—';
+  const noGo        = sessions.filter(s => s.signal === 'no_go' || s.go_no_go === 'no_go').length;
+  const conditional = sessions.filter(s => s.signal === 'conditional' || s.go_no_go === 'conditional').length;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

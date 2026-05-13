@@ -30,7 +30,7 @@ function SectionContent({ id, editable, goTo }) {
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.75)' }}>5 personas · 3 tasks · High-fidelity artefact · Astro.com.my</div>
         </div>
         <button style={{ padding: '0.6rem 1.5rem', background: '#fff', color: 'var(--primary)', border: 'none', borderRadius: '7px', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
-          onClick={() => goTo('running')}>▶  Run research</button>
+          onClick={() => goTo('running', { runId })}>▶  Run research</button>
       </div>
       <F label="Product lifecycle phase" value="Live — mature / optimising" />
       <F label="Design thinking phase" value="Test — validating with real designs" />
@@ -204,11 +204,76 @@ function SectionContent({ id, editable, goTo }) {
 /* ══════════════════════════════════════════════════════
    PlanViewer Page
 ═══════════════════════════════════════════════════════ */
-export default function PlanViewer({ goTo }) {
+/* ── Live plan section renderer — used when real plan data is available ── */
+function renderValue(val) {
+  if (val === null || val === undefined || val === '') return '—';
+  if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+  if (Array.isArray(val)) {
+    if (val.length === 0) return '—';
+    if (typeof val[0] === 'string') return val.join('\n');
+    return val.map((v, i) => (
+      <div key={i} style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: i < val.length - 1 ? '1px solid var(--hairline)' : 'none' }}>
+        {Object.entries(v).map(([k, vv]) => (
+          <div key={k} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.2rem', fontSize: '12px' }}>
+            <span style={{ color: 'var(--mute)', minWidth: '120px', flexShrink: 0 }}>{k.replace(/_/g, ' ')}</span>
+            <span style={{ color: 'var(--body)' }}>{String(vv)}</span>
+          </div>
+        ))}
+      </div>
+    ));
+  }
+  if (typeof val === 'object') {
+    return Object.entries(val).map(([k, v]) => (
+      <div key={k} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem', fontSize: '12px' }}>
+        <span style={{ color: 'var(--mute)', minWidth: '140px', flexShrink: 0 }}>{k.replace(/_/g, ' ')}</span>
+        <span style={{ color: 'var(--body)' }}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
+      </div>
+    ));
+  }
+  return String(val);
+}
+
+function LivePlanSection({ sectionKey, data }) {
+  if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+    return <div style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>No data for this section.</div>;
+  }
+  return (
+    <div>
+      {Object.entries(data).map(([key, val]) => (
+        <div key={key} style={{ marginBottom: '1.1rem' }}>
+          <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.35rem' }}>
+            {key.replace(/_/g, ' ')}
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65, padding: '0.625rem 0.875rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)', whiteSpace: 'pre-wrap' }}>
+            {renderValue(val)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Section key → plan key mapping ── */
+const SECTION_MAP = {
+  ctx:     'study_context',
+  goals:   'research_goals',
+  personas:'user_segments',
+  tasks:   'test_scenarios',
+  eval:    'eval_metrics',
+  hypo:    'hypotheses',
+  method:  'method',
+  output:  'output_handoff',
+};
+
+export default function PlanViewer({ goTo, runId, plan }) {
   const [activeSection, setActiveSection] = useState('ctx');
   const [editMode, setEditMode] = useState(false);
 
-  const current = PLAN_SECTIONS.find(s => s.id === activeSection);
+  const isLive    = !!plan;
+  const current   = PLAN_SECTIONS.find(s => s.id === activeSection);
+  const studyName = plan?._meta?.feature || plan?._meta?.product
+    ? `${plan._meta.product || ''}${plan._meta.feature ? ' — ' + plan._meta.feature : ''}`
+    : 'Astro.com.my — Homepage Revamp';
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -221,16 +286,17 @@ export default function PlanViewer({ goTo }) {
         background: 'var(--paper)',
       }}>
         <div>
-          <div style={{ fontSize: '11px', color: 'var(--mute-soft)', marginBottom: '0.1rem' }}>Study plan</div>
+          <div style={{ fontSize: '11px', color: 'var(--mute-soft)', marginBottom: '0.1rem' }}>
+            Study plan {isLive && <span style={{ color: 'var(--teal)', fontWeight: 500 }}>· Live</span>}
+          </div>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: '20px', color: 'var(--ink)' }}>
-            Astro.com.my — Homepage Revamp
+            {studyName}
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <TBtn label={editMode ? '✎ Editing…' : '✎ Edit'} onClick={() => setEditMode(e => !e)} />
+          {!isLive && <TBtn label={editMode ? '✎ Editing…' : '✎ Edit'} onClick={() => setEditMode(e => !e)} />}
           <TBtn label="↓ Download DOCX" onClick={() => alert('Downloading research plan as DOCX…')} />
-          <TBtn label="✓ Save" onClick={() => alert('Plan saved')} />
-          <TBtn label="▶  Run research" onClick={() => goTo('running')} primary />
+          <TBtn label="▶  Run research" onClick={() => goTo('running', { runId })} primary />
         </div>
       </div>
 
@@ -258,11 +324,19 @@ export default function PlanViewer({ goTo }) {
             </div>
           ))}
 
-          {/* Edit mode notice */}
-          {editMode && (
+          {!isLive && editMode && (
             <div style={{ margin: '1.5rem 0 0', padding: '0.75rem', background: 'var(--blue-lt)', borderRadius: '7px', border: '1px solid rgba(27,79,216,.2)' }}>
               <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--blue)', marginBottom: '0.25rem' }}>Edit mode on</div>
               <div style={{ fontSize: '11px', color: 'var(--body)', lineHeight: 1.5 }}>Click any field to edit. Changes are saved locally.</div>
+            </div>
+          )}
+
+          {isLive && (
+            <div style={{ margin: '1.5rem 0 0', padding: '0.75rem', background: 'rgba(0,215,34,0.08)', borderRadius: '7px', border: '1px solid rgba(0,215,34,0.2)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--teal)', marginBottom: '0.2rem' }}>Generated plan</div>
+              <div style={{ fontSize: '11px', color: 'var(--body)', lineHeight: 1.5 }}>
+                Run ID: {plan?._meta?.run_id || '—'}
+              </div>
             </div>
           )}
         </div>
@@ -270,12 +344,19 @@ export default function PlanViewer({ goTo }) {
         {/* Content */}
         <div style={{ padding: '1.75rem 2.25rem', overflowY: 'auto', background: '#fff' }}>
           <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '0.4rem' }}>
-            Section {PLAN_SECTIONS.findIndex(s => s.id === activeSection) + 1 < 10 ? '0' : ''}{PLAN_SECTIONS.findIndex(s => s.id === activeSection) + 1}
+            Section {String(PLAN_SECTIONS.findIndex(s => s.id === activeSection) + 1).padStart(2, '0')}
           </div>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: '26px', color: 'var(--ink)', marginBottom: '1.75rem' }}>
             {current?.label}
           </h2>
-          <SectionContent id={activeSection} editable={editMode} goTo={goTo} />
+
+          {isLive
+            ? <LivePlanSection
+                sectionKey={activeSection}
+                data={plan[SECTION_MAP[activeSection]]}
+              />
+            : <SectionContent id={activeSection} editable={editMode} goTo={goTo} />
+          }
         </div>
       </div>
     </div>
