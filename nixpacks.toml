@@ -1,11 +1,1 @@
-[phases.setup]
-nixPkgs = ["python311", "nodejs_20"]
-
-[phases.install]
-cmds = [
-  "npm install",
-  "python3 -m pip install --break-system-packages -r requirements.txt"
-]
-
-[start]
-cmd = "node src/server/index.js"
+# Nixpacks config kept for reference but Railway now uses Dockerfile
