@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { STEPS, PRODUCTS, PERSONAS } from '../data/questionnaire';
 import { SelectCard, PersonaCard, Pill, AutofillNotice, FieldGroup, TextInput, UploadZone } from '../components/UI';
+import { api, generateRunId, buildIntake } from '../api';
 
 /* ── Shared style helpers ── */
 const grid3 = { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '1.25rem' };
@@ -402,15 +403,59 @@ const stepComponents = [StepProduct, StepContext, StepGoals, StepPersonas, StepT
    Questionnaire Page
 ═══════════════════════════════════════════════════════ */
 export default function Questionnaire({ goTo, draft }) {
-  const [step, setStep] = useState(0);
-  const [form, setForm] = useState(draft || {});
-  const total = STEPS.length;
-  const isLast = step === total - 1;
+  const [step,       setStep]       = useState(0);
+  const [form,       setForm]       = useState(draft || {});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMsg,  setSubmitMsg]  = useState('');
+  const total    = STEPS.length;
+  const isLast   = step === total - 1;
   const StepContent = stepComponents[step];
 
-  const handleSave = () => alert('Draft saved. You can return to this later.');
+  const handleSave     = () => alert('Draft saved. You can return to this later.');
   const handleSaveEdit = () => alert('Saved — you can come back and continue editing any time.');
-  const handleSubmit = () => goTo('plan', form);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitMsg('Checking connection…');
+
+    const live = await api.isAvailable();
+
+    if (!live) {
+      // No backend — go straight to demo plan viewer
+      setSubmitting(false);
+      goTo('plan', { draft: form });
+      return;
+    }
+
+    try {
+      const runId  = generateRunId(form.feature || form.product || 'study');
+      const intake = buildIntake(form, runId);
+
+      setSubmitMsg('Creating study run…');
+      await api.createRun(runId, intake);
+
+      setSubmitMsg('Generating research plan…');
+      await api.startPlan(runId);
+
+      // Poll until plan is ready
+      let attempts = 0;
+      while (attempts < 60) {
+        await new Promise(r => setTimeout(r, 3000));
+        const status = await api.getStatus(runId);
+        if (status.status === 'plan_ready') break;
+        if (status.status === 'error') throw new Error(status.error || 'Plan generation failed');
+        attempts++;
+      }
+
+      const plan = await api.getPlan(runId);
+      setSubmitting(false);
+      goTo('plan', { runId, plan, draft: form });
+
+    } catch (err) {
+      setSubmitting(false);
+      alert(`Could not generate plan: ${err.message}`);
+    }
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '780px', margin: '0 auto', width: '100%', padding: '0 1.5rem' }}>
@@ -479,11 +524,14 @@ export default function Questionnaire({ goTo, draft }) {
             }}>← Back</button>
           )}
           {isLast ? (
-            <button onClick={handleSubmit} style={{
-              padding: '0.5rem 1.5rem', background: 'var(--teal)', color: '#fff',
+            <button onClick={handleSubmit} disabled={submitting} style={{
+              padding: '0.5rem 1.5rem', background: submitting ? '#9CA3AF' : 'var(--teal)', color: '#fff',
               border: 'none', borderRadius: 'var(--radius-sm)',
-              fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-            }}>Submit and generate plan →</button>
+              fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500,
+              cursor: submitting ? 'default' : 'pointer',
+            }}>
+              {submitting ? submitMsg || 'Generating…' : 'Submit and generate plan →'}
+            </button>
           ) : (
             <button onClick={() => setStep(s => s + 1)} style={{
               padding: '0.5rem 1.25rem', background: 'var(--blue)', color: '#fff',

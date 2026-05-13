@@ -1,16 +1,19 @@
 {
   "name": "synthetic-user-testing",
   "version": "1.0.0",
-  "description": "Synthetic UX research pipeline using Claude Code",
+  "description": "Synthetic UX research pipeline — pipeline + API server",
   "private": true,
   "scripts": {
-    "parse": "node src/pipeline/parseIntake.js",
-    "plan": "node src/pipeline/generatePlan.js",
-    "run-study": "node src/pipeline/runner.js"
+    "start":     "node src/server/index.js",
+    "parse":     "node src/pipeline/parseIntake.js",
+    "plan":      "node src/pipeline/generatePlan.js",
+    "run-study": "node src/pipeline/evaluator.js"
   },
   "dependencies": {
-    "dotenv": "^17.4.2",
+    "cors":    "^2.8.5",
+    "dotenv":  "^17.4.2",
+    "express": "^4.19.2",
     "mammoth": "^1.8.0",
-    "openai": "^6.37.0"
+    "openai":  "^6.37.0"
   }
 }

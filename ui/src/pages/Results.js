@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tag } from '../components/UI';
+import { api } from '../api';
 
 const SESSIONS = [
   {
@@ -66,8 +67,24 @@ function frictionColor(n) {
   return n >= 7 ? 'var(--red)' : n >= 4 ? 'var(--amber)' : 'var(--teal)';
 }
 
-export default function Results({ goTo }) {
+export default function Results({ goTo, runId }) {
   const [expanded, setExpanded] = useState(null);
+  const [sessions,  setSessions] = useState(SESSIONS);
+  const [isLive,    setIsLive]   = useState(false);
+
+  useEffect(() => {
+    if (!runId) return;
+    api.isAvailable().then(async available => {
+      if (!available) return;
+      try {
+        const data = await api.getSessions(runId);
+        if (data?.sessions?.length) {
+          setSessions(data.sessions);
+          setIsLive(true);
+        }
+      } catch {}
+    });
+  }, [runId]);
 
   const avgFriction = (SESSIONS.reduce((s, p) => s + p.friction.avg, 0) / SESSIONS.length).toFixed(1);
   const noGo        = SESSIONS.filter(s => s.signal === 'no_go').length;
@@ -90,7 +107,13 @@ export default function Results({ goTo }) {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
-            onClick={() => alert('Downloading session data as Excel…')}
+            onClick={() => {
+              if (isLive && runId) {
+                window.open(api.downloadUrl(runId, `${runId}_raw_data.xlsx`), '_blank');
+              } else {
+                alert('Download available after a live study run.');
+              }
+            }}
             style={{
               padding: '0.45rem 1rem', border: '1px solid var(--border-md)',
               borderRadius: 'var(--radius-sm)', background: '#fff',
