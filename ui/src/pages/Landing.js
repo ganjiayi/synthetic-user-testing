@@ -1,109 +1,167 @@
 import React from 'react';
 
-const steps = [
-  { num: '01', title: 'Fill in the research questionnaire', desc: 'Select your product, define goals, choose personas, and describe tasks. Takes about 10 minutes.' },
-  { num: '02', title: 'Check the generated plan', desc: 'Review, edit, and approve the AI-generated study plan before any sessions run.' },
-  { num: '03', title: 'Run research', desc: 'Synthetic agents simulate each persona and return scored findings within minutes.', accent: true },
+const STEPS = [
+  {
+    num: '01',
+    title: 'Fill in the research questionnaire',
+    desc: 'Select your product, define goals, choose personas, and describe tasks. Takes about 10 minutes.',
+    bg: '#7a3dff',
+    color: '#fff',
+  },
+  {
+    num: '02',
+    title: 'Check the generated plan',
+    desc: 'Review, edit, and approve the AI-generated study plan before any sessions run.',
+    bg: '#3b89ff',
+    color: '#fff',
+  },
+  {
+    num: '03',
+    title: 'Run research',
+    desc: 'Synthetic agents simulate each persona and return scored findings within minutes.',
+    bg: '#080808',
+    color: '#fff',
+  },
 ];
 
 export default function Landing({ goTo }) {
   return (
-    <main style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1, minHeight: 'calc(100vh - 57px)' }}>
+    <main style={{
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      flex: 1,
+      minHeight: 'calc(100vh - 56px)',
+    }}>
 
-      {/* ── Left ── */}
+      {/* ── Left — hero ── */}
       <div style={{
-        padding: '5rem 3rem 4rem 3.5rem',
+        padding: '5rem 3.5rem 4rem 4rem',
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        position: 'relative', overflow: 'hidden',
+        borderRight: '1px solid var(--hairline)',
       }}>
-        <div style={{
-          position: 'absolute', top: '-80px', left: '-100px',
-          width: '400px', height: '400px',
-          background: 'radial-gradient(circle, rgba(27,79,216,.07) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
 
-        <div style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '.12em', color: 'var(--blue)', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
+        {/* Eyebrow */}
+        <div style={{
+          fontSize: '12px', fontWeight: 500, letterSpacing: '1.5px',
+          color: 'var(--mute)', textTransform: 'uppercase',
+          marginBottom: '1.5rem',
+        }}>
           Synthetic UX Research Platform
         </div>
 
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: '52px', lineHeight: 1.1, color: 'var(--ink)', marginBottom: '1.25rem', maxWidth: '480px' }}>
-          Ready to see what{' '}
-          <em style={{ fontStyle: 'italic', color: 'var(--blue)' }}>users think?</em>
+        {/* Hero headline */}
+        <h1 style={{
+          fontFamily: 'var(--sans)',
+          fontSize: '52px', fontWeight: 600,
+          lineHeight: 1.05, letterSpacing: '-0.03em',
+          color: 'var(--ink)',
+          marginBottom: '1.5rem', maxWidth: '460px',
+        }}>
+          Ready to see what users think?
         </h1>
 
-        <p style={{ fontSize: '16px', lineHeight: 1.75, color: '#4A5568', maxWidth: '380px', marginBottom: '2.5rem' }}>
+        <p style={{
+          fontSize: '16px', lineHeight: 1.75,
+          color: 'var(--body)', maxWidth: '380px',
+          marginBottom: '2.5rem', fontWeight: 400,
+          letterSpacing: '-0.01em',
+        }}>
           Generate a complete research study plan, run synthetic persona sessions,
           and get actionable findings — without scheduling a single participant.
         </p>
 
-        <div style={{ display: 'flex', gap: '0.875rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {/* Primary CTA — near-black */}
           <button
             onClick={() => goTo('questionnaire')}
             style={{
-              padding: '0.875rem 2rem',
-              background: 'var(--blue)', color: '#fff',
-              border: 'none', borderRadius: 'var(--radius-md)',
+              padding: '0.75rem 1.5rem',
+              background: 'var(--primary)', color: 'var(--on-primary)',
+              border: 'none', borderRadius: 'var(--radius-sm)',
               fontFamily: 'var(--sans)', fontSize: '15px', fontWeight: 500,
-              cursor: 'pointer', transition: 'background .15s',
+              cursor: 'pointer', letterSpacing: '-0.01em',
+              boxShadow: 'var(--shadow-sm)',
             }}
-            onMouseOver={e => e.target.style.background='#1640B0'}
-            onMouseOut={e => e.target.style.background='var(--blue)'}
+            onMouseOver={e => e.currentTarget.style.opacity = '0.88'}
+            onMouseOut={e => e.currentTarget.style.opacity = '1'}
           >
             Get started →
           </button>
+
+          {/* Secondary CTA — outline */}
           <button
             onClick={() => goTo('plan')}
             style={{
-              padding: '0.875rem 1.5rem',
-              background: 'transparent', color: 'var(--ink)',
-              border: '1px solid var(--border-md)', borderRadius: 'var(--radius-md)',
-              fontFamily: 'var(--sans)', fontSize: '15px',
-              cursor: 'pointer', transition: 'background .15s',
+              padding: '0.75rem 1.25rem',
+              background: 'var(--canvas)', color: 'var(--ink)',
+              border: '1px solid var(--hairline)', borderRadius: 'var(--radius-sm)',
+              fontFamily: 'var(--sans)', fontSize: '15px', fontWeight: 400,
+              cursor: 'pointer', letterSpacing: '-0.01em',
             }}
-            onMouseOver={e => e.target.style.background='var(--cream)'}
-            onMouseOut={e => e.target.style.background='transparent'}
+            onMouseOver={e => e.currentTarget.style.background = 'var(--cream)'}
+            onMouseOut={e => e.currentTarget.style.background = 'var(--canvas)'}
           >
             View sample plan
           </button>
         </div>
       </div>
 
-      {/* ── Right ── */}
+      {/* ── Right — how it works ── */}
       <div style={{
         background: 'var(--cream)',
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        padding: '3rem 3rem 3rem 2.5rem', gap: '1rem',
-        position: 'relative', overflow: 'hidden',
+        padding: '3rem',
+        gap: '12px',
       }}>
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 28px, rgba(13,17,23,.022) 28px, rgba(13,17,23,.022) 29px)',
-          pointerEvents: 'none',
-        }} />
 
-        <div style={{ position: 'relative', zIndex: 1, fontSize: '11px', fontWeight: 500, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.25rem' }}>
+        {/* Section eyebrow */}
+        <div style={{
+          fontSize: '12px', fontWeight: 500,
+          color: 'var(--mute)', textTransform: 'uppercase',
+          letterSpacing: '1px', marginBottom: '4px',
+        }}>
           How it works
         </div>
 
-        {steps.map((step, i) => (
-          <div key={i} style={{
-            background: '#fff',
-            borderRadius: 'var(--radius-md)',
-            padding: '1.25rem 1.5rem',
-            border: step.accent ? '1px solid rgba(15,138,110,.25)' : '1px solid var(--border)',
-            position: 'relative', zIndex: 1,
-          }}>
-            <div style={{ fontFamily: 'var(--serif)', fontSize: '32px', color: step.accent ? 'var(--teal-lt)' : 'var(--cream)', lineHeight: 1, marginBottom: '0.5rem' }}>
+        {/* Category cards */}
+        {STEPS.map((step, i) => (
+          <div
+            key={i}
+            style={{
+              background: step.bg,
+              borderRadius: 'var(--radius-md)',
+              padding: '1.5rem',
+              position: 'relative',
+              boxShadow: i === 2 ? 'var(--shadow-md)' : 'none',
+            }}
+          >
+            <div style={{
+              fontSize: '32px', fontWeight: 600,
+              color: 'rgba(255,255,255,0.25)',
+              lineHeight: 1, marginBottom: '0.625rem',
+              letterSpacing: '-0.03em',
+              fontFamily: 'var(--sans)',
+            }}>
               {step.num}
             </div>
-            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.25rem' }}>
+            <div style={{
+              fontSize: '14px', fontWeight: 500,
+              color: step.color, marginBottom: '0.3rem',
+              letterSpacing: '-0.01em',
+            }}>
               {step.title}
             </div>
-            <div style={{ fontSize: '13px', color: '#6B7280', lineHeight: 1.6 }}>
+            <div style={{
+              fontSize: '13px', color: 'rgba(255,255,255,0.72)',
+              lineHeight: 1.6,
+            }}>
               {step.desc}
             </div>
-            <div style={{ position: 'absolute', right: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: step.accent ? 'var(--teal)' : 'var(--blue)', fontSize: '18px' }}>
+            <div style={{
+              position: 'absolute', right: '1.25rem', top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'rgba(255,255,255,0.5)', fontSize: '18px',
+            }}>
               →
             </div>
           </div>

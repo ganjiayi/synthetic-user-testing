@@ -4,10 +4,10 @@ import { Tag } from '../components/UI';
 const SECTIONS = [
   { id: 'summary',         label: 'Executive summary',       dot: '#1B4FD8' },
   { id: 'background',      label: 'Background & goals',      dot: '#534AB7' },
-  { id: 'methodology',     label: 'Methodology',              dot: '#6B7280' },
+  { id: 'methodology',     label: 'Methodology',              dot: 'var(--mute)' },
   { id: 'findings',        label: 'Key findings & insights',  dot: '#C97B2F' },
   { id: 'recommendations', label: 'Recommendations',          dot: '#0F8A6E' },
-  { id: 'appendix',        label: 'Next steps & appendix',   dot: '#9CA3AF' },
+  { id: 'appendix',        label: 'Next steps & appendix',   dot: 'var(--mute-soft)' },
 ];
 
 /* ── Shared helpers ── */
@@ -27,7 +27,7 @@ function TBtn({ label, onClick, primary }) {
 
 function SectionLabel({ text }) {
   return (
-    <div style={{ fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>
+    <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>
       {text}
     </div>
   );
@@ -37,7 +37,7 @@ function SectionLabel({ text }) {
 function Cite({ children }) {
   return (
     <span style={{
-      fontSize: '10px', color: '#9CA3AF', fontFamily: 'monospace',
+      fontSize: '10px', color: 'var(--mute-soft)', fontFamily: 'monospace',
       marginLeft: '0.5rem', whiteSpace: 'nowrap',
     }}>({children})</span>
   );
@@ -50,7 +50,7 @@ function InsufficientData({ message }) {
       padding: '0.75rem 1rem', marginBottom: '0.5rem',
       background: 'var(--cream)', borderRadius: 'var(--radius-sm)',
       border: '1px solid var(--border)',
-      fontSize: '12px', color: '#6B7280', fontStyle: 'italic',
+      fontSize: '12px', color: 'var(--mute)', fontStyle: 'italic',
       display: 'flex', alignItems: 'center', gap: '0.5rem',
     }}>
       <span style={{ opacity: .5 }}>⚠</span>
@@ -86,17 +86,17 @@ function Summary() {
       }}>
         <div>
           <div style={{ fontFamily: 'var(--serif)', fontSize: '18px', color: 'var(--red)', marginBottom: '0.2rem' }}>No Go — return to design</div>
-          <div style={{ fontSize: '12px', color: '#92400E' }}>0 of 5 personas converted · 1 of 5 conditional · average friction 5.2 / 10</div>
+          <div style={{ fontSize: '12px', color: 'var(--amber)' }}>0 of 5 personas converted · 1 of 5 conditional · average friction 5.2 / 10</div>
         </div>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--serif)', fontSize: '28px', color: 'var(--red)', lineHeight: 1 }}>5.2</div>
-          <div style={{ fontSize: '10px', color: '#9CA3AF', marginTop: '2px' }}>avg friction</div>
+          <div style={{ fontSize: '10px', color: 'var(--mute-soft)', marginTop: '2px' }}>avg friction</div>
         </div>
       </div>
 
       {/* 1. Study Aims & Objectives */}
       <Subsection title="Study Aims & Objectives">
-        <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.75, margin: 0 }}>
+        <p style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.75, margin: 0 }}>
           This study was conducted to evaluate whether the revamped <strong>Astro.com.my</strong> homepage clearly communicates the Astro One boxless product proposition to prospective subscribers, and whether the pack selection page enables users to self-serve without contacting support. The study supports a go / no-go decision on the scheduled homepage launch date.
         </p>
       </Subsection>
@@ -111,18 +111,18 @@ function Summary() {
           ].map((s, i) => (
             <div key={i} style={{ padding: '0.875rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', textAlign: 'center' }}>
               <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.15rem' }}>{s.value}</div>
-              <div style={{ fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '.06em' }}>{s.label}</div>
+              <div style={{ fontSize: '10px', color: 'var(--mute-soft)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{s.label}</div>
             </div>
           ))}
         </div>
-        <p style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.65, margin: 0 }}>
+        <p style={{ fontSize: '12px', color: 'var(--mute)', lineHeight: 1.65, margin: 0 }}>
           Five synthetic Malaysian consumer personas — Spontaneous Traditionalist, Progressive Influencer, Trendsetter Explorer, Family-Centric Devotee, and Routine Conservative — were run in parallel sessions. Each persona completed T1 (Homepage orientation) and T2 (Pack selection) and was scored on friction, confusion signals, trust signals, and task completion.
         </p>
       </Subsection>
 
       {/* 3. Key Findings */}
       <Subsection title="Key Findings">
-        <div style={{ fontSize: '11px', color: '#6B7280', marginBottom: '0.875rem' }}>
+        <div style={{ fontSize: '11px', color: 'var(--mute)', marginBottom: '0.875rem' }}>
           Issues are ranked by impact. Successes are marked separately. All findings are cited to the session(s) that produced them.
         </div>
 
@@ -155,7 +155,7 @@ function Summary() {
             background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
           }}>
             <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={f.label} type={f.type} /></div>
-            <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.65, margin: 0 }}>
+            <p style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65, margin: 0 }}>
               {f.text}<Cite>{f.cite}</Cite>
             </p>
           </div>
@@ -181,7 +181,7 @@ function Summary() {
               background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
             }}>
               <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={f.label} type={f.type} /></div>
-              <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.65, margin: 0 }}>
+              <p style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65, margin: 0 }}>
                 {f.text}<Cite>{f.cite}</Cite>
               </p>
             </div>
@@ -193,14 +193,14 @@ function Summary() {
       <Subsection title="Recommendations">
         {/* Severity legend */}
         <div style={{ padding: '0.875rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '1rem' }}>
-          <div style={{ fontSize: '11px', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>Severity rubric</div>
+          <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ink-strong)', marginBottom: '0.5rem' }}>Severity rubric</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
             {[
               { tag: 'P0', type: 'red',   desc: 'Critical — blocks launch. Must be resolved before go-live.' },
               { tag: 'P1', type: 'amber', desc: 'Significant — high user impact. Resolve in the same sprint.' },
               { tag: 'P2', type: 'gray',  desc: 'Improvement — address in the next sprint or backlog.' },
             ].map((r, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '12px', color: '#4A5568' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '12px', color: 'var(--body)' }}>
                 <Tag label={r.tag} type={r.type} />
                 {r.desc}
               </div>
@@ -221,7 +221,7 @@ function Summary() {
             background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
           }}>
             <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={r.p} type={r.type} /></div>
-            <div style={{ fontSize: '12px', color: '#4A5568', lineHeight: 1.6, flex: 1 }}>
+            <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.6, flex: 1 }}>
               {r.text}<Cite>{r.cite}</Cite>
             </div>
           </div>
@@ -231,16 +231,16 @@ function Summary() {
       {/* 5. Overall Satisfaction */}
       <Subsection title="Overall Satisfaction">
         <div style={{ padding: '1rem 1.25rem', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '0.75rem' }}>
-          <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.75, margin: 0 }}>
+          <p style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.75, margin: 0 }}>
             Overall sentiment across the five synthetic user sessions was <strong>neutral to negative</strong>. No persona expressed strong positive sentiment toward the product or the page experience. The most positive signal came from David, who found the pricing competitive and described the experience as manageable — but still would not convert without additional information. <Cite>David · T2</Cite>
           </p>
         </div>
-        <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.75, margin: 0 }}>
+        <p style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.75, margin: 0 }}>
           The primary driver of dissatisfaction was not the product itself but the information architecture — personas who were open to subscribing could not get the information they needed to commit. Two personas exited to seek help elsewhere rather than abandon outright, indicating residual intent that the page failed to convert. <Cite>Hakim · T1, Puan Rohani · T2</Cite>
         </p>
       </Subsection>
 
-      <div style={{ padding: '0.75rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '11px', color: '#6B7280' }}>
+      <div style={{ padding: '0.75rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '11px', color: 'var(--mute)' }}>
         All findings are drawn directly from synthetic user session data. Citations reference the persona and task that produced each signal. See Section 04 for full data and Section 06 for session log references.
       </div>
     </>
@@ -254,7 +254,7 @@ function Background() {
   const F = ({ label, value }) => (
     <div style={{ marginBottom: '1rem' }}>
       <SectionLabel text={label} />
-      <div style={{ fontSize: '13px', color: '#374151', lineHeight: 1.7, padding: '0.625rem 0.875rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(13,17,23,.06)' }}>
+      <div style={{ fontSize: '13px', color: 'var(--ink-strong)', lineHeight: 1.7, padding: '0.625rem 0.875rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(13,17,23,.06)' }}>
         {value}
       </div>
     </div>
@@ -281,7 +281,7 @@ function Methodology() {
       {/* Method */}
       <div style={{ padding: '1rem 1.25rem', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
         <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '0.25rem' }}>Usability Testing — Synthetic Persona Sessions</div>
-        <div style={{ fontSize: '12px', color: '#4A5568', lineHeight: 1.7 }}>
+        <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.7 }}>
           Five synthetic personas from the v4 Malaysian consumer library were run in parallel sessions against two tasks on the Astro.com.my homepage and TV pack page. Sessions were scored turn by turn using the usability testing eval schema. All sessions were completed in a single pass.
         </div>
       </div>
@@ -297,7 +297,7 @@ function Methodology() {
         ].map((s, i) => (
           <div key={i} style={{ padding: '0.875rem', background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--serif)', fontSize: '22px', color: 'var(--ink)', lineHeight: 1 }}>{s.value}</div>
-            <div style={{ fontSize: '10px', color: '#9CA3AF', marginTop: '0.25rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>{s.label}</div>
+            <div style={{ fontSize: '10px', color: 'var(--mute-soft)', marginTop: '0.25rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -307,7 +307,7 @@ function Methodology() {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '1.5rem' }}>
         <thead>
           <tr>{['ID','Task','Success condition','Abandon condition'].map(h => (
-            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
           ))}</tr>
         </thead>
         <tbody>
@@ -318,7 +318,7 @@ function Methodology() {
             <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
               <td style={{ padding: '0.75rem', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace' }}>{id}</td>
               <td style={{ padding: '0.75rem', fontWeight: 500 }}>{name}</td>
-              <td style={{ padding: '0.75rem', color: 'var(--teal)', fontSize: '11px' }}>{succ}</td>
+              <td style={{ padding: '0.75rem', color: 'var(--primary)', fontSize: '11px' }}>{succ}</td>
               <td style={{ padding: '0.75rem', color: 'var(--red)', fontSize: '11px' }}>{aban}</td>
             </tr>
           ))}
@@ -330,7 +330,7 @@ function Methodology() {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
         <thead>
           <tr>{['ID','Hypothesis statement'].map(h => (
-            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
           ))}</tr>
         </thead>
         <tbody>
@@ -340,7 +340,7 @@ function Methodology() {
           ].map(([id, stmt], i) => (
             <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
               <td style={{ padding: '0.75rem', fontWeight: 600, color: 'var(--red)', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{id}</td>
-              <td style={{ padding: '0.75rem', color: '#4A5568', lineHeight: 1.6 }}>{stmt}</td>
+              <td style={{ padding: '0.75rem', color: 'var(--body)', lineHeight: 1.6 }}>{stmt}</td>
             </tr>
           ))}
         </tbody>
@@ -360,7 +360,7 @@ function Findings() {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '1.5rem' }}>
         <thead>
           <tr>{['Hypothesis','Verdict','Evidence'].map(h => (
-            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
           ))}</tr>
         </thead>
         <tbody>
@@ -379,7 +379,7 @@ function Findings() {
             <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
               <td style={{ padding: '0.75rem', fontWeight: 600, fontFamily: 'monospace', color: 'var(--red)' }}>{row.id}</td>
               <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}><Tag label={row.verdict} type={row.type} /></td>
-              <td style={{ padding: '0.75rem', color: '#4A5568', lineHeight: 1.6, fontSize: '12px' }}>
+              <td style={{ padding: '0.75rem', color: 'var(--body)', lineHeight: 1.6, fontSize: '12px' }}>
                 {row.evidence}<Cite>{row.cite}</Cite>
               </td>
             </tr>
@@ -392,7 +392,7 @@ function Findings() {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '0.5rem' }}>
         <thead>
           <tr>{['Persona', 'T1: Homepage', 'T2: TV Pack Page', 'Avg', 'Outcome'].map(h => (
-            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
           ))}</tr>
         </thead>
         <tbody>
@@ -415,7 +415,7 @@ function Findings() {
           ))}
         </tbody>
       </table>
-      <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '1.5rem' }}>
+      <div style={{ fontSize: '11px', color: 'var(--mute-soft)', marginBottom: '1.5rem' }}>
         Friction scored 0–10 per session. Average calculated across T1 and T2 for each persona. Source: 10 sessions across 5 personas.
       </div>
 
@@ -427,9 +427,9 @@ function Findings() {
           { task: 'T2 — TV Pack Page', rate: '0/5', note: '4 of 5 abandoned. 1 of 5 shortlisted (David). 0 converted.', type: 'red' },
         ].map((t, i) => (
           <div key={i} style={{ padding: '1rem', background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '11px', color: '#6B7280', marginBottom: '0.25rem' }}>{t.task}</div>
+            <div style={{ fontSize: '11px', color: 'var(--mute)', marginBottom: '0.25rem' }}>{t.task}</div>
             <div style={{ fontFamily: 'var(--serif)', fontSize: '28px', color: frictionColor(i === 0 ? 4 : 7), lineHeight: 1, marginBottom: '0.25rem' }}>{t.rate}</div>
-            <div style={{ fontSize: '11px', color: '#4A5568' }}>{t.note}</div>
+            <div style={{ fontSize: '11px', color: 'var(--body)' }}>{t.note}</div>
           </div>
         ))}
       </div>
@@ -449,7 +449,7 @@ function Findings() {
           background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
         }}>
           <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={s.severity} type={s.type} /></div>
-          <div style={{ fontSize: '12px', color: '#4A5568', lineHeight: 1.6 }}>
+          <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.6 }}>
             {s.signal}<Cite>{s.cite}</Cite>
           </div>
         </div>
@@ -464,7 +464,7 @@ function Findings() {
           { trigger: 'No pack relevant to solo young viewer. No lite or social-first tier available.', cite: 'Syafiqah · T2' },
           { trigger: 'No local drama or BM content visible on pack page. Could not match any pack to household needs.', cite: 'Hakim · T2' },
         ].map((t, i) => (
-          <div key={i} style={{ display: 'flex', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid rgba(13,17,23,.05)', fontSize: '12px', color: '#4A5568' }}>
+          <div key={i} style={{ display: 'flex', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid rgba(13,17,23,.05)', fontSize: '12px', color: 'var(--body)' }}>
             <span style={{ color: 'var(--red)', fontWeight: 600, flexShrink: 0 }}>✗</span>
             <span>{t.trigger}<Cite>{t.cite}</Cite></span>
           </div>
@@ -488,7 +488,7 @@ function Recommendations() {
 
   return (
     <>
-      <div style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.75, marginBottom: '1.5rem' }}>
+      <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.75, marginBottom: '1.5rem' }}>
         All recommendations below are derived directly from signals recorded in synthetic user sessions. Each item is cited to the session(s) that produced the finding. Severity is rated P0 (critical, blocks launch) to P2 (improvement, address in next sprint).
       </div>
 
@@ -532,10 +532,10 @@ function Recommendations() {
           <div style={{ paddingTop: '1px', flexShrink: 0 }}><Tag label={a.p} type={a.type} /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '0.3rem' }}>{a.title}</div>
-            <div style={{ fontSize: '12px', color: '#4A5568', lineHeight: 1.6 }}>
+            <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.6 }}>
               {a.desc}
             </div>
-            <div style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: 'monospace', marginTop: '0.4rem' }}>Source: {a.cite}</div>
+            <div style={{ fontSize: '11px', color: 'var(--mute-soft)', fontFamily: 'monospace', marginTop: '0.4rem' }}>Source: {a.cite}</div>
           </div>
         </div>
       ))}
@@ -543,7 +543,7 @@ function Recommendations() {
       {/* Generate PPT */}
       <div style={{
         marginTop: '1.75rem', padding: '1.5rem 1.75rem',
-        background: 'linear-gradient(135deg, #1B4FD8 0%, #0A2E8A 100%)',
+        background: 'var(--primary)',
         borderRadius: 'var(--radius-md)',
       }}>
         <div style={{ fontFamily: 'var(--serif)', fontSize: '22px', color: '#fff', marginBottom: '0.5rem' }}>
@@ -566,7 +566,7 @@ function Recommendations() {
               ✓ Deck ready — <span style={{ fontWeight: 500 }}>Astro_Homepage_Research.pptx</span>
             </div>
             <button onClick={() => alert('Downloading…')} style={{
-              padding: '0.75rem 1.25rem', background: '#fff', color: 'var(--blue)',
+              padding: '0.75rem 1.25rem', background: 'var(--on-primary)', color: 'var(--primary)',
               border: 'none', borderRadius: '8px', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
             }}>↓ Download</button>
           </div>
@@ -592,8 +592,8 @@ function Appendix() {
           'Would Epic 24 convert more users if Netflix account and profile portability were explicitly confirmed on the pack page?',
           'What is the actual channel list for Entertainment 12? This was not available in the test materials and was the primary blocker for evaluation.',
         ].map((q, i) => (
-          <div key={i} style={{ display: 'flex', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid rgba(13,17,23,.05)', fontSize: '12px', color: '#4A5568', lineHeight: 1.6 }}>
-            <span style={{ color: '#9CA3AF', flexShrink: 0 }}>{i + 1}.</span>
+          <div key={i} style={{ display: 'flex', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid rgba(13,17,23,.05)', fontSize: '12px', color: 'var(--body)', lineHeight: 1.6 }}>
+            <span style={{ color: 'var(--mute-soft)', flexShrink: 0 }}>{i + 1}.</span>
             {q}
           </div>
         ))}
@@ -609,7 +609,7 @@ function Appendix() {
       {/* Session log references */}
       <SectionLabel text="Session log references" />
       <div style={{ padding: '1rem 1.1rem', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-        <div style={{ fontSize: '12px', color: '#4A5568', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+        <div style={{ fontSize: '12px', color: 'var(--body)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
           All session data is stored in the run folder. Each file below corresponds to one synthetic user session. Friction scores, inner monologues, confusion signals, and turn-by-turn logs are available in full.
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -622,13 +622,13 @@ function Appendix() {
           ].map(([file, desc], i) => (
             <div key={i} style={{ display: 'flex', gap: '1rem', fontSize: '12px', padding: '0.4rem 0', borderBottom: i < 4 ? '1px solid rgba(13,17,23,.05)' : 'none' }}>
               <span style={{ fontFamily: 'monospace', color: 'var(--blue)', flexShrink: 0 }}>{file}</span>
-              <span style={{ color: '#6B7280' }}>{desc}</span>
+              <span style={{ color: 'var(--mute)' }}>{desc}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '11px', color: '#6B7280' }}>
+      <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '11px', color: 'var(--mute)' }}>
         Run ID: 22042026_synthetic-user-test-1 · Model: claude-sonnet-4-6 · Methodology: Usability Testing · 5 personas · 2 tasks · 10 sessions
       </div>
     </>
@@ -664,7 +664,7 @@ export default function Report({ goTo }) {
         background: 'var(--paper)', flexShrink: 0,
       }}>
         <div>
-          <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '0.1rem' }}>Research report · Usability Testing</div>
+          <div style={{ fontSize: '11px', color: 'var(--mute-soft)', marginBottom: '0.1rem' }}>Research report · Usability Testing</div>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: '20px', color: 'var(--ink)' }}>
             Astro.com.my — Homepage Revamp
           </h2>
@@ -691,7 +691,7 @@ export default function Report({ goTo }) {
               border: s.id === active ? '1px solid var(--border)' : '1px solid transparent',
               fontSize: '13px',
               fontWeight: s.id === active ? 500 : 400,
-              color: s.id === active ? 'var(--ink)' : '#6B7280',
+              color: s.id === active ? 'var(--ink)' : 'var(--mute)',
               transition: 'all .12s',
             }}>
               <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
@@ -703,7 +703,7 @@ export default function Report({ goTo }) {
           <div style={{ margin: '1.5rem 0 0', padding: '0.875rem', background: 'var(--red-lt)', borderRadius: '7px', border: '1px solid rgba(196,43,43,.2)' }}>
             <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--red)', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '.07em' }}>Overall signal</div>
             <div style={{ fontFamily: 'var(--serif)', fontSize: '16px', color: 'var(--red)' }}>No Go</div>
-            <div style={{ fontSize: '11px', color: '#92400E', marginTop: '0.2rem' }}>Return to design</div>
+            <div style={{ fontSize: '11px', color: 'var(--amber)', marginTop: '0.2rem' }}>Return to design</div>
           </div>
         </div>
 

@@ -217,7 +217,7 @@ function StepTasks({ form, setForm }) {
               }}
             >
               <div style={{ fontSize: '13px', fontWeight: 500, color: form.methodology === m.id ? 'var(--blue)' : 'var(--ink)', marginBottom: '0.2rem' }}>{m.id}</div>
-              <div style={{ fontSize: '11px', color: '#6B7280', lineHeight: 1.4 }}>{m.desc}</div>
+              <div style={{ fontSize: '11px', color: 'var(--mute)', lineHeight: 1.4 }}>{m.desc}</div>
             </div>
           ))}
         </div>
@@ -229,7 +229,7 @@ function StepTasks({ form, setForm }) {
       <FieldGroup label="Tasks">
         <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr', gap: '8px', marginBottom: '6px' }}>
           {['Task', 'Top task', 'Task instruction for synthetic users'].map(h => (
-            <div key={h} style={{ fontSize: '10px', color: '#9CA3AF', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</div>
+            <div key={h} style={{ fontSize: '10px', color: 'var(--mute-soft)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</div>
           ))}
         </div>
 
@@ -258,7 +258,7 @@ function StepTasks({ form, setForm }) {
             marginTop: '4px', padding: '0.45rem 1rem',
             border: '1px dashed var(--border-md)', borderRadius: 'var(--radius-sm)',
             background: 'transparent', fontFamily: 'var(--sans)',
-            fontSize: '12px', color: '#6B7280', cursor: 'pointer', width: '100%',
+            fontSize: '12px', color: 'var(--mute)', cursor: 'pointer', width: '100%',
           }}
         >+ Add task</button>
       </FieldGroup>
@@ -356,8 +356,8 @@ function StepOutput({ form, setForm }) {
               <div style={{ fontSize: '13px', fontWeight: 500, color: form.modelProvider === m.id ? m.color : 'var(--ink)', marginBottom: '0.2rem' }}>
                 {m.name}
               </div>
-              <div style={{ fontSize: '11px', color: '#6B7280', fontFamily: 'monospace', marginBottom: '0.35rem' }}>{m.model}</div>
-              <div style={{ fontSize: '11px', color: '#9CA3AF', lineHeight: 1.4 }}>{m.note}</div>
+              <div style={{ fontSize: '11px', color: 'var(--mute)', fontFamily: 'monospace', marginBottom: '0.35rem' }}>{m.model}</div>
+              <div style={{ fontSize: '11px', color: 'var(--mute-soft)', lineHeight: 1.4 }}>{m.note}</div>
             </div>
           ))}
         </div>
@@ -482,11 +482,11 @@ export default function Questionnaire({ goTo, draft }) {
             <h2 style={{ fontFamily: 'var(--serif)', fontSize: '26px', color: 'var(--ink)', marginBottom: '0.3rem' }}>
               {STEPS[step].title}
             </h2>
-            <p style={{ fontSize: '13px', color: '#6B7280', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '13px', color: 'var(--mute)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
               {STEPS[step].sub}
             </p>
           </div>
-          <div style={{ fontSize: '12px', color: '#9CA3AF', flexShrink: 0, paddingTop: '0.25rem' }}>
+          <div style={{ fontSize: '12px', color: 'var(--mute-soft)', flexShrink: 0, paddingTop: '0.25rem' }}>
             {step + 1} / {total}
           </div>
         </div>
@@ -508,11 +508,11 @@ export default function Questionnaire({ goTo, draft }) {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={handleSave} style={{
             padding: '0.45rem 0.9rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
-            background: 'transparent', fontFamily: 'var(--sans)', fontSize: '12px', color: '#6B7280', cursor: 'pointer',
+            background: 'transparent', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--mute)', cursor: 'pointer',
           }}>Save draft</button>
           <button onClick={handleSaveEdit} style={{
             padding: '0.45rem 0.9rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
-            background: 'transparent', fontFamily: 'var(--sans)', fontSize: '12px', color: '#6B7280', cursor: 'pointer',
+            background: 'transparent', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--mute)', cursor: 'pointer',
           }}>Save and edit later</button>
         </div>
 
@@ -520,12 +520,12 @@ export default function Questionnaire({ goTo, draft }) {
           {step > 0 && (
             <button onClick={() => setStep(s => s - 1)} style={{
               padding: '0.5rem 1.1rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
-              background: 'transparent', fontFamily: 'var(--sans)', fontSize: '13px', color: '#4A5568', cursor: 'pointer',
+              background: 'transparent', fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--body)', cursor: 'pointer',
             }}>← Back</button>
           )}
           {isLast ? (
             <button onClick={handleSubmit} disabled={submitting} style={{
-              padding: '0.5rem 1.5rem', background: submitting ? '#9CA3AF' : 'var(--teal)', color: '#fff',
+              padding: '0.5rem 1.5rem', background: submitting ? 'var(--mute-soft)' : 'var(--teal)', color: '#fff',
               border: 'none', borderRadius: 'var(--radius-sm)',
               fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500,
               cursor: submitting ? 'default' : 'pointer',
@@ -534,7 +534,7 @@ export default function Questionnaire({ goTo, draft }) {
             </button>
           ) : (
             <button onClick={() => setStep(s => s + 1)} style={{
-              padding: '0.5rem 1.25rem', background: 'var(--blue)', color: '#fff',
+              padding: '0.5rem 1.25rem', background: 'var(--primary)', color: 'var(--on-primary)',
               border: 'none', borderRadius: 'var(--radius-sm)',
               fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
             }}>Continue →</button>

@@ -29,7 +29,7 @@ function SectionContent({ id, editable, goTo }) {
           <div style={{ fontFamily: 'var(--serif)', fontSize: '18px', color: '#fff', marginBottom: '0.25rem' }}>Plan approved — ready to run</div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.75)' }}>5 personas · 3 tasks · High-fidelity artefact · Astro.com.my</div>
         </div>
-        <button style={{ padding: '0.6rem 1.5rem', background: '#fff', color: 'var(--teal)', border: 'none', borderRadius: '7px', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
+        <button style={{ padding: '0.6rem 1.5rem', background: '#fff', color: 'var(--primary)', border: 'none', borderRadius: '7px', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
           onClick={() => goTo('running')}>▶  Run research</button>
       </div>
       <F label="Product lifecycle phase" value="Live — mature / optimising" />
@@ -55,7 +55,7 @@ function SectionContent({ id, editable, goTo }) {
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
       <thead>
         <tr>{['Persona','Context for this study','Priority','Library ref'].map(h => (
-          <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+          <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
         ))}</tr>
       </thead>
       <tbody>
@@ -68,9 +68,9 @@ function SectionContent({ id, editable, goTo }) {
         ].map(([name, ctx, pri, ref], i) => (
           <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
             <td style={{ padding: '0.75rem', fontWeight: 500, color: 'var(--ink)' }}>{name}</td>
-            <td style={{ padding: '0.75rem', color: '#4A5568', lineHeight: 1.5 }}>{ctx}</td>
+            <td style={{ padding: '0.75rem', color: 'var(--body)', lineHeight: 1.5 }}>{ctx}</td>
             <td style={{ padding: '0.75rem' }}><Tag label={pri} type={pri === 'Primary' ? 'blue' : pri === 'Secondary' ? 'gray' : 'amber'} /></td>
-            <td style={{ padding: '0.75rem', color: '#9CA3AF', fontFamily: 'monospace', fontSize: '11px' }}>{ref}</td>
+            <td style={{ padding: '0.75rem', color: 'var(--mute-soft)', fontFamily: 'monospace', fontSize: '11px' }}>{ref}</td>
           </tr>
         ))}
       </tbody>
@@ -84,7 +84,7 @@ function SectionContent({ id, editable, goTo }) {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginTop: '1rem' }}>
         <thead>
           <tr>{['#','Task','Agent instruction','Success','Abandon'].map(h => (
-            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
           ))}</tr>
         </thead>
         <tbody>
@@ -96,8 +96,8 @@ function SectionContent({ id, editable, goTo }) {
             <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
               <td style={{ padding: '0.75rem', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace' }}>{id}</td>
               <td style={{ padding: '0.75rem', fontWeight: 500 }}>{name}</td>
-              <td style={{ padding: '0.75rem', color: '#4A5568', lineHeight: 1.5 }}>{inst}</td>
-              <td style={{ padding: '0.75rem', color: 'var(--teal)', fontSize: '11px' }}>{succ}</td>
+              <td style={{ padding: '0.75rem', color: 'var(--body)', lineHeight: 1.5 }}>{inst}</td>
+              <td style={{ padding: '0.75rem', color: 'var(--primary)', fontSize: '11px' }}>{succ}</td>
               <td style={{ padding: '0.75rem', color: 'var(--red)', fontSize: '11px' }}>{aban}</td>
             </tr>
           ))}
@@ -111,7 +111,7 @@ function SectionContent({ id, editable, goTo }) {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '1.25rem' }}>
         <thead>
           <tr>{['Eval key','What it measures','Signal type'].map(h => (
-            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
           ))}</tr>
         </thead>
         <tbody>
@@ -125,7 +125,7 @@ function SectionContent({ id, editable, goTo }) {
           ].map(([key, desc, type], i) => (
             <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
               <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '11px', fontWeight: 500 }}>{key}</td>
-              <td style={{ padding: '0.75rem', color: '#4A5568' }}>{desc}</td>
+              <td style={{ padding: '0.75rem', color: 'var(--body)' }}>{desc}</td>
               <td style={{ padding: '0.75rem' }}><Tag label={type} type={type === 'binary' ? 'blue' : type === 'numeric' ? 'amber' : type === 'qualitative' ? 'teal' : 'gray'} /></td>
             </tr>
           ))}
@@ -140,7 +140,7 @@ function SectionContent({ id, editable, goTo }) {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '1.5rem' }}>
         <thead>
           <tr>{['#','Hypothesis'].map(h => (
-            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+            <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
           ))}</tr>
         </thead>
         <tbody>
@@ -150,18 +150,18 @@ function SectionContent({ id, editable, goTo }) {
           ].map(([id, stmt], i) => (
             <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
               <td style={{ padding: '0.75rem', fontWeight: 600, color: 'var(--red)', fontFamily: 'monospace' }}>{id}</td>
-              <td style={{ padding: '0.75rem', color: '#4A5568', lineHeight: 1.6 }}>{stmt}</td>
+              <td style={{ padding: '0.75rem', color: 'var(--body)', lineHeight: 1.6 }}>{stmt}</td>
             </tr>
           ))}
         </tbody>
       </table>
       <div style={{ marginBottom: '1rem' }}>
-        <div style={{ fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.5rem' }}>Known UX risks (from product database)</div>
+        <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.5rem' }}>Known UX risks (from product database)</div>
         <div style={{ padding: '0.875rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
           {[['P0','Boxless messaging confusion','red'],['P1','Pack pricing complexity','amber'],['P1','Subdomain fragmentation across 4 domains','amber'],['P2','Content carousel absorbs attention','gray']].map(([sev, desc, type], i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: i < 3 ? '0.5rem' : 0 }}>
               <Tag label={sev} type={type} />
-              <span style={{ fontSize: '12px', color: '#4A5568' }}>{desc}</span>
+              <span style={{ fontSize: '12px', color: 'var(--body)' }}>{desc}</span>
             </div>
           ))}
         </div>
@@ -184,13 +184,13 @@ function SectionContent({ id, editable, goTo }) {
   return (
     <>
       <div style={{ marginBottom: '1rem' }}>
-        <div style={{ fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>Primary audience</div>
+        <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>Primary audience</div>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           <Tag label="Marketing" type="blue" /><Tag label="Leadership" type="blue" />
         </div>
       </div>
       <div style={{ marginBottom: '1rem' }}>
-        <div style={{ fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>Output formats</div>
+        <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>Output formats</div>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           <Tag label="JSON eval log" type="teal" /><Tag label="Markdown summary" type="teal" /><Tag label="DOCX research plan" type="teal" />
         </div>
@@ -221,7 +221,7 @@ export default function PlanViewer({ goTo }) {
         background: 'var(--paper)',
       }}>
         <div>
-          <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '0.1rem' }}>Study plan</div>
+          <div style={{ fontSize: '11px', color: 'var(--mute-soft)', marginBottom: '0.1rem' }}>Study plan</div>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: '20px', color: 'var(--ink)' }}>
             Astro.com.my — Homepage Revamp
           </h2>
@@ -250,7 +250,7 @@ export default function PlanViewer({ goTo }) {
                 border: s.id === activeSection ? '1px solid var(--border)' : '1px solid transparent',
                 fontSize: '13px',
                 fontWeight: s.id === activeSection ? 500 : 400,
-                color: s.id === activeSection ? 'var(--ink)' : '#6B7280',
+                color: s.id === activeSection ? 'var(--ink)' : 'var(--mute)',
                 transition: 'all .12s',
               }}>
               <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
@@ -262,7 +262,7 @@ export default function PlanViewer({ goTo }) {
           {editMode && (
             <div style={{ margin: '1.5rem 0 0', padding: '0.75rem', background: 'var(--blue-lt)', borderRadius: '7px', border: '1px solid rgba(27,79,216,.2)' }}>
               <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--blue)', marginBottom: '0.25rem' }}>Edit mode on</div>
-              <div style={{ fontSize: '11px', color: '#4A5568', lineHeight: 1.5 }}>Click any field to edit. Changes are saved locally.</div>
+              <div style={{ fontSize: '11px', color: 'var(--body)', lineHeight: 1.5 }}>Click any field to edit. Changes are saved locally.</div>
             </div>
           )}
         </div>

@@ -1,49 +1,95 @@
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Tokens ── */
+/* ── Tokens — Webflow-inspired design system ── */
 :root {
-  --ink:        #0D1117;
-  --paper:      #F7F4EF;
-  --cream:      #EDE9E0;
-  --steel:      #2A3142;
-  --blue:       #1B4FD8;
-  --blue-lt:    #EEF3FF;
-  --blue-md:    #BFCFFA;
-  --teal:       #0F8A6E;
-  --teal-lt:    #E6F5F1;
-  --amber:      #C97B2F;
-  --amber-lt:   #FDF3E7;
-  --red:        #C42B2B;
-  --red-lt:     #FEE2E2;
-  --border:     rgba(13,17,23,.1);
-  --border-md:  rgba(13,17,23,.18);
-  --serif:      'DM Serif Display', serif;
-  --sans:       'DM Sans', sans-serif;
-  --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  14px;
+  /* Brand */
+  --primary:       #080808;
+  --on-primary:    #ffffff;
+
+  /* Text scale */
+  --ink:           #080808;
+  --ink-strong:    #222222;
+  --body:          #363636;
+  --body-mid:      #5a5a5a;
+  --mute:          #898989;
+  --mute-soft:     #ababab;
+
+  /* Surfaces */
+  --paper:         #ffffff;
+  --canvas:        #ffffff;
+  --cream:         #f7f7f7;
+  --steel:         #5a5a5a;
+
+  /* Borders */
+  --border:        #d8d8d8;
+  --border-md:     #c4c4c4;
+  --hairline:      #d8d8d8;
+
+  /* Semantic — maps to WF accent palette */
+  --blue:          #146ef5;
+  --blue-lt:       rgba(20,110,245,0.08);
+  --blue-md:       rgba(20,110,245,0.22);
+
+  --teal:          #008a15;
+  --teal-lt:       rgba(0,215,34,0.10);
+
+  --amber:         #b87800;
+  --amber-lt:      rgba(255,174,19,0.12);
+
+  --red:           #ee1d36;
+  --red-lt:        rgba(238,29,54,0.08);
+
+  /* Accent palette */
+  --accent-purple: #7a3dff;
+  --accent-pink:   #ed52cb;
+  --accent-blue:   #3b89ff;
+  --accent-orange: #ff6b00;
+  --accent-green:  #00d722;
+  --accent-yellow: #ffae13;
+  --accent-red:    #ee1d36;
+
+  /* Typography — single family */
+  --serif:         'Inter', system-ui, -apple-system, sans-serif;
+  --sans:          'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Border radius */
+  --radius-xs:     2px;
+  --radius-sm:     4px;
+  --radius-md:     8px;
+  --radius-lg:     12px;
+  --radius-full:   9999px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:  0 3px 7px rgba(0,0,0,0.09), 0 13px 13px rgba(0,0,0,0.08), 0 30px 18px rgba(0,0,0,0.04);
+  --shadow-lg:  0 3px 7px rgba(0,0,0,0.09), 0 13px 13px rgba(0,0,0,0.08), 0 30px 18px rgba(0,0,0,0.04), 0 54px 22px rgba(0,0,0,0.01);
 }
 
 html, body, #root {
   height: 100%;
   font-family: var(--sans);
-  background: var(--paper);
+  background: var(--canvas);
   color: var(--ink);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Headings — Inter 600 replaces serif ── */
+h1, h2, h3 {
+  font-family: var(--sans);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--cream); border-radius: 3px; }
-
-/* ── Typography ── */
-h1, h2, h3 { font-family: var(--serif); }
+::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 3px; }
 
 /* ── Focus ── */
 :focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }

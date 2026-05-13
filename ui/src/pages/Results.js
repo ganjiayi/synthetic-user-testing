@@ -60,7 +60,7 @@ function outcomeTag(o) {
 function gngStyle(sig) {
   if (sig === 'no_go')      return { label: 'No Go',      bg: 'var(--red-lt)',   color: 'var(--red)',   border: 'rgba(196,43,43,.2)'  };
   if (sig === 'conditional') return { label: 'Conditional', bg: 'var(--amber-lt)', color: 'var(--amber)', border: 'rgba(201,123,47,.2)' };
-  return                           { label: 'Go',          bg: 'var(--teal-lt)', color: 'var(--teal)',  border: 'rgba(15,138,110,.2)' };
+  return                           { label: 'Go',          bg: 'var(--teal-lt)', color: 'var(--primary)',  border: 'rgba(15,138,110,.2)' };
 }
 
 function frictionColor(n) {
@@ -100,7 +100,7 @@ export default function Results({ goTo, runId }) {
         background: 'var(--paper)', flexShrink: 0,
       }}>
         <div>
-          <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '0.1rem' }}>Session results</div>
+          <div style={{ fontSize: '11px', color: 'var(--mute-soft)', marginBottom: '0.1rem' }}>Session results</div>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: '20px', color: 'var(--ink)' }}>
             Astro.com.my — Homepage Revamp
           </h2>
@@ -124,7 +124,7 @@ export default function Results({ goTo, runId }) {
             onClick={() => goTo('report')}
             style={{
               padding: '0.45rem 1.25rem', border: 'none',
-              borderRadius: 'var(--radius-sm)', background: 'var(--teal)', color: '#fff',
+              borderRadius: 'var(--radius-sm)', background: 'var(--primary)', color: 'var(--on-primary)',
               fontFamily: 'var(--sans)', fontSize: '12px', fontWeight: 500, cursor: 'pointer',
             }}
           >Analyze data →</button>
@@ -145,13 +145,13 @@ export default function Results({ goTo, runId }) {
               padding: '1.1rem 1.25rem', background: '#fff',
               borderRadius: 'var(--radius-md)', border: '1px solid var(--border)',
             }}>
-              <div style={{ fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>
                 {stat.label}
               </div>
               <div style={{ fontFamily: 'var(--serif)', fontSize: '28px', color: stat.color, lineHeight: 1 }}>
                 {stat.value}
               </div>
-              <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '0.25rem' }}>{stat.sub}</div>
+              <div style={{ fontSize: '11px', color: 'var(--mute-soft)', marginTop: '0.25rem' }}>{stat.sub}</div>
             </div>
           ))}
         </div>
@@ -173,7 +173,7 @@ export default function Results({ goTo, runId }) {
         </div>
 
         {/* Session cards */}
-        <div style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.75rem' }}>
           Persona sessions
         </div>
 
@@ -207,12 +207,12 @@ export default function Results({ goTo, runId }) {
                     }}>{s.id}</div>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)' }}>{s.persona}</div>
-                      <div style={{ fontSize: '11px', color: '#9CA3AF' }}>{s.archetype}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--mute-soft)' }}>{s.archetype}</div>
                     </div>
                   </div>
 
                   {/* Summary snippet */}
-                  <div style={{ fontSize: '12px', color: '#4A5568', lineHeight: 1.5, overflow: 'hidden' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.5, overflow: 'hidden' }}>
                     {s.summary.slice(0, 85)}…
                   </div>
 
@@ -229,7 +229,7 @@ export default function Results({ goTo, runId }) {
                     <div style={{ fontFamily: 'var(--serif)', fontSize: '20px', color: frictionColor(s.friction.avg) }}>
                       {s.friction.avg}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#9CA3AF' }}>avg</div>
+                    <div style={{ fontSize: '10px', color: 'var(--mute-soft)' }}>avg</div>
                   </div>
 
                   {/* Go/No-Go pill */}
@@ -242,7 +242,7 @@ export default function Results({ goTo, runId }) {
                   }}>{gng.label}</div>
 
                   {/* Chevron */}
-                  <div style={{ color: '#9CA3AF', fontSize: '12px', textAlign: 'right', transition: 'transform .15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>›</div>
+                  <div style={{ color: 'var(--mute-soft)', fontSize: '12px', textAlign: 'right', transition: 'transform .15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>›</div>
                 </div>
 
                 {/* Expanded detail */}
@@ -254,20 +254,20 @@ export default function Results({ goTo, runId }) {
                     display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem',
                   }}>
                     <div>
-                      <div style={{ fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>Session summary</div>
-                      <p style={{ fontSize: '12px', color: '#374151', lineHeight: 1.7, margin: 0 }}>{s.summary}</p>
+                      <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>Session summary</div>
+                      <p style={{ fontSize: '12px', color: 'var(--ink-strong)', lineHeight: 1.7, margin: 0 }}>{s.summary}</p>
                     </div>
                     <div>
-                      <div style={{ fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>Primary friction signal</div>
-                      <p style={{ fontSize: '12px', color: '#374151', lineHeight: 1.7, margin: 0, marginBottom: '0.875rem' }}>{s.frictionDetail}</p>
-                      <div style={{ fontSize: '10px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>Friction by task</div>
+                      <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>Primary friction signal</div>
+                      <p style={{ fontSize: '12px', color: 'var(--ink-strong)', lineHeight: 1.7, margin: 0, marginBottom: '0.875rem' }}>{s.frictionDetail}</p>
+                      <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>Friction by task</div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         {Object.entries(s.friction).filter(([k]) => k !== 'avg').map(([task, score]) => (
                           <div key={task} style={{
                             padding: '0.3rem 0.75rem', background: '#fff',
                             borderRadius: '6px', border: '1px solid var(--border)', fontSize: '12px',
                           }}>
-                            <span style={{ color: '#6B7280' }}>{task}:</span>{' '}
+                            <span style={{ color: 'var(--mute)' }}>{task}:</span>{' '}
                             <span style={{ fontWeight: 600, color: frictionColor(score) }}>{score}</span>
                           </div>
                         ))}
@@ -283,7 +283,7 @@ export default function Results({ goTo, runId }) {
         {/* Bottom CTA */}
         <div style={{
           marginTop: '2rem', padding: '1.5rem 2rem',
-          background: 'linear-gradient(135deg, var(--teal) 0%, #0A5C48 100%)',
+          background: 'var(--primary)',
           borderRadius: 'var(--radius-md)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
@@ -298,7 +298,7 @@ export default function Results({ goTo, runId }) {
           <button
             onClick={() => goTo('report')}
             style={{
-              padding: '0.75rem 2rem', background: '#fff', color: 'var(--teal)',
+              padding: '0.75rem 2rem', background: '#fff', color: 'var(--primary)',
               border: 'none', borderRadius: '8px',
               fontFamily: 'var(--sans)', fontSize: '14px', fontWeight: 500, cursor: 'pointer',
             }}

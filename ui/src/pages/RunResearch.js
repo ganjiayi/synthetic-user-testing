@@ -91,7 +91,7 @@ export default function RunResearch({ goTo, runId }) {
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: '36px', color: 'var(--ink)', marginBottom: '0.5rem' }}>
             {done ? 'All sessions complete' : 'Testing in progress…'}
           </h1>
-          <p style={{ fontSize: '14px', color: '#6B7280' }}>
+          <p style={{ fontSize: '14px', color: 'var(--mute)' }}>
             {done
               ? '5 personas · 2 tasks · 10 sessions completed'
               : `5 personas · 2 tasks · ~${secsLeft}s remaining`}
@@ -102,7 +102,7 @@ export default function RunResearch({ goTo, runId }) {
         <div style={{ marginBottom: '1.75rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)' }}>{pct}% complete</span>
-            {!done && <span style={{ fontSize: '13px', color: '#9CA3AF' }}>~{secsLeft}s remaining</span>}
+            {!done && <span style={{ fontSize: '13px', color: 'var(--mute-soft)' }}>~{secsLeft}s remaining</span>}
           </div>
           <div style={{ height: '8px', background: 'var(--cream)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border)' }}>
             <div style={{
@@ -131,7 +131,7 @@ export default function RunResearch({ goTo, runId }) {
               <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--blue)' }}>
                 {current.persona} · {current.task}
               </div>
-              <div style={{ fontSize: '11px', color: '#4A5568', marginTop: '1px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--body)', marginTop: '1px' }}>
                 {current.archetype}
               </div>
             </div>
@@ -147,9 +147,9 @@ export default function RunResearch({ goTo, runId }) {
               background: '#fff', borderRadius: 'var(--radius-sm)',
               border: '1px solid var(--border)', fontSize: '12px',
             }}>
-              <span style={{ color: 'var(--teal)', fontWeight: 600, fontSize: '13px' }}>✓</span>
-              <span style={{ color: '#374151', flex: 1 }}>{s.persona} — {s.task}</span>
-              <span style={{ color: '#9CA3AF', fontSize: '11px' }}>{s.archetype}</span>
+              <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px' }}>✓</span>
+              <span style={{ color: 'var(--ink-strong)', flex: 1 }}>{s.persona} — {s.task}</span>
+              <span style={{ color: 'var(--mute-soft)', fontSize: '11px' }}>{s.archetype}</span>
             </div>
           ))}
         </div>
@@ -162,10 +162,10 @@ export default function RunResearch({ goTo, runId }) {
               background: 'var(--teal-lt)', borderRadius: 'var(--radius-md)',
               border: '1px solid rgba(15,138,110,.25)',
             }}>
-              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--teal)', marginBottom: '0.25rem' }}>
+              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--primary)', marginBottom: '0.25rem' }}>
                 Sessions complete — results ready
               </div>
-              <div style={{ fontSize: '12px', color: '#065F46', lineHeight: 1.6 }}>
+              <div style={{ fontSize: '12px', color: 'var(--primary)', lineHeight: 1.6 }}>
                 Friction scores, session logs, and eval matrix generated across all 5 personas.
               </div>
             </div>
@@ -174,7 +174,7 @@ export default function RunResearch({ goTo, runId }) {
                 onClick={() => goTo('results')}
                 style={{
                   padding: '0.875rem 2.5rem',
-                  background: 'var(--teal)', color: '#fff',
+                  background: 'var(--primary)', color: 'var(--on-primary)',
                   border: 'none', borderRadius: 'var(--radius-md)',
                   fontFamily: 'var(--sans)', fontSize: '15px', fontWeight: 500,
                   cursor: 'pointer',
