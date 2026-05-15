@@ -3,6 +3,7 @@ import React from 'react';
 const labels = {
   landing:       'Home',
   questionnaire: 'Questionnaire',
+  review:        'Review',
   plan:          'Study plan',
   running:       'Running sessions',
   results:       'Session results',

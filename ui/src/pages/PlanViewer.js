@@ -30,7 +30,7 @@ function SectionContent({ id, editable, goTo }) {
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.75)' }}>5 personas · 3 tasks · High-fidelity artefact · Astro.com.my</div>
         </div>
         <button style={{ padding: '0.6rem 1.5rem', background: '#fff', color: 'var(--primary)', border: 'none', borderRadius: '7px', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
-          onClick={() => goTo('running', { runId })}>▶  Run research</button>
+          onClick={handleRunClick}>▶  Run research</button>
       </div>
       <F label="Product lifecycle phase" value="Live — mature / optimising" />
       <F label="Design thinking phase" value="Test — validating with real designs" />
@@ -265,15 +265,82 @@ const SECTION_MAP = {
   output:  'output_handoff',
 };
 
+/* ── Run confirmation modal ── */
+function RunConfirmModal({ plan, runId, onConfirm, onCancel }) {
+  const personas = plan?.user_segments?.segments?.length
+    || plan?.personas?.length
+    || 5;
+  const tasks    = plan?.test_scenarios?.scenarios?.length
+    || plan?.tasks?.length
+    || 2;
+  const model    = plan?._meta?.model || 'gpt-4o';
+  const estMins  = Math.ceil((personas * tasks * 45) / 60);
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'rgba(8,8,8,0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: 'var(--canvas)', borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--hairline)',
+        padding: '2rem', width: '420px',
+        boxShadow: '0 24px 48px rgba(0,0,0,0.18)',
+      }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--ink)', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
+          Ready to run research?
+        </h3>
+        <p style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.7, marginBottom: '1.5rem' }}>
+          This will start synthetic user sessions. Once launched it cannot be paused.
+        </p>
+
+        <div style={{ background: 'var(--cream)', borderRadius: 'var(--radius-sm)', padding: '1rem', marginBottom: '1.5rem' }}>
+          {[
+            { label: 'Personas',       value: `${personas} synthetic users` },
+            { label: 'Tasks',          value: `${tasks} tasks per persona` },
+            { label: 'Total sessions', value: `${personas * tasks} sessions` },
+            { label: 'Model',          value: model },
+            { label: 'Est. duration',  value: `~${estMins} minutes` },
+          ].map((row, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: i < 4 ? '0.5rem' : 0 }}>
+              <span style={{ color: 'var(--mute)' }}>{row.label}</span>
+              <span style={{ color: 'var(--ink)', fontWeight: 500 }}>{row.value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+          <button onClick={onCancel} style={{
+            padding: '0.6rem 1.25rem', border: '1px solid var(--hairline)',
+            borderRadius: 'var(--radius-sm)', background: 'var(--canvas)',
+            fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--body)', cursor: 'pointer',
+          }}>Cancel</button>
+          <button onClick={onConfirm} style={{
+            padding: '0.6rem 1.5rem', border: 'none',
+            borderRadius: 'var(--radius-sm)', background: 'var(--primary)', color: 'var(--on-primary)',
+            fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+          }}>▶ Start research</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PlanViewer({ goTo, runId, plan }) {
   const [activeSection, setActiveSection] = useState('ctx');
-  const [editMode, setEditMode] = useState(false);
+  const [editMode,      setEditMode]      = useState(false);
+  const [showConfirm,   setShowConfirm]   = useState(false);
 
   const isLive    = !!plan;
   const current   = PLAN_SECTIONS.find(s => s.id === activeSection);
   const studyName = plan?._meta?.feature || plan?._meta?.product
     ? `${plan._meta.product || ''}${plan._meta.feature ? ' — ' + plan._meta.feature : ''}`
     : 'Astro.com.my — Homepage Revamp';
+
+  const handleRunClick = () => setShowConfirm(true);
+  const handleConfirm  = () => { setShowConfirm(false); goTo('running', { runId }); };
+  const handleCancel   = () => setShowConfirm(false);
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -296,7 +363,7 @@ export default function PlanViewer({ goTo, runId, plan }) {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {!isLive && <TBtn label={editMode ? '✎ Editing…' : '✎ Edit'} onClick={() => setEditMode(e => !e)} />}
           <TBtn label="↓ Download DOCX" onClick={() => alert('Downloading research plan as DOCX…')} />
-          <TBtn label="▶  Run research" onClick={() => goTo('running', { runId })} primary />
+          <TBtn label="▶  Run research" onClick={handleRunClick} primary />
         </div>
       </div>
 
@@ -359,6 +426,15 @@ export default function PlanViewer({ goTo, runId, plan }) {
           }
         </div>
       </div>
+
+      {showConfirm && (
+        <RunConfirmModal
+          plan={plan}
+          runId={runId}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
+      )}
     </div>
   );
 }
