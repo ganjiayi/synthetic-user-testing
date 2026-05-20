@@ -28,9 +28,11 @@ Respond with a single valid JSON object. No preamble, no markdown fences, no exp
 ### study_context
 
 - `study_context.product`                          ← `q5_product_context.product_name` or `q1_product`
+- `study_context.product_description`              ← `q5_product_context.product_desc`
 - `study_context.lifecycle`                        ← `q2_context.lifecycle`
 - `study_context.design_phase`                     ← `q2_context.design_phase`
 - `study_context.methodology`                      ← `q6_methodology.methodology`
+- `study_context.urgency`                          ← `meta.urgency` (e.g. "Immediate", "Within 48 hours", "End of sprint")
 - `study_context.artefact_config.fidelity_level`   ← `q2_context.fidelity`
 - `study_context.artefact_config.artefact_notes`   ← `q2_context.artefact_notes`
 - `study_context.artefact_config.artefact_link`    ← first entry in `q2_context.test_materials.urls` (null if empty)
@@ -44,6 +46,7 @@ Respond with a single valid JSON object. No preamble, no markdown fences, no exp
 ### research_goals
 
 - `research_goals.product_name`          ← `q5_product_context.product_name` or `q1_product`
+- `research_goals.product_description`   ← `q5_product_context.product_desc`
 - `research_goals.feature_under_test`    ← `q5_product_context.feature_under_test` or `q3_goals.feature`
 - `research_goals.why_this_why_now`      ← `q5_product_context.why_this_why_now` or `q3_goals.why_now`
 - `research_goals.insight_type`          ← `q3_goals.insight_type`
@@ -140,7 +143,7 @@ Always add: `"custom_keys": []`
 
 Derive this section by reasoning from the intake — do not copy fields. Write clear orchestration instructions:
 
-- `method.orchestration`: 2–3 sentences on how sessions run given the methodology, fidelity level, and available materials.
+- `method.orchestration`: 2–3 sentences on how sessions run given the methodology, fidelity level, available materials, and urgency (if "Immediate" or "Within 24 hours", note that speed is a constraint and session depth may be traded for throughput).
 - `method.persona_loading`: Instruction for how to load personas, referencing the `persona_library_ref` values from `user_segments`.
 - `method.session_flow`: Ordered array of strings describing the pipeline steps for this study. Derive from artefact type, methodology, and active personas. Example steps:
   - "Validate artefact and confirm materials are accessible"

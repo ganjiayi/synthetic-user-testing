@@ -1,3 +1,5 @@
+import { PRODUCTS } from './data/questionnaire';
+
 const BASE = process.env.REACT_APP_API_URL || '';
 
 async function req(method, path, body) {
@@ -104,15 +106,19 @@ export function generateRunId(studyName) {
 }
 
 export function buildIntake(form, runId) {
-  const now = new Date();
+  const now         = new Date();
+  const productMeta = PRODUCTS.find(p => p.id === form.product) || {};
+  const productName = productMeta.name || form.product || '';
+
   return {
     meta: {
       run_id:          runId,
       researcher_name: '',
       date_submitted:  `${String(now.getDate()).padStart(2,'0')}${String(now.getMonth()+1).padStart(2,'0')}${now.getFullYear()}`,
       schema_version:  '1.0',
+      urgency:         form.urgency || '',
     },
-    q1_product:   form.product || '',
+    q1_product:   productName,
     q2_context: {
       lifecycle:       form.lifecycle || '',
       design_phase:    form.designPhase || '',
@@ -146,7 +152,9 @@ export function buildIntake(form, runId) {
       priority_segment: form.prioritySegment || '',
     },
     q5_product_context: {
-      product_name:      form.product || '',
+      product_name:      productName,
+      product_id:        form.product || '',
+      product_desc:      productMeta.desc || '',
       feature_under_test:form.feature || '',
       why_this_why_now:  form.whyNow || '',
     },

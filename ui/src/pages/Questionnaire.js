@@ -4,10 +4,9 @@ import { SelectCard, PersonaCard, Pill, AutofillNotice, FieldGroup, TextInput, U
 import { api, generateRunId, buildIntake } from '../api';
 
 /* ── Shared style helpers ── */
-const grid3 = { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '1.25rem' };
-const grid2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '1.25rem' };
+const grid3   = { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '1.25rem' };
+const grid2   = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '1.25rem' };
 const pillRow = { display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '1.1rem' };
-const taskGrid = { display: 'grid', gridTemplateColumns: '36px 1fr 1fr 1fr', gap: '8px', marginBottom: '8px' };
 
 /* ══════════════════════════════════════════════════════
    Step content components
@@ -179,6 +178,8 @@ function StepPersonas({ form, setForm }) {
 }
 
 function StepTasks({ form, setForm }) {
+  const [showExamples, setShowExamples] = React.useState(false);
+
   const methodologies = [
     { id: 'Usability Testing',    desc: 'Task-based — where do users get stuck or abandon?' },
     { id: 'UX Testing',           desc: 'Holistic — does the design communicate its intent?' },
@@ -213,6 +214,57 @@ function StepTasks({ form, setForm }) {
     },
   };
 
+  const SAMPLE_TASKS = {
+    'Usability Testing': [
+      { name: 'Find pricing',          instruction: 'You want to subscribe to a streaming plan. Find out how much it costs per month.' },
+      { name: 'Compare plans',         instruction: 'You are deciding between two plans. Find what is different between them.' },
+      { name: 'Subscribe',             instruction: 'You have decided on a plan. Find the subscribe button and go through the first step.' },
+      { name: 'Add-on discovery',      instruction: 'You want to add Netflix to your plan. Find out how and what it costs.' },
+      { name: 'Find support',          instruction: 'Your device is not working. Find out how to contact customer support.' },
+      { name: 'Account settings',      instruction: 'Navigate to where you would update your billing details.' },
+      { name: 'Discover content',      instruction: 'Find out what sports content is available and whether a specific match is included.' },
+      { name: 'Cancel or pause',       instruction: 'You want to pause your subscription temporarily. Find out if this is possible and how.' },
+      { name: 'Check contract status', instruction: 'Find out when your current contract ends and what happens after.' },
+      { name: 'Upgrade plan',          instruction: 'Your household has grown. Find the right plan upgrade and start the process.' },
+    ],
+    'UX Testing': [
+      { name: 'Homepage interpretation', instruction: 'Visit the homepage and tell me in your own words what this product is and who it is for.' },
+      { name: 'Value proposition',       instruction: 'What would you say this product does differently from what you currently use?' },
+      { name: 'Navigation intent',       instruction: 'Where would you go first if you wanted to find entertainment for your children?' },
+      { name: 'Feature recognition',     instruction: 'Look at this screen, then tell me what the main feature being promoted is.' },
+      { name: 'Trust assessment',        instruction: 'After browsing the page, do you feel confident this service is reliable? Walk me through your thinking.' },
+      { name: 'Onboarding flow',         instruction: 'Start the sign-up process and tell me what you understand at each step.' },
+      { name: 'Label comprehension',     instruction: 'Without clicking anything, tell me what you think the product name means.' },
+      { name: 'Content hierarchy',       instruction: 'What on this page is most important according to the design? Does that match what matters to you?' },
+      { name: 'Error recovery',          instruction: 'You made an error on this form. Tell me what you would do next.' },
+      { name: 'Call to action',          instruction: 'What is this page asking you to do? Is it clear enough that you would do it?' },
+    ],
+    'Concept Testing': [
+      { name: 'First impression',       instruction: 'Look at this concept for 10 seconds. Without reading carefully, what is it about?' },
+      { name: 'Value clarity',          instruction: 'What problem does this concept solve? Who do you think it is designed for?' },
+      { name: 'Competitive framing',    instruction: 'How is this different from your current subscription? Would it replace it?' },
+      { name: 'Willingness to try',     instruction: 'Based on what you see, would you try this? What would make you more likely to?' },
+      { name: 'Feature appeal',         instruction: 'Which feature shown here is most relevant to your life, and why?' },
+      { name: 'Concept in one line',    instruction: 'Describe this product to a friend in one sentence. What would you say?' },
+      { name: 'Price expectation',      instruction: 'Before we reveal the price, what would you expect to pay for this?' },
+      { name: 'Scepticism check',       instruction: 'Is there anything about this concept that makes you hesitant or sceptical?' },
+      { name: 'Audience fit',           instruction: 'Who do you think this was designed for? Are you that person?' },
+      { name: 'Next step intent',       instruction: 'If this were available today, what would you do next?' },
+    ],
+    'Desirability Testing': [
+      { name: 'Initial reaction',       instruction: 'Look at this design. What is the first feeling or word that comes to mind?' },
+      { name: 'Brand impression',       instruction: 'What kind of brand does this design feel like it belongs to?' },
+      { name: 'Aesthetic preference',   instruction: 'Is this something you would want on your phone by choice? Why or why not?' },
+      { name: 'Tone alignment',         instruction: 'Does the tone feel right for a family streaming service? Describe what feels right or wrong.' },
+      { name: 'Perceived tier',         instruction: 'Does this feel premium, mid-range, or budget? What gives you that impression?' },
+      { name: 'Visual language',        instruction: 'Without reading the words, what does the colour and font choice communicate to you?' },
+      { name: 'Trust through design',   instruction: 'Does this design make you trust the brand more or less? Point to what influenced that.' },
+      { name: 'Brand personality',      instruction: 'If this design were a person, how would you describe their personality?' },
+      { name: 'Emotional resonance',    instruction: 'Does this design make you feel anything? Describe the feeling.' },
+      { name: 'Recommendation intent',  instruction: 'Would you send a screenshot of this to a friend? What would you say about it?' },
+    ],
+  };
+
   const tasks = form.tasks || [
     { name: '', instruction: '' },
     { name: '', instruction: '' },
@@ -234,7 +286,7 @@ function StepTasks({ form, setForm }) {
           {methodologies.map(m => (
             <div
               key={m.id}
-              onClick={() => setForm(f => ({ ...f, methodology: m.id }))}
+              onClick={() => { setForm(f => ({ ...f, methodology: m.id })); setShowExamples(false); }}
               style={{
                 padding: '0.875rem 1rem',
                 border: form.methodology === m.id ? '2px solid var(--blue)' : '1px solid var(--border)',
@@ -294,12 +346,45 @@ function StepTasks({ form, setForm }) {
               </div>
 
               {/* Friction signals */}
-              <div>
+              <div style={{ marginBottom: '0.75rem' }}>
                 <div style={{ fontSize: '10px', color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '0.35rem' }}>Friction signals watched</div>
                 <div style={{ fontSize: '11px', color: 'var(--body)', lineHeight: 1.6 }}>
                   {m.frictionSignals.join(' · ')}
                 </div>
               </div>
+
+              {/* Example tasks toggle */}
+              <button
+                onClick={() => setShowExamples(v => !v)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.3rem',
+                  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                  fontSize: '11px', color: 'var(--blue)', fontFamily: 'var(--sans)',
+                  fontWeight: 500,
+                }}
+              >
+                <span style={{ fontSize: '10px' }}>{showExamples ? '▾' : '▸'}</span>
+                {showExamples ? 'Hide example tasks' : 'See 10 example tasks for this methodology'}
+              </button>
+
+              {showExamples && SAMPLE_TASKS[form.methodology] && (
+                <div style={{ marginTop: '0.75rem', borderTop: '1px solid var(--hairline)', paddingTop: '0.75rem' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '0.5rem' }}>
+                    Example tasks — {form.methodology}
+                  </div>
+                  {SAMPLE_TASKS[form.methodology].map((t, i) => (
+                    <div key={i} style={{
+                      display: 'grid', gridTemplateColumns: '28px 130px 1fr', gap: '0.5rem',
+                      alignItems: 'start', paddingBottom: '0.5rem', marginBottom: '0.5rem',
+                      borderBottom: i < 9 ? '1px solid var(--hairline)' : 'none',
+                    }}>
+                      <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace', paddingTop: '1px' }}>T{i + 1}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ink)', lineHeight: 1.5 }}>{t.name}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--mute)', lineHeight: 1.5 }}>{t.instruction}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })()}
