@@ -8,7 +8,28 @@ const labels = {
   running:       'Running sessions',
   results:       'Session results',
   report:        'Research report',
+  history:       'Research history',
+  runDetail:     'Study detail',
 };
+
+function NavLink({ label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: 'none', border: 'none', cursor: 'pointer',
+        fontFamily: 'var(--sans)', fontSize: '13px',
+        color: active ? 'var(--ink)' : 'var(--mute)',
+        fontWeight: active ? 500 : 400,
+        padding: '0.25rem 0',
+        borderBottom: active ? '1.5px solid var(--ink)' : '1.5px solid transparent',
+        letterSpacing: '-0.01em',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
 
 export default function Nav({ page, goTo }) {
   return (
@@ -21,20 +42,28 @@ export default function Nav({ page, goTo }) {
       position: 'sticky', top: 0, zIndex: 100,
     }}>
       {/* Logo */}
-      <div
-        onClick={() => goTo('landing')}
-        style={{
-          fontFamily: 'var(--sans)', fontSize: '16px', fontWeight: 600,
-          color: 'var(--ink)', cursor: 'pointer', userSelect: 'none',
-          letterSpacing: '-0.02em',
-        }}
-      >
-        Synth<span style={{ color: 'var(--mute)' }}>UX</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <div
+          onClick={() => goTo('landing')}
+          style={{
+            fontFamily: 'var(--sans)', fontSize: '16px', fontWeight: 600,
+            color: 'var(--ink)', cursor: 'pointer', userSelect: 'none',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          Synth<span style={{ color: 'var(--mute)' }}>UX</span>
+        </div>
+
+        <NavLink
+          label="Research history"
+          active={page === 'history' || page === 'runDetail'}
+          onClick={() => goTo('history')}
+        />
       </div>
 
       {/* Right */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-        {page !== 'landing' && (
+        {page !== 'landing' && page !== 'history' && page !== 'runDetail' && (
           <span style={{ fontSize: '13px', color: 'var(--mute)', fontWeight: 400 }}>
             {labels[page]}
           </span>
@@ -50,7 +79,7 @@ export default function Nav({ page, goTo }) {
               cursor: 'pointer', letterSpacing: '-0.01em',
             }}
           >
-            Get started
+            New study
           </button>
         )}
       </div>

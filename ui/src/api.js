@@ -23,6 +23,16 @@ async function req(method, path, body) {
 
 export const api = {
 
+  /* List all research runs */
+  listRuns() {
+    return req('GET', '/api/runs');
+  },
+
+  /* Get full detail for a single run (intake, plan, sessions, materials) */
+  getRun(runId) {
+    return req('GET', `/api/runs/${runId}`);
+  },
+
   /* Check if the backend is reachable */
   async isAvailable() {
     if (!BASE) return false;
@@ -94,6 +104,14 @@ export const api = {
 
 };
 
+const PERSONA_MAP = {
+  ST: { name: 'Hakim',       ref: 'v4_spontaneous_traditionalist', priority: 'primary',   context: 'Spontaneous Traditionalist — mobile-first, Sooka user, price-sensitive, impulsive.' },
+  PI: { name: 'Syafiqah',    ref: 'v4_progressive_influencer',     priority: 'secondary',  context: 'Progressive Influencer — urban professional, social-media driven.' },
+  TE: { name: 'Marcus',      ref: 'v4_trendsetter_explorer',       priority: 'secondary',  context: 'Trendsetter Explorer — high tech literacy, benchmarks against Netflix.' },
+  FC: { name: 'Puan Rohani', ref: 'v4_family_centric_devotee',     priority: 'primary',   context: 'Family-Centric Devotee — low tech literacy, family-first, long-term Astro customer.' },
+  RC: { name: 'David',       ref: 'v4_routine_conservative',       priority: 'secondary',  context: 'Routine Conservative — habitual, risk-averse, long-term Astro subscriber.' },
+};
+
 /* Generate a run ID from date + study name */
 export function generateRunId(studyName) {
   const now  = new Date();
@@ -140,6 +158,16 @@ export function buildIntake(form, runId) {
     q4_personas: {
       selected:          form.personas || [],
       priority_segment:  form.prioritySegment || '',
+    },
+    q7_personas: {
+      segments: Object.entries(PERSONA_MAP).map(([code, p]) => ({
+        name:                p.name,
+        context:             p.context,
+        priority:            p.priority,
+        persona_library_ref: p.ref,
+        include:             (form.personas || []).includes(code),
+      })),
+      priority_segment: form.prioritySegment || '',
     },
     q5_product_context: {
       product_name:      form.product || '',
