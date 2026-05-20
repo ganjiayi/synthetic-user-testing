@@ -32,7 +32,6 @@ Respond with a single valid JSON object. No preamble, no markdown fences, no exp
 - `study_context.lifecycle`                        ← `q2_context.lifecycle`
 - `study_context.design_phase`                     ← `q2_context.design_phase`
 - `study_context.methodology`                      ← `q6_methodology.methodology`
-- `study_context.urgency`                          ← `meta.urgency` (e.g. "Immediate", "Within 48 hours", "End of sprint")
 - `study_context.artefact_config.fidelity_level`   ← `q2_context.fidelity`
 - `study_context.artefact_config.artefact_notes`   ← `q2_context.artefact_notes`
 - `study_context.artefact_config.artefact_link`    ← first entry in `q2_context.test_materials.urls` (null if empty)
@@ -143,7 +142,7 @@ Always add: `"custom_keys": []`
 
 Derive this section by reasoning from the intake — do not copy fields. Write clear orchestration instructions:
 
-- `method.orchestration`: 2–3 sentences on how sessions run given the methodology, fidelity level, available materials, and urgency (if "Immediate" or "Within 24 hours", note that speed is a constraint and session depth may be traded for throughput).
+- `method.orchestration`: 2–3 sentences on how sessions run given the methodology, fidelity level, and available materials.
 - `method.persona_loading`: Instruction for how to load personas, referencing the `persona_library_ref` values from `user_segments`.
 - `method.session_flow`: Ordered array of strings describing the pipeline steps for this study. Derive from artefact type, methodology, and active personas. Example steps:
   - "Validate artefact and confirm materials are accessible"

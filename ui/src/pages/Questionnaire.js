@@ -13,7 +13,6 @@ const pillRow = { display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '
 ═══════════════════════════════════════════════════════ */
 
 function StepProduct({ form, setForm }) {
-  const urgencyOpts = ['Immediate','Within 24 hours','Within 48 hours','End of sprint'];
   return (
     <>
       <div style={grid3}>
@@ -27,14 +26,6 @@ function StepProduct({ form, setForm }) {
           Astro.com.my loaded — product description, 7 known pain points, and agent instructions auto-populated. Section 6B pre-filled from the product database.
         </AutofillNotice>
       )}
-      <FieldGroup label="Urgency">
-        <div style={pillRow}>
-          {urgencyOpts.map(o => (
-            <Pill key={o} label={o} selected={form.urgency === o}
-              onClick={() => setForm(f => ({ ...f, urgency: o }))} />
-          ))}
-        </div>
-      </FieldGroup>
     </>
   );
 }

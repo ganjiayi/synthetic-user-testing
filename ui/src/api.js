@@ -116,7 +116,6 @@ export function buildIntake(form, runId) {
       researcher_name: '',
       date_submitted:  `${String(now.getDate()).padStart(2,'0')}${String(now.getMonth()+1).padStart(2,'0')}${now.getFullYear()}`,
       schema_version:  '1.0',
-      urgency:         form.urgency || '',
     },
     q1_product:   productName,
     q2_context: {
