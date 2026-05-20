@@ -73,7 +73,7 @@ export default function Landing({ goTo }) {
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           {/* Primary CTA — near-black */}
           <button
-            onClick={() => goTo('questionnaire')}
+            onClick={() => goTo('pin')}
             style={{
               padding: '0.75rem 1.5rem',
               background: 'var(--primary)', color: 'var(--on-primary)',
@@ -85,7 +85,7 @@ export default function Landing({ goTo }) {
             onMouseOver={e => e.currentTarget.style.opacity = '0.88'}
             onMouseOut={e => e.currentTarget.style.opacity = '1'}
           >
-            Get started →
+            Login →
           </button>
 
           {/* Secondary CTA — outline */}

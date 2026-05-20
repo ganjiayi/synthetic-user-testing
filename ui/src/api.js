@@ -84,7 +84,7 @@ export const api = {
 
 };
 
-const PERSONA_MAP = {
+export const PERSONA_MAP = {
   ST: { name: 'Hakim',       ref: 'v4_spontaneous_traditionalist', priority: 'primary',   context: 'Spontaneous Traditionalist — mobile-first, Sooka user, price-sensitive, impulsive.' },
   PI: { name: 'Syafiqah',    ref: 'v4_progressive_influencer',     priority: 'secondary',  context: 'Progressive Influencer — urban professional, social-media driven.' },
   TE: { name: 'Marcus',      ref: 'v4_trendsetter_explorer',       priority: 'secondary',  context: 'Trendsetter Explorer — high tech literacy, benchmarks against Netflix.' },

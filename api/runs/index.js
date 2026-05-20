@@ -18,6 +18,7 @@ module.exports = async (req, res) => {
       status:     run.status,
       product:    run.intake?.q5_product_context?.product_name || run.intake?.q1_product || '—',
       primary_rq: run.intake?.q3_goals?.primary_rq || '—',
+      personas:   run.intake?.q4_personas?.selected || [],
     }));
 
     return res.json({ runs });

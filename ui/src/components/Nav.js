@@ -1,7 +1,8 @@
 import React from 'react';
 
 const labels = {
-  landing:       'Home',
+  pin:           'Login',
+  dashboard:     'Dashboard',
   questionnaire: 'Questionnaire',
   review:        'Review',
   plan:          'Study plan',
@@ -11,6 +12,8 @@ const labels = {
   history:       'Research history',
   runDetail:     'Study detail',
 };
+
+const AUTH_PAGES = new Set(['dashboard', 'questionnaire', 'review', 'plan', 'running', 'results', 'report', 'history', 'runDetail']);
 
 function NavLink({ label, active, onClick }) {
   return (
@@ -31,7 +34,9 @@ function NavLink({ label, active, onClick }) {
   );
 }
 
-export default function Nav({ page, goTo }) {
+export default function Nav({ page, goTo, isAuth, onLogout }) {
+  const showHistoryLink = AUTH_PAGES.has(page) && page !== 'pin';
+
   return (
     <nav style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -41,10 +46,10 @@ export default function Nav({ page, goTo }) {
       background: 'var(--canvas)',
       position: 'sticky', top: 0, zIndex: 100,
     }}>
-      {/* Logo */}
+      {/* Logo + nav links */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
         <div
-          onClick={() => goTo('landing')}
+          onClick={() => goTo(isAuth ? 'dashboard' : 'landing')}
           style={{
             fontFamily: 'var(--sans)', fontSize: '16px', fontWeight: 600,
             color: 'var(--ink)', cursor: 'pointer', userSelect: 'none',
@@ -54,21 +59,26 @@ export default function Nav({ page, goTo }) {
           Synth<span style={{ color: 'var(--mute)' }}>UX</span>
         </div>
 
-        <NavLink
-          label="Research history"
-          active={page === 'history' || page === 'runDetail'}
-          onClick={() => goTo('history')}
-        />
+        {showHistoryLink && (
+          <NavLink
+            label="Research history"
+            active={page === 'history' || page === 'runDetail'}
+            onClick={() => goTo('history')}
+          />
+        )}
       </div>
 
-      {/* Right */}
+      {/* Right side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-        {page !== 'landing' && page !== 'history' && page !== 'runDetail' && (
+        {/* Current page label */}
+        {page !== 'landing' && page !== 'pin' && page !== 'dashboard' && page !== 'history' && page !== 'runDetail' && (
           <span style={{ fontSize: '13px', color: 'var(--mute)', fontWeight: 400 }}>
             {labels[page]}
           </span>
         )}
-        {page !== 'questionnaire' && (
+
+        {/* New study button — shown when authenticated and not already on questionnaire */}
+        {isAuth && page !== 'questionnaire' && page !== 'landing' && page !== 'pin' && (
           <button
             onClick={() => goTo('questionnaire')}
             style={{
@@ -80,6 +90,25 @@ export default function Nav({ page, goTo }) {
             }}
           >
             New study
+          </button>
+        )}
+
+        {/* Lock / logout — shown when authenticated */}
+        {isAuth && (
+          <button
+            onClick={onLogout}
+            title="Lock workspace"
+            style={{
+              background: 'none', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', padding: '0.4rem 0.6rem',
+              cursor: 'pointer', display: 'flex', alignItems: 'center',
+              color: 'var(--mute)',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="2.5" y="6.5" width="9" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M4.5 6.5V4.5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
+            </svg>
           </button>
         )}
       </div>
