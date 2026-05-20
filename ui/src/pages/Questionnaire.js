@@ -180,11 +180,38 @@ function StepPersonas({ form, setForm }) {
 
 function StepTasks({ form, setForm }) {
   const methodologies = [
-    { id: 'Usability Testing',  desc: 'Task-based — where do users get stuck or abandon?' },
-    { id: 'UX Testing',         desc: 'Holistic — does the design communicate its intent?' },
-    { id: 'Concept Testing',    desc: 'Reaction-based — is the concept clear and appealing?' },
+    { id: 'Usability Testing',    desc: 'Task-based — where do users get stuck or abandon?' },
+    { id: 'UX Testing',           desc: 'Holistic — does the design communicate its intent?' },
+    { id: 'Concept Testing',      desc: 'Reaction-based — is the concept clear and appealing?' },
     { id: 'Desirability Testing', desc: 'Impression-based — does the design resonate emotionally?' },
   ];
+
+  const METHODOLOGY_METRICS = {
+    'Usability Testing': {
+      primary: 'task_completion',
+      primaryNote: 'Percentage of personas completing each task without abandoning',
+      keys: ['task_completion', 'friction_score', 'confusion_signal', 'trust_signal', 'abandon_trigger', 'persona_alignment_note'],
+      frictionSignals: ['hesitation on CTA', 'wrong path taken', 're-reads same content', 'support-seeking behaviour'],
+    },
+    'UX Testing': {
+      primary: 'comprehension_signal',
+      primaryNote: 'User correctly understands design intent without prompting',
+      keys: ['task_completion', 'friction_score', 'comprehension_signal', 'confusion_signal', 'trust_signal', 'abandon_trigger', 'persona_alignment_note'],
+      frictionSignals: ['misinterpretation of labels', 'unexpected navigation path', 'information overload', 'dead ends'],
+    },
+    'Concept Testing': {
+      primary: 'concept_clarity',
+      primaryNote: 'User articulates the core value proposition unprompted',
+      keys: ['concept_clarity', 'perceived_value', 'first_impression', 'confusion_signal', 'trust_signal', 'persona_alignment_note'],
+      frictionSignals: ['unclear value proposition', 'category confusion', 'feature misattribution', 'scepticism signal'],
+    },
+    'Desirability Testing': {
+      primary: 'emotional_resonance',
+      primaryNote: 'Design evokes the intended feeling for this persona segment',
+      keys: ['emotional_resonance', 'aesthetic_reaction', 'brand_alignment', 'trust_signal', 'confusion_signal', 'persona_alignment_note'],
+      frictionSignals: ['emotional mismatch', 'brand inconsistency', 'visual noise', 'tone-of-voice misalignment'],
+    },
+  };
 
   const tasks = form.tasks || [
     { name: '', instruction: '' },
@@ -203,7 +230,7 @@ function StepTasks({ form, setForm }) {
     <>
       {/* Research Methodology — single select */}
       <FieldGroup label="Research methodology" hint="Select one. This determines which eval metrics, scoring schema, and report sections are used.">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '1.1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: form.methodology ? '0.75rem' : '1.1rem' }}>
           {methodologies.map(m => (
             <div
               key={m.id}
@@ -221,6 +248,61 @@ function StepTasks({ form, setForm }) {
             </div>
           ))}
         </div>
+
+        {/* Metrics preview — shown when a methodology is selected */}
+        {form.methodology && METHODOLOGY_METRICS[form.methodology] && (() => {
+          const m = METHODOLOGY_METRICS[form.methodology];
+          return (
+            <div style={{
+              border: '1px solid var(--blue-lt)',
+              borderTop: '2px solid var(--blue)',
+              borderRadius: '0 0 var(--radius-md) var(--radius-md)',
+              padding: '0.875rem 1rem',
+              background: '#fafcff',
+              marginBottom: '1.1rem',
+            }}>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.625rem' }}>
+                Eval metrics for {form.methodology}
+              </div>
+
+              {/* Primary metric */}
+              <div style={{ marginBottom: '0.625rem' }}>
+                <div style={{ fontSize: '10px', color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '0.3rem' }}>Primary metric</div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.625rem', background: 'var(--blue)', borderRadius: '5px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#fff', fontFamily: 'monospace' }}>{m.primary}</span>
+                </div>
+                <span style={{ fontSize: '11px', color: 'var(--mute)', marginLeft: '0.5rem' }}>{m.primaryNote}</span>
+              </div>
+
+              {/* All eval keys */}
+              <div style={{ marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '10px', color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '0.35rem' }}>All eval keys</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                  {m.keys.map(key => (
+                    <span key={key} style={{
+                      padding: '0.2rem 0.5rem', borderRadius: '4px',
+                      background: key === m.primary ? 'rgba(27,79,216,.1)' : 'var(--cream)',
+                      border: `1px solid ${key === m.primary ? 'rgba(27,79,216,.25)' : 'var(--border)'}`,
+                      fontSize: '11px', fontFamily: 'monospace',
+                      color: key === m.primary ? 'var(--blue)' : 'var(--body)',
+                      fontWeight: key === m.primary ? 500 : 400,
+                    }}>
+                      {key}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Friction signals */}
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '0.35rem' }}>Friction signals watched</div>
+                <div style={{ fontSize: '11px', color: 'var(--body)', lineHeight: 1.6 }}>
+                  {m.frictionSignals.join(' · ')}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </FieldGroup>
 
       <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
