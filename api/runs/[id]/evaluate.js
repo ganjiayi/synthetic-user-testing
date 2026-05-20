@@ -45,7 +45,6 @@ async function handler(req, res) {
 
     const evalMatrix = buildEvalMatrix(sessions);
 
-    // Store eval matrix summary on the run row for quick access
     await supabase.from('runs').update({
       status:      'evaluation_complete',
       updated_at:  new Date(),

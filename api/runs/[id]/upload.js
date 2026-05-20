@@ -30,7 +30,6 @@ async function handler(req, res) {
 
   if (uploadError) return res.status(500).json({ error: uploadError.message });
 
-  // Append filename to runs.materials array
   const { data: run } = await supabase.from('runs').select('materials').eq('id', id).single();
   const current = run?.materials || [];
   if (!current.includes(safe)) {

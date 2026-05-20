@@ -1,8 +1,3 @@
-/**
- * Core evaluation logic — shared by CLI (evaluator.js) and Vercel API routes.
- * No filesystem writes here; callers handle persistence.
- */
-
 const path = require('path');
 const fs   = require('fs');
 

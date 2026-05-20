@@ -1,11 +1,3 @@
-/**
- * API utility for the SynthUX frontend.
- *
- * When REACT_APP_API_URL is set (Railway backend available) — uses real API.
- * When not set (Vercel demo mode, no backend) — returns null so pages fall
- * back to their hardcoded demo data automatically.
- */
-
 const BASE = process.env.REACT_APP_API_URL || '';
 
 async function req(method, path, body) {
@@ -23,17 +15,14 @@ async function req(method, path, body) {
 
 export const api = {
 
-  /* List all research runs */
   listRuns() {
     return req('GET', '/api/runs');
   },
 
-  /* Get full detail for a single run (intake, plan, sessions, materials) */
   getRun(runId) {
     return req('GET', `/api/runs/${runId}`);
   },
 
-  /* Check if the backend is reachable */
   async isAvailable() {
     if (!BASE) return false;
     try {
@@ -46,42 +35,34 @@ export const api = {
     }
   },
 
-  /* Create a new run and save intake */
   createRun(runId, intake) {
     return req('POST', '/api/runs', { runId, intake });
   },
 
-  /* Start plan generation (async — poll status) */
   startPlan(runId) {
     return req('POST', `/api/runs/${runId}/plan`);
   },
 
-  /* Fetch the generated plan */
   getPlan(runId) {
     return req('GET', `/api/runs/${runId}/plan`);
   },
 
-  /* Start persona evaluation sessions (async — poll status) */
   startEvaluation(runId) {
     return req('POST', `/api/runs/${runId}/evaluate`);
   },
 
-  /* Fetch all persona session results */
   getSessions(runId) {
     return req('GET', `/api/runs/${runId}/sessions`);
   },
 
-  /* Start report generation — Excel, DOCX, PPTX (async — poll status) */
   startReport(runId) {
     return req('POST', `/api/runs/${runId}/report`);
   },
 
-  /* Poll run status */
   getStatus(runId) {
     return req('GET', `/api/runs/${runId}/status`);
   },
 
-  /* Upload test material files to Railway (one at a time) */
   async uploadFiles(runId, files) {
     const results = [];
     for (const file of files) {
@@ -97,7 +78,6 @@ export const api = {
     return results;
   },
 
-  /* Get a direct download URL for a report file */
   downloadUrl(runId, filename) {
     return `${BASE}/api/runs/${runId}/download/${filename}`;
   },
@@ -112,7 +92,6 @@ const PERSONA_MAP = {
   RC: { name: 'David',       ref: 'v4_routine_conservative',       priority: 'secondary',  context: 'Routine Conservative — habitual, risk-averse, long-term Astro subscriber.' },
 };
 
-/* Generate a run ID from date + study name */
 export function generateRunId(studyName) {
   const now  = new Date();
   const dd   = String(now.getDate()).padStart(2, '0');
@@ -126,7 +105,6 @@ export function generateRunId(studyName) {
   return `${dd}${mm}${yyyy}_${slug}`;
 }
 
-/* Build an intake.json object from questionnaire form data */
 export function buildIntake(form, runId) {
   const now = new Date();
   return {

@@ -7,7 +7,6 @@ async function handler(req, res) {
   const { id } = req.query;
   const supabase = getClient();
 
-  // ── GET: return stored plan ──────────────────────────────────────────────────
   if (req.method === 'GET') {
     const { data, error } = await supabase
       .from('runs').select('plan').eq('id', id).single();
@@ -15,7 +14,6 @@ async function handler(req, res) {
     return res.json(data.plan);
   }
 
-  // ── POST: generate plan (runs synchronously, returns when done) ──────────────
   if (req.method === 'POST') {
     const { data: run, error: runError } = await supabase
       .from('runs').select('intake').eq('id', id).single();

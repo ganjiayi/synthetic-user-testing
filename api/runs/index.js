@@ -4,7 +4,6 @@ const { getClient } = require('../../src/lib/supabase');
 module.exports = async (req, res) => {
   const supabase = getClient();
 
-  // ── GET: list all runs (summary fields only) ─────────────────────────────────
   if (req.method === 'GET') {
     const { data, error } = await supabase
       .from('runs')
@@ -24,7 +23,6 @@ module.exports = async (req, res) => {
     return res.json({ runs });
   }
 
-  // ── POST: create new run ──────────────────────────────────────────────────────
   if (req.method === 'POST') {
     const { runId, intake } = req.body;
     if (!runId || !intake) return res.status(400).json({ error: 'runId and intake required' });
