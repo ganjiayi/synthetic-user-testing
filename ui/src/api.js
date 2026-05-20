@@ -24,11 +24,9 @@ export const api = {
   },
 
   async isAvailable() {
-    if (!BASE) return false;
     try {
-      const res = await fetch(`${BASE}/api/health`, {
-        signal: AbortSignal.timeout(4000),
-      });
+      const url = BASE ? `${BASE}/api/health` : '/api/health';
+      const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
       return res.ok;
     } catch {
       return false;

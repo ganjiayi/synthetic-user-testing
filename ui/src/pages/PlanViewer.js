@@ -19,7 +19,7 @@ function TBtn({ label, onClick, primary }) {
 }
 
 /* ── Section content ── */
-function SectionContent({ id, editable, goTo }) {
+function SectionContent({ id, editable, goTo, onRunClick }) {
   const F = (props) => <PlanField {...props} editable={editable} />;
 
   if (id === 'ctx') return (
@@ -30,7 +30,7 @@ function SectionContent({ id, editable, goTo }) {
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.75)' }}>5 personas · 3 tasks · High-fidelity artefact · Astro.com.my</div>
         </div>
         <button style={{ padding: '0.6rem 1.5rem', background: '#fff', color: 'var(--primary)', border: 'none', borderRadius: '7px', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
-          onClick={handleRunClick}>▶  Run research</button>
+          onClick={onRunClick}>▶  Run research</button>
       </div>
       <F label="Product lifecycle phase" value="Live — mature / optimising" />
       <F label="Design thinking phase" value="Test — validating with real designs" />
@@ -422,7 +422,7 @@ export default function PlanViewer({ goTo, runId, plan }) {
                 sectionKey={activeSection}
                 data={plan[SECTION_MAP[activeSection]]}
               />
-            : <SectionContent id={activeSection} editable={editMode} goTo={goTo} />
+            : <SectionContent id={activeSection} editable={editMode} goTo={goTo} onRunClick={handleRunClick} />
           }
         </div>
       </div>
