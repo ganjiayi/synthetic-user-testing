@@ -1,5 +1,9 @@
 {
   "buildCommand": "cd ui && npm install && npm run build",
   "outputDirectory": "ui/build",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
+  "functions": {
+    "api/runs/[id]/plan.js":     { "maxDuration": 300 },
+    "api/runs/[id]/evaluate.js": { "maxDuration": 300 }
+  }
 }

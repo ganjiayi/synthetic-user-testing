@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "researcher_name": "Jia Yi Gan",
+    "product_project": "Astro TV Pack Page — Messaging & Conversion",
+    "date_submitted": "19052026",
+    "urgency": "immediate",
+    "run_id": "19052026_tvpack-messaging-test"
+  },
+  "q1_lifecycle_phase": {
+    "phase": "live_mature",
+    "phase_context": "The TV pack page is live in production. We are testing whether the current messaging drives conversion or creates drop-off.",
+    "agent_calibration": "minimal_tolerance"
+  },
+  "q2_design_phase": {
+    "phase": "test",
+    "research_focus": "Usability validation — agent should score task completion and friction signals"
+  },
+  "q3_artefact": {
+    "input_format": "screenshot_sequence",
+    "fidelity_level": "production",
+    "artefact_link": "astro.com.my TV packs page — screenshot provided",
+    "artefact_notes": "Mobile screenshot of the Astro postpaid TV packs page. Three plans visible: Entertainment RM49.99/month, Sports RM69.99/month (was RM89.99), Epic RM159.99/month (was RM139.99). All plans are 12-month contracts except Epic (24-month). Page includes a Three Easy Steps section, a Want More Value add-on section (Netflix, Disney+), a WhatsApp support button, and a collapsed FAQ at the bottom.",
+    "api_mode": "image_sequence",
+    "friction_sensitivity": "production_grade"
+  },
+  "q4_core_question": {
+    "main_question": "Does the current TV pack page messaging clearly communicate product value to users — and if not, what specific changes would improve clarity?",
+    "good_answer_looks_like": "Users can correctly identify what each pack includes and its price without clicking. Users can identify which pack is most relevant to their household. Users can state what they would do next with confidence. Friction scores stay below 4 on Tasks 1 and 2. Fewer than 2 personas abandon due to missing information.",
+    "insight_type": "mixed"
+  },
+  "q5_product_context": {
+    "product_name": "Astro",
+    "product_category": "Streaming TV Subscription",
+    "feature_under_test": "TV Pack Page — pack selection and messaging",
+    "target_market": "Malaysian households, mixed demographics",
+    "why_this_why_now": "Checkout completion rate is below target. Hypothesis is that messaging on the TV pack page is not clearly communicating value, causing drop-off before users reach the checkout."
+  },
+  "q6_research_questions": {
+    "primary_rq": "What is the primary drop-off point in the TV pack page flow, and does the current messaging clearly communicate product value across different persona segments?",
+    "secondary_rqs": [
+      "How do different persona segments respond to the pack names and price points?",
+      "What information is missing that users need before they can commit?",
+      "Does the page give users enough confidence to proceed to checkout without external help?"
+    ],
+    "decision_to_support": "What is the optimal messaging for the TV pack page to improve conversion and increase checkout completion rate?"
+  },
+  "q7_personas": {
+    "segments": [
+      {
+        "name": "Hakim",
+        "context": "Spontaneous Traditionalist — mobile-first, Sooka user, price-sensitive, impulsive. Key test: does the sports pack feel like an upgrade over his free Sooka or a confusing duplicate?",
+        "priority": "primary",
+        "include": true,
+        "persona_library_ref": "v4_spontaneous_traditionalist"
+      },
+      {
+        "name": "Puan Rohani",
+        "context": "Family-Centric Devotee — low tech literacy (28/100), Kota Bharu, family-first decisions. Key test: can she understand the packs and confidently select one without help?",
+        "priority": "primary",
+        "include": true,
+        "persona_library_ref": "v4_family_centric_devotee"
+      },
+      {
+        "name": "Marcus",
+        "context": "Trendsetter Explorer — high tech literacy (93/100), benchmarks everything against Netflix. Key test: does the value proposition hold up against his expectations?",
+        "priority": "secondary",
+        "include": true,
+        "persona_library_ref": "v4_trendsetter_explorer"
+      }
+    ],
+    "priority_segment": "Puan Rohani"
+  },
+  "q8_tasks": {
+    "session_config": {
+      "entry_point": "User lands directly on the Astro TV packs page",
+      "max_turns": 5,
+      "stuck_loop_threshold": 2,
+      "session_mode": "single_pass"
+    },
+    "scenarios": [
+      {
+        "task_id": "T1",
+        "task_name": "Price and value comprehension",
+        "instruction": "You have just landed on this page. Take a moment to look around. Tell me: what do you think this page is offering you? Without clicking anything, what would you expect to pay for the pack you think is the best value, and what do you believe is included in that price?",
+        "success_condition": "User correctly identifies at least one pack price and can describe what they believe is included. User identifies a pack as relevant to them.",
+        "abandon_condition": "User cannot identify what the page is selling. User is unable to state a price or what is included for any pack after viewing the page."
+      },
+      {
+        "task_id": "T2",
+        "task_name": "Next action intent",
+        "instruction": "Based on what you see on this page, what would you do next if you were seriously considering subscribing? Walk me through your thought process step by step.",
+        "success_condition": "User names a specific next action (tap Get It Now, look for more info, compare packs). User's reasoning is coherent with the page content.",
+        "abandon_condition": "User has no clear next action. User would leave the page or seek help externally before taking any action on-page."
+      },
+      {
+        "task_id": "T3",
+        "task_name": "Missing information",
+        "instruction": "Is there anything you would want to know before making a decision that you cannot find on this page? Be specific — what question does the page leave unanswered?",
+        "success_condition": "User articulates at least one specific unanswered question. Response reflects genuine comprehension gaps rather than general price sensitivity.",
+        "abandon_condition": "User cannot identify any specific missing information — response is too vague to be actionable."
+      }
+    ]
+  },
+  "q9_eval_metrics": {
+    "default_eval_keys": [
+      "task_completion",
+      "friction_score",
+      "confusion_signal",
+      "abandon_trigger",
+      "trust_signal",
+      "persona_alignment"
+    ],
+    "custom_eval_keys": [
+      {
+        "key": "pack_differentiation_clarity",
+        "description": "Could the user tell the packs apart and articulate the difference between them",
+        "signal_type": "categorical"
+      },
+      {
+        "key": "information_gaps",
+        "description": "What questions were left unanswered by the page that blocked or slowed decision-making",
+        "signal_type": "qualitative"
+      },
+      {
+        "key": "purchase_intent",
+        "description": "Would the user proceed to checkout, pause for more research, or abandon — and why",
+        "signal_type": "categorical"
+      }
+    ],
+    "friction_signals": [
+      "label / copy misunderstanding",
+      "price or value friction",
+      "missing information"
+    ],
+    "primary_metric": "pack_differentiation_clarity — direct proxy for messaging effectiveness and conversion readiness"
+  },
+  "q10_hypotheses": {
+    "hypotheses": [
+      {
+        "id": "H1",
+        "statement": "If users cannot distinguish between the Sports and Entertainment packs from the page copy alone, they will hesitate or abandon before reaching checkout."
+      },
+      {
+        "id": "H2",
+        "statement": "Low-tech-literacy users (Rohani) will not understand that no set-top box is required, and this will be a source of confusion or trust friction."
+      },
+      {
+        "id": "H3",
+        "statement": "The Epic pack price increase (was RM139.99, now RM159.99) will register as a negative signal and reduce consideration of the highest-value tier."
+      }
+    ],
+    "known_ux_risks": "Pack names do not communicate content type. Set-top box requirement is ambiguous. Price anchoring on Epic is negative (price went up). 12 and 24-month contracts may create commitment hesitation.",
+    "forbidden_assumptions": "Do not assume users know a set-top box is not required. Do not assume users understand that pack names indicate content type. Do not assume users will scroll to the FAQ section.",
+    "risk_severity_threshold": "p1_and_above"
+  },
+  "q11_output": {
+    "primary_audience": ["product_team", "design_team"],
+    "output_formats": ["json_eval_log", "markdown_summary"],
+    "turnaround": "immediate",
+    "escalation_threshold": "p1_and_above",
+    "additional_notes": "Focus on actionable copy changes. Flag any finding that directly maps to a specific piece of on-page copy that could be changed without a design sprint."
+  },
+  "_derived": {
+    "parsed_at": "2026-05-19T00:00:00.000Z",
+    "source_file": "manual_intake",
+    "validation_status": "valid",
+    "warnings": [],
+    "active_personas": ["Hakim", "Puan Rohani", "Marcus"],
+    "active_tasks": ["T1", "T2", "T3"],
+    "all_eval_keys": [
+      "task_completion",
+      "friction_score",
+      "confusion_signal",
+      "abandon_trigger",
+      "trust_signal",
+      "persona_alignment",
+      "pack_differentiation_clarity",
+      "information_gaps",
+      "purchase_intent"
+    ]
+  }
+}

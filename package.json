@@ -6,15 +6,22 @@
   "scripts": {
     "start": "node src/server/index.js",
     "parse": "node src/pipeline/parseIntake.js",
-    "plan": "node src/pipeline/generatePlan.js",
-    "run-study": "node src/pipeline/evaluator.js"
+    "plan": "NODE_EXTRA_CA_CERTS=certs.pem node src/pipeline/generatePlan.js",
+    "run-study": "NODE_EXTRA_CA_CERTS=certs.pem node src/pipeline/evaluator.js",
+    "compare": "NODE_EXTRA_CA_CERTS=certs.pem node src/pipeline/compare.js",
+    "compare-plan": "NODE_EXTRA_CA_CERTS=certs.pem node src/pipeline/comparePlan.js",
+    "certs": "security find-certificate -a -p /Library/Keychains/System.keychain > certs.pem && security find-certificate -a -p ~/Library/Keychains/login.keychain-db >> certs.pem && echo 'certs.pem updated'"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
+    "@supabase/supabase-js": "^2.106.0",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
+    "formidable": "^3.5.4",
     "mammoth": "^1.8.0",
     "multer": "^2.1.1",
-    "openai": "^6.37.0"
+    "openai": "^6.37.0",
+    "sharp": "^0.34.5"
   }
 }

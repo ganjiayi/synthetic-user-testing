@@ -13,6 +13,9 @@ env/
 .env
 .env.local
 
+# Local TLS certs (machine-specific, regenerate with: npm run certs)
+certs.pem
+
 # Run outputs (large binary files)
 runs/**/report/*.pptx
 runs/**/report/*.xlsx

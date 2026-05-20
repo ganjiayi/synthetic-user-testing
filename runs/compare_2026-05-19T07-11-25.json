@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-05-19T07:11:25.656Z",
+  "results": [
+    {
+      "persona": "Puan Rohani",
+      "archetype": "Family-Centric Devotee",
+      "task_num": 1,
+      "task_label": "Price & value comprehension",
+      "claude": {
+        "ok": true,
+        "text": "*Duduk tegak, pegang telefon dengan dua tangan, skrin dihalakan ke arah cahaya supaya nampak lebih jelas*\n\nHa... okay. Saya tengok ni...\n\nAstro One. Nama tu saya tak pernah dengar sebelum ni. Tapi saya scroll perlahan-lahan...\n\n---\n\n**Apa yang saya faham halaman ni tawarkan:**\n\nNampaknya ini halaman untuk — apa kata dia — *\"Endless streaming.\"* Macam pakej baru Astro. Ada tiga pilihan pakej yang saya nampak — Entertainment, Sports, dan satu lagi nama Epic. Jadi ini macam... Astro nak jual pakej streaming baru kepada saya.\n\n---\n\n**Pakej mana yang saya rasa terbaik untuk keluarga saya?**\n\nSaya tengok yang **Epic — RM159.99 sebulan.** Sebab ada Netflix, Disney+, dan lain-lain dalam gambar tu. Untuk keluarga dengan tiga anak, tu nampak paling lengkap.\n\nTapi — *tarik nafas panjang* — **RM159.99 sebulan?** Suami saya yang bayar bil. Saya kena tanya dia dulu. Ini bukan keputusan saya sorang boleh buat.\n\n---\n\n**Apa yang saya sangka termasuk dalam harga tu:**\n\nTerus terang? **Saya tak pasti.** \n\nSaya nampak logo-logo — Netflix, Disney+, Prime Video, iQIYI, beIN Sports... tapi saya **tidak tahu sama ada semua tu betul-betul termasuk dalam harga RM159.99, atau ada caj tambahan lagi** selepas saya daftar. \n\nDan yang paling mengganggu fikiran saya — **kontrak 24 bulan.** Dua tahun! Kalau ada masalah macam dulu — bil berubah tiba-tiba, TV gelap dua hari — saya dah terikat. Tak boleh keluar senang-senang.\n\n*Mengerut dahi*\n\nSaya nak tahu satu perkara — mana butang dalam Bahasa Malaysia? Semua ni dalam English. Saya faham sikit-sikit, tapi bila buat keputusan pasal duit, saya nak baca dalam bahasa saya sendiri."
+      },
+      "openai": {
+        "ok": true,
+        "text": "Saya lihat laman ini menawarkan pelbagai pakej penstriman Astro. Ada beberapa pilihan ditunjukkan seperti \"Entertainment,\" \"Sports,\" dan \"Epic.\" \n\nUntuk nilai terbaik, saya lihat pakej \"Entertainment\" berharga RM49.99 sebulan dengan kontrak 12 bulan. Dalam harga ini, saya nampak ia termasuk penstriman sehingga 2 peranti dan tidak memerlukan set-top box. \n\nSaya harap pakej ini termasuk kandungan hiburan yang sesuai untuk keluarga saya."
+      }
+    }
+  ]
+}

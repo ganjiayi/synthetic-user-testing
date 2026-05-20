@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-05-19T06:21:52.580Z",
+  "claude": {
+    "parsed": true,
+    "audit": {
+      "issues": [],
+      "ok": [
+        "study_context.product_phase.lifecycle",
+        "study_context.product_phase.agent_calibration",
+        "study_context.design_phase.phase",
+        "study_context.design_phase.research_focus",
+        "study_context.artefact_config.input_format",
+        "study_context.artefact_config.api_mode",
+        "study_context.artefact_config.friction_sensitivity",
+        "study_context.artefact_config.artefact_notes",
+        "research_goals.core_question",
+        "research_goals.product_name",
+        "research_goals.feature_under_test",
+        "research_goals.primary_rq",
+        "research_goals.decision_to_support",
+        "user_segments.segments",
+        "user_segments.priority_segment",
+        "test_scenarios.session_config.max_turns",
+        "test_scenarios.scenarios",
+        "eval_metrics.default_keys",
+        "eval_metrics.all_keys",
+        "eval_metrics.primary_metric",
+        "hypotheses.list",
+        "hypotheses.known_ux_risks",
+        "hypotheses.forbidden_assumptions",
+        "method.orchestration",
+        "method.session_flow",
+        "method.limitations",
+        "output_handoff.primary_audience",
+        "output_handoff.output_formats",
+        "output_handoff.report_parts"
+      ],
+      "total": 29
+    }
+  },
+  "openai": {
+    "parsed": true,
+    "audit": {
+      "issues": [],
+      "ok": [
+        "study_context.product_phase.lifecycle",
+        "study_context.product_phase.agent_calibration",
+        "study_context.design_phase.phase",
+        "study_context.design_phase.research_focus",
+        "study_context.artefact_config.input_format",
+        "study_context.artefact_config.api_mode",
+        "study_context.artefact_config.friction_sensitivity",
+        "study_context.artefact_config.artefact_notes",
+        "research_goals.core_question",
+        "research_goals.product_name",
+        "research_goals.feature_under_test",
+        "research_goals.primary_rq",
+        "research_goals.decision_to_support",
+        "user_segments.segments",
+        "user_segments.priority_segment",
+        "test_scenarios.session_config.max_turns",
+        "test_scenarios.scenarios",
+        "eval_metrics.default_keys",
+        "eval_metrics.all_keys",
+        "eval_metrics.primary_metric",
+        "hypotheses.list",
+        "hypotheses.known_ux_risks",
+        "hypotheses.forbidden_assumptions",
+        "method.orchestration",
+        "method.session_flow",
+        "method.limitations",
+        "output_handoff.primary_audience",
+        "output_handoff.output_formats",
+        "output_handoff.report_parts"
+      ],
+      "total": 29
+    }
+  }
+}

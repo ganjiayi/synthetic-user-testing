@@ -28,18 +28,26 @@ function getClient() {
 /**
  * @param {string} systemPrompt
  * @param {string} userMessage
+ * @param {{ b64: string, mediaType: string }|null} image  — optional image for vision
  * @returns {Promise<string>} model response text
  */
-async function callOpenAI(systemPrompt, userMessage) {
+async function callOpenAI(systemPrompt, userMessage, image = null) {
   const client = getClient();
+
+  const userContent = image
+    ? [
+        { type: 'image_url', image_url: { url: `data:${image.mediaType};base64,${image.b64}`, detail: 'high' } },
+        { type: 'text', text: userMessage },
+      ]
+    : userMessage;
 
   const response = await client.chat.completions.create({
     model:    DEFAULT_MODEL,
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user',   content: userMessage  },
+      { role: 'user',   content: userContent  },
     ],
-    max_tokens:  2000,
+    max_tokens:  8192,
     temperature: 0.7,
   });
 
