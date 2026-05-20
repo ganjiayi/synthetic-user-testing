@@ -162,7 +162,7 @@ export function buildIntake(form, runId) {
       forbidden_assumptions:form.forbiddenAssumptions || '',
     },
     q8_output: {
-      model_provider: form.modelProvider || 'openai',
+      model_providers: form.modelProviders?.length ? form.modelProviders : (form.modelProvider ? [form.modelProvider] : ['openai']),
       audience:       form.audience || [],
       output_formats: form.outputFormats || [],
       additional_notes:form.additionalNotes || '',

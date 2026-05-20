@@ -39,8 +39,9 @@ async function handler(req, res) {
         'Respond with ONLY the JSON object — no preamble, no markdown fences, no explanation.',
       ].join('\n');
 
-      const provider    = require('../../../src/providers/openai');
-      const rawResponse = await provider.call(systemPrompt, userMessage);
+      const providerName = (run.intake?.q8_output?.model_providers || ['openai'])[0];
+      const provider     = require(`../../../src/providers/${providerName}`);
+      const rawResponse  = await provider.call(systemPrompt, userMessage);
 
       const cleaned = rawResponse
         .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();

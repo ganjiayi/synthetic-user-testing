@@ -342,28 +342,52 @@ function StepOutput({ form, setForm }) {
         hint="Select which model runs the synthetic user sessions. Both produce the same output format."
       >
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '0.5rem' }}>
-          {models.map(m => (
-            <div
-              key={m.id}
-              onClick={() => setForm(f => ({ ...f, modelProvider: m.id }))}
-              style={{
-                padding: '1rem 1.1rem', cursor: 'pointer', userSelect: 'none',
-                borderRadius: 'var(--radius-md)', transition: 'all .15s',
-                background: form.modelProvider === m.id ? m.bg : '#fff',
-                border: form.modelProvider === m.id ? `2px solid ${m.color}` : '1px solid var(--border)',
-              }}
-            >
-              <div style={{ fontSize: '13px', fontWeight: 500, color: form.modelProvider === m.id ? m.color : 'var(--ink)', marginBottom: '0.2rem' }}>
-                {m.name}
+          {models.map(m => {
+            const selected = (form.modelProviders || []).includes(m.id);
+            return (
+              <div
+                key={m.id}
+                onClick={() => {
+                  const cur  = form.modelProviders || [];
+                  const next = cur.includes(m.id) ? cur.filter(v => v !== m.id) : [...cur, m.id];
+                  setForm(f => ({ ...f, modelProviders: next }));
+                }}
+                style={{
+                  padding: '1rem 1.1rem', cursor: 'pointer', userSelect: 'none',
+                  borderRadius: 'var(--radius-md)', transition: 'all .15s',
+                  background: selected ? m.bg : '#fff',
+                  border: selected ? `2px solid ${m.color}` : '1px solid var(--border)',
+                  position: 'relative',
+                }}
+              >
+                {selected && (
+                  <div style={{
+                    position: 'absolute', top: '0.6rem', right: '0.75rem',
+                    width: '16px', height: '16px', borderRadius: '50%',
+                    background: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                      <path d="M1 3.5l2.5 2.5L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
+                <div style={{ fontSize: '13px', fontWeight: 500, color: selected ? m.color : 'var(--ink)', marginBottom: '0.2rem' }}>
+                  {m.name}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--mute)', fontFamily: 'monospace', marginBottom: '0.35rem' }}>{m.model}</div>
+                <div style={{ fontSize: '11px', color: 'var(--mute-soft)', lineHeight: 1.4 }}>{m.note}</div>
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--mute)', fontFamily: 'monospace', marginBottom: '0.35rem' }}>{m.model}</div>
-              <div style={{ fontSize: '11px', color: 'var(--mute-soft)', lineHeight: 1.4 }}>{m.note}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-        {!form.modelProvider && (
+        {(form.modelProviders || []).length === 0 && (
           <div style={{ fontSize: '11px', color: 'var(--amber)', marginTop: '0.25rem' }}>
-            ⚠ No model selected — you will be prompted when the study runs.
+            ⚠ No model selected — please select at least one.
+          </div>
+        )}
+        {(form.modelProviders || []).length === 2 && (
+          <div style={{ fontSize: '11px', color: 'var(--blue)', marginTop: '0.25rem' }}>
+            Both models selected — each persona session will run twice for comparison.
           </div>
         )}
       </FieldGroup>

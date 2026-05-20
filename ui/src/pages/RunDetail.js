@@ -170,7 +170,7 @@ function ReportTab({ run }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '0.5rem' }}>
             <thead>
               <tr>
-                {['Persona', 'Tasks completed', 'Avg friction', 'Outcome'].map(h => (
+                {['Persona', 'Model', 'Tasks completed', 'Avg friction', 'Outcome'].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
                 ))}
               </tr>
@@ -188,6 +188,11 @@ function ReportTab({ run }) {
                 return (
                   <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
                     <td style={{ padding: '0.75rem', fontWeight: 500 }}>{s.persona_name}</td>
+                    <td style={{ padding: '0.75rem' }}>
+                      {s.provider
+                        ? <Tag label={s.provider === 'claude' ? 'Claude' : 'OpenAI'} type={s.provider === 'claude' ? 'amber' : 'teal'} />
+                        : <span style={{ color: 'var(--mute-soft)', fontSize: '12px' }}>—</span>}
+                    </td>
                     <td style={{ padding: '0.75rem', color: 'var(--body)' }}>{(s.tasks_completed || []).join(', ') || '—'}</td>
                     <td style={{ padding: '0.75rem' }}>
                       {avg !== '—'

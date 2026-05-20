@@ -14,7 +14,7 @@ async function handler(req, res) {
   const supabase = getClient();
 
   const { data: run, error: runError } = await supabase
-    .from('runs').select('plan').eq('id', id).single();
+    .from('runs').select('plan, intake').eq('id', id).single();
   if (runError || !run?.plan) {
     return res.status(400).json({ error: 'Plan not found. Generate plan first.' });
   }
@@ -23,24 +23,28 @@ async function handler(req, res) {
     .update({ status: 'evaluating', updated_at: new Date() }).eq('id', id);
 
   try {
-    const plan          = run.plan;
-    const provider      = require('../../../src/providers/openai');
-    const personaLib    = loadPersonaPrompts();
-    const simPrompt     = loadSimulationPrompt();
+    const plan           = run.plan;
+    const providerNames  = run.intake?.q8_output?.model_providers || ['openai'];
+    const personaLib     = loadPersonaPrompts();
+    const simPrompt      = loadSimulationPrompt();
     const activePersonas = (plan.user_segments?.segments || []).filter(s => s.include !== false);
     const activeTasks    = plan.test_scenarios?.scenarios || [];
 
     const sessions = [];
-    for (const persona of activePersonas) {
-      const session = await runPersonaSession(provider, persona, activeTasks, plan, personaLib, simPrompt);
-      sessions.push(session);
+    for (const providerName of providerNames) {
+      const provider = require(`../../../src/providers/${providerName}`);
+      for (const persona of activePersonas) {
+        const session = await runPersonaSession(provider, persona, activeTasks, plan, personaLib, simPrompt);
+        session.provider = providerName;
+        sessions.push(session);
 
-      await supabase.from('sessions').insert({
-        run_id:       id,
-        persona_id:   session.persona_id,
-        persona_name: session.persona_name,
-        data:         session,
-      });
+        await supabase.from('sessions').insert({
+          run_id:       id,
+          persona_id:   providerNames.length > 1 ? `${providerName}::${session.persona_id}` : session.persona_id,
+          persona_name: session.persona_name,
+          data:         session,
+        });
+      }
     }
 
     const evalMatrix = buildEvalMatrix(sessions);
