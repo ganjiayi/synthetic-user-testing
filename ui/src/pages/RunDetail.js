@@ -39,15 +39,221 @@ function SectionHead({ children }) {
   );
 }
 
+/* ── Methodology metric card definitions ─────────────────────────────────── */
+const METHODOLOGY_CARDS = {
+  'Usability Testing': [
+    { label: 'Task completion rate', key: 'completion_rate', format: 'pct', desc: 'Personas completing all tasks' },
+    { label: 'Avg friction score',   key: 'avg_friction',    format: 'score', desc: 'Out of 10 across all turns' },
+    { label: 'Confusion signals',    key: 'confusion_count', format: 'count', desc: 'Turns flagged with confusion' },
+    { label: 'Sessions abandoned',   key: 'abandon_count',   format: 'count', desc: 'Personas who did not finish' },
+  ],
+  'UX Testing': [
+    { label: 'Task completion rate',  key: 'completion_rate',     format: 'pct',   desc: 'Personas completing all tasks' },
+    { label: 'Avg friction score',    key: 'avg_friction',        format: 'score', desc: 'Out of 10 across all turns' },
+    { label: 'Comprehension signals', key: 'comprehension_count', format: 'count', desc: 'Turns showing correct understanding' },
+    { label: 'Confusion signals',     key: 'confusion_count',     format: 'count', desc: 'Turns flagged with confusion' },
+  ],
+  'Concept Testing': [
+    { label: 'Concept clarity',   key: 'concept_clarity_count', format: 'count', desc: 'Turns with clarity signal' },
+    { label: 'Trust signals',     key: 'trust_count',           format: 'count', desc: 'Positive trust reactions' },
+    { label: 'Confusion signals', key: 'confusion_count',       format: 'count', desc: 'Turns flagged with confusion' },
+    { label: 'Avg friction score',key: 'avg_friction',          format: 'score', desc: 'Out of 10 across all turns' },
+  ],
+  'Desirability Testing': [
+    { label: 'Emotional resonance', key: 'emotional_resonance_count', format: 'count', desc: 'Turns with resonance signal' },
+    { label: 'Brand alignment',     key: 'brand_alignment_count',     format: 'count', desc: 'Turns with alignment signal' },
+    { label: 'Trust signals',       key: 'trust_count',               format: 'count', desc: 'Positive trust reactions' },
+    { label: 'Confusion signals',   key: 'confusion_count',           format: 'count', desc: 'Turns flagged with confusion' },
+  ],
+};
+
+function computeMetrics(sessions) {
+  const allTurns = sessions.flatMap(s => s.turns || []);
+  const total    = sessions.length;
+
+  const frictionScores = allTurns.map(t => t.eval_scores?.friction_score).filter(n => typeof n === 'number');
+  const avgFriction    = frictionScores.length
+    ? (frictionScores.reduce((a, b) => a + b, 0) / frictionScores.length)
+    : null;
+
+  return {
+    completion_rate:          total ? sessions.filter(s => s.session_outcome === 'all_tasks_completed').length / total : null,
+    avg_friction:             avgFriction,
+    confusion_count:          allTurns.filter(t => t.eval_scores?.confusion_signal && t.eval_scores.confusion_signal !== 'null').length,
+    abandon_count:            sessions.filter(s => s.session_outcome !== 'all_tasks_completed').length,
+    comprehension_count:      allTurns.filter(t => t.eval_scores?.comprehension_signal && t.eval_scores.comprehension_signal !== 'null').length,
+    concept_clarity_count:    allTurns.filter(t => t.eval_scores?.concept_clarity     && t.eval_scores.concept_clarity     !== 'null').length,
+    emotional_resonance_count:allTurns.filter(t => t.eval_scores?.emotional_resonance && t.eval_scores.emotional_resonance !== 'null').length,
+    brand_alignment_count:    allTurns.filter(t => t.eval_scores?.brand_alignment     && t.eval_scores.brand_alignment     !== 'null').length,
+    trust_count:              allTurns.filter(t => t.eval_scores?.trust_signal        && t.eval_scores.trust_signal        !== 'null').length,
+  };
+}
+
+function MetricCard({ label, value, format, desc }) {
+  let display = '—';
+  if (value !== null && value !== undefined) {
+    if (format === 'pct')   display = `${Math.round(value * 100)}%`;
+    else if (format === 'score') display = typeof value === 'number' ? value.toFixed(1) : value;
+    else display = String(value);
+  }
+  const isScore = format === 'score' && value !== null;
+  const scoreColor = isScore ? frictionColor(parseFloat(display)) : 'var(--ink)';
+
+  return (
+    <div style={{ padding: '1.1rem 1.25rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: '#fff' }}>
+      <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.5rem' }}>
+        {label}
+      </div>
+      <div style={{ fontSize: '26px', fontWeight: 700, color: isScore ? scoreColor : 'var(--ink)', lineHeight: 1, marginBottom: '0.3rem' }}>
+        {display}
+      </div>
+      <div style={{ fontSize: '10px', color: 'var(--mute-soft)' }}>{desc}</div>
+    </div>
+  );
+}
+
+/* ── Collapsible persona session block ───────────────────────────────────── */
+function PersonaTaskBlock({ session, taskId }) {
+  const [open, setOpen] = React.useState(false);
+  const turns    = (session.turns || []).filter(t => t.task_id === taskId);
+  const completed = (session.tasks_completed || []).includes(taskId);
+  const abandoned = turns.some(t => t.eval_scores?.task_completion === 'abandoned');
+  const outcome   = completed ? 'Completed' : abandoned ? 'Abandoned' : 'In progress';
+  const outcomeColor = completed ? 'var(--teal)' : abandoned ? 'var(--red)' : 'var(--amber)';
+
+  if (turns.length === 0) return null;
+
+  const avgFriction = (() => {
+    const scores = turns.map(t => t.eval_scores?.friction_score).filter(n => typeof n === 'number');
+    return scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : null;
+  })();
+
+  return (
+    <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', marginBottom: '0.5rem', overflow: 'hidden' }}>
+      {/* Header row */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0.75rem 1rem', cursor: 'pointer',
+          background: open ? 'var(--cream)' : '#fff',
+          borderBottom: open ? '1px solid var(--border)' : 'none',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)' }}>{session.persona_name}</span>
+          {session.provider && (
+            <span style={{ fontSize: '10px', padding: '0.15rem 0.45rem', borderRadius: '4px', background: session.provider === 'claude' ? '#FDF3E7' : '#E6F5F1', color: session.provider === 'claude' ? '#D97706' : '#10A37F', fontWeight: 500 }}>
+              {session.provider === 'claude' ? 'Claude' : 'OpenAI'}
+            </span>
+          )}
+          {session.persona_priority === 'primary' && (
+            <span style={{ fontSize: '10px', color: 'var(--blue)', fontWeight: 500 }}>Primary</span>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ fontSize: '11px', color: 'var(--mute)' }}>{turns.length} turn{turns.length !== 1 ? 's' : ''}</span>
+          {avgFriction !== null && (
+            <span style={{ fontSize: '11px', fontWeight: 600, color: frictionColor(parseFloat(avgFriction)) }}>
+              friction {avgFriction}
+            </span>
+          )}
+          <span style={{ fontSize: '11px', fontWeight: 600, color: outcomeColor }}>{outcome}</span>
+          <span style={{ fontSize: '11px', color: 'var(--mute)' }}>{open ? '▾' : '▸'}</span>
+        </div>
+      </div>
+
+      {/* Turn-by-turn raw data */}
+      {open && (
+        <div style={{ padding: '0.75rem 1rem', background: '#fafafa' }}>
+          {turns.map((turn, i) => {
+            const es     = turn.eval_scores || {};
+            const isDone = es.task_completion === 'completed' || es.task_completion === 'abandoned';
+            return (
+              <div key={i} style={{
+                paddingBottom: '0.875rem', marginBottom: '0.875rem',
+                borderBottom: i < turns.length - 1 ? '1px solid var(--hairline)' : 'none',
+              }}>
+                {/* Turn header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+                  <span style={{ fontSize: '10px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)', flexShrink: 0 }}>
+                    Turn {turn.turn_number}
+                  </span>
+                  {turn.action && (
+                    <span style={{ fontSize: '10px', padding: '0.1rem 0.4rem', background: 'var(--cream)', border: '1px solid var(--hairline)', borderRadius: '4px', color: 'var(--body)' }}>
+                      {turn.action}
+                    </span>
+                  )}
+                  {typeof es.friction_score === 'number' && (
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: frictionColor(es.friction_score), marginLeft: 'auto', flexShrink: 0 }}>
+                      friction {es.friction_score}
+                    </span>
+                  )}
+                  {isDone && (
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: es.task_completion === 'completed' ? 'var(--teal)' : 'var(--red)', flexShrink: 0 }}>
+                      {es.task_completion === 'completed' ? '✓ Completed' : '✕ Abandoned'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Inner monologue — the key raw data */}
+                {turn.inner_monologue && (
+                  <div style={{
+                    fontSize: '12px', color: 'var(--body)', lineHeight: 1.7,
+                    fontStyle: 'italic',
+                    padding: '0.5rem 0.75rem',
+                    background: '#fff', border: '1px solid var(--hairline)',
+                    borderRadius: 'var(--radius-sm)',
+                    marginBottom: '0.35rem',
+                  }}>
+                    "{turn.inner_monologue}"
+                  </div>
+                )}
+
+                {/* Signals row */}
+                {(es.confusion_signal || es.trust_signal || es.abandon_trigger) && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.3rem' }}>
+                    {es.confusion_signal && es.confusion_signal !== 'null' && (
+                      <span style={{ fontSize: '10px', padding: '0.15rem 0.5rem', background: 'var(--amber-lt)', border: '1px solid rgba(194,113,4,.2)', borderRadius: '4px', color: 'var(--amber)' }}>
+                        Confusion: {es.confusion_signal}
+                      </span>
+                    )}
+                    {es.trust_signal && es.trust_signal !== 'null' && (
+                      <span style={{ fontSize: '10px', padding: '0.15rem 0.5rem', background: 'var(--blue-lt)', border: '1px solid rgba(27,79,216,.15)', borderRadius: '4px', color: 'var(--blue)' }}>
+                        Trust: {es.trust_signal}
+                      </span>
+                    )}
+                    {es.abandon_trigger && es.abandon_trigger !== 'null' && (
+                      <span style={{ fontSize: '10px', padding: '0.15rem 0.5rem', background: 'var(--red-lt)', border: '1px solid rgba(196,43,43,.2)', borderRadius: '4px', color: 'var(--red)' }}>
+                        Abandon: {es.abandon_trigger}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Tab: Report ─────────────────────────────────────────────────────────── */
 function ReportTab({ run }) {
   const plan     = run.plan;
   const sessions = run.sessions || [];
   const intake   = run.intake;
 
-  const personas  = plan?.user_segments?.segments || [];
-  const tasks     = plan?.test_scenarios?.scenarios || [];
-  const hypotheses = plan?.hypotheses?.list || [];
+  const methodology = plan?.study_context?.methodology || intake?.q6_methodology?.methodology || '';
+  const tasks       = plan?.test_scenarios?.scenarios || [];
+  const personas    = plan?.user_segments?.segments || [];
+  const evalKeys    = plan?.eval_metrics?.default_keys || [];
+  const rqPrimary   = plan?.research_goals?.primary_rq || intake?.q3_goals?.primary_rq || '';
+  const rqSecondary = plan?.research_goals?.secondary_rqs || intake?.q3_goals?.secondary_rqs || '';
+  const feature     = plan?.research_goals?.feature_under_test || intake?.q5_product_context?.feature_under_test || '';
+  const artefact    = plan?.study_context?.artefact_config || {};
+  const orchestration = plan?.method?.orchestration || '';
 
   if (!plan && sessions.length === 0) {
     return (
@@ -61,152 +267,190 @@ function ReportTab({ run }) {
     );
   }
 
+  const metrics     = sessions.length > 0 ? computeMetrics(sessions) : null;
+  const cardDefs    = METHODOLOGY_CARDS[methodology] || METHODOLOGY_CARDS['Usability Testing'];
+
+  /* "How it was conducted" narrative */
+  const artefactDesc = artefact.artefact_link
+    ? `a live prototype at ${artefact.artefact_link}`
+    : artefact.files?.length
+    ? `uploaded test materials (${artefact.files.join(', ')})`
+    : 'task descriptions and scenario context';
+
+  const conductedNarrative = orchestration || (methodology && tasks.length
+    ? `The ${methodology} was conducted through ${
+        methodology === 'Usability Testing' ? 'task-based scenarios' :
+        methodology === 'UX Testing'        ? 'a combination of task-based scenarios and open-ended exploration' :
+        methodology === 'Concept Testing'   ? 'concept exposure and structured reaction prompts' :
+        'impression-based exploration and emotional response prompts'
+      } of ${feature || 'the product flow'}. Participants interacted with ${artefactDesc} and were observed across ${tasks.length} task${tasks.length !== 1 ? 's' : ''}.`
+    : '');
+
   return (
     <div>
-      {/* Study signal banner */}
-      {sessions.length > 0 && (() => {
-        const allScores = sessions.flatMap(s =>
-          (s.turns || []).map(t => t.eval_scores?.friction_score).filter(n => typeof n === 'number')
-        );
-        const avg = allScores.length ? (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1) : null;
-        const completed = sessions.filter(s => s.session_outcome === 'all_tasks_completed').length;
-        const isGood = avg !== null && avg < 4;
 
-        return (
-          <div style={{
-            padding: '1rem 1.5rem', marginBottom: '2rem',
-            background: isGood ? 'var(--teal-lt)' : 'var(--red-lt)',
-            borderRadius: 'var(--radius-md)',
-            border: `1px solid ${isGood ? 'rgba(0,138,21,.2)' : 'rgba(196,43,43,.2)'}`,
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <div>
-              <div style={{ fontSize: '17px', fontWeight: 600, color: isGood ? 'var(--teal)' : 'var(--red)', marginBottom: '0.2rem' }}>
-                {isGood ? 'Go — ready to ship' : 'No Go — return to design'}
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--mute)' }}>
-                {completed} of {sessions.length} personas completed all tasks · avg friction {avg ?? '—'} / 10
-              </div>
-            </div>
-            {avg !== null && (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '28px', fontWeight: 600, color: frictionColor(parseFloat(avg)), lineHeight: 1 }}>{avg}</div>
-                <div style={{ fontSize: '10px', color: 'var(--mute-soft)', marginTop: '2px' }}>avg friction</div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* Goals */}
-      {plan?.research_goals && (
-        <>
-          <SectionHead>Research goals</SectionHead>
-          <Field label="Core question"      value={plan.research_goals.core_question} />
-          <Field label="Primary RQ"         value={plan.research_goals.primary_rq} />
-          <Field label="Decision to support" value={plan.research_goals.decision_to_support} />
-        </>
+      {/* ── 4 Metric cards ─────────────────────────────────────────────── */}
+      {metrics && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '2rem' }}>
+          {cardDefs.map(card => (
+            <MetricCard
+              key={card.key}
+              label={card.label}
+              value={metrics[card.key]}
+              format={card.format}
+              desc={card.desc}
+            />
+          ))}
+        </div>
       )}
 
-      {/* Personas */}
-      {personas.length > 0 && (
-        <>
-          <SectionHead>Personas ({personas.length})</SectionHead>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.625rem', marginBottom: '0.5rem' }}>
-            {personas.map((p, i) => (
-              <div key={i} style={{ padding: '0.875rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: '#fff' }}>
-                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.25rem' }}>{p.name}</div>
-                <div style={{ fontSize: '11px', color: 'var(--mute)', lineHeight: 1.5 }}>{p.context}</div>
-                {p.priority === 'primary' && <div style={{ marginTop: '0.5rem' }}><Tag label="Primary" type="blue" /></div>}
+      {/* ── Research overview ──────────────────────────────────────────── */}
+      <div style={{ marginBottom: '2rem' }}>
+        <SectionHead>Research overview</SectionHead>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem 2rem', marginBottom: '1.25rem' }}>
+          {rqPrimary && (
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Primary research question</div>
+              <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65 }}>{rqPrimary}</div>
+            </div>
+          )}
+          {rqSecondary && (
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Secondary research questions</div>
+              <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65, whiteSpace: 'pre-line' }}>{rqSecondary}</div>
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Date of study</div>
+            <div style={{ fontSize: '13px', color: 'var(--body)' }}>{formatDate(run.created_at)}</div>
+          </div>
+          {methodology && (
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Methodology</div>
+              <div style={{ fontSize: '13px', color: 'var(--body)' }}>{methodology}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Synthetic users */}
+        {(personas.length > 0 || sessions.length > 0) && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.5rem' }}>
+              Synthetic users ({personas.length || sessions.length})
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {(personas.length > 0 ? personas : sessions.map(s => ({ name: s.persona_name, priority: s.persona_priority }))).map((p, i) => (
+                <span key={i} style={{
+                  fontSize: '12px', padding: '0.25rem 0.65rem',
+                  background: p.priority === 'primary' ? 'var(--blue-lt)' : 'var(--cream)',
+                  border: `1px solid ${p.priority === 'primary' ? 'rgba(27,79,216,.2)' : 'var(--border)'}`,
+                  color: p.priority === 'primary' ? 'var(--blue)' : 'var(--body)',
+                  borderRadius: '5px', fontWeight: p.priority === 'primary' ? 500 : 400,
+                }}>
+                  {p.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* How conducted */}
+        {conductedNarrative && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>How the study was conducted</div>
+            <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.75 }}>{conductedNarrative}</div>
+          </div>
+        )}
+
+        {/* Tasks list */}
+        {tasks.length > 0 && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.5rem' }}>
+              Participants were asked to complete
+            </div>
+            {tasks.map((t, i) => (
+              <div key={i} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.35rem', fontSize: '13px' }}>
+                <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)', flexShrink: 0 }}>{t.task_id}</span>
+                <span style={{ color: 'var(--body)' }}>
+                  <strong style={{ fontWeight: 500, color: 'var(--ink)' }}>{t.task_name}</strong>
+                  {t.instruction ? ` — ${t.instruction}` : ''}
+                </span>
               </div>
             ))}
           </div>
-        </>
-      )}
+        )}
 
-      {/* Tasks */}
-      {tasks.length > 0 && (
-        <>
-          <SectionHead>Tasks ({tasks.length})</SectionHead>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '0.5rem' }}>
-            <thead>
-              <tr>
-                {['ID', 'Task', 'Success condition', 'Abandon condition'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((t, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
-                  <td style={{ padding: '0.75rem', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace' }}>{t.task_id}</td>
-                  <td style={{ padding: '0.75rem', fontWeight: 500 }}>{t.task_name}</td>
-                  <td style={{ padding: '0.75rem', color: 'var(--teal)', fontSize: '11px' }}>{t.success_condition || '—'}</td>
-                  <td style={{ padding: '0.75rem', color: 'var(--red)',  fontSize: '11px' }}>{t.abandon_condition  || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
-
-      {/* Hypotheses */}
-      {hypotheses.length > 0 && (
-        <>
-          <SectionHead>Hypotheses</SectionHead>
-          {hypotheses.map((h, i) => (
-            <div key={i} style={{ display: 'flex', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid rgba(13,17,23,.05)', fontSize: '12px', color: 'var(--body)', lineHeight: 1.6 }}>
-              <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)', flexShrink: 0 }}>{h.id}</span>
-              <span>{h.statement}</span>
+        {/* Metrics collected */}
+        {evalKeys.length > 0 && (
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.4rem' }}>
+              Metrics collected and measured
             </div>
-          ))}
-        </>
-      )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+              {evalKeys.map(k => (
+                <span key={k} style={{ fontSize: '11px', fontFamily: 'monospace', padding: '0.2rem 0.5rem', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--body)' }}>
+                  {k}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
-      {/* Session results */}
-      {sessions.length > 0 && (
-        <>
-          <SectionHead>Session results — friction map</SectionHead>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '0.5rem' }}>
-            <thead>
-              <tr>
-                {['Persona', 'Model', 'Tasks completed', 'Avg friction', 'Outcome'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', borderBottom: '1px solid var(--border)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((s, i) => {
-                const scores = (s.turns || []).map(t => t.eval_scores?.friction_score).filter(n => typeof n === 'number');
-                const avg    = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '—';
-                const outcome = s.session_outcome === 'all_tasks_completed' ? 'Completed'
-                  : s.session_outcome === 'partial_completion' ? 'Partial'
-                  : 'No tasks completed';
-                const outcomeType = s.session_outcome === 'all_tasks_completed' ? 'teal'
-                  : s.session_outcome === 'partial_completion' ? 'amber' : 'red';
+      {/* ── Per-task raw data ───────────────────────────────────────────── */}
+      {tasks.length > 0 && sessions.length > 0 && tasks.map((task, ti) => {
+        const taskSessions = sessions.filter(s => (s.turns || []).some(t => t.task_id === task.task_id));
+        const completedCount = sessions.filter(s => (s.tasks_completed || []).includes(task.task_id)).length;
+        const pct = sessions.length ? Math.round(completedCount / sessions.length * 100) : 0;
+        const turnsPerSession = taskSessions.map(s => (s.turns || []).filter(t => t.task_id === task.task_id).length);
+        const avgTurns = turnsPerSession.length
+          ? (turnsPerSession.reduce((a, b) => a + b, 0) / turnsPerSession.length).toFixed(1)
+          : null;
 
-                return (
-                  <tr key={i} style={{ borderBottom: '1px solid rgba(13,17,23,.04)' }}>
-                    <td style={{ padding: '0.75rem', fontWeight: 500 }}>{s.persona_name}</td>
-                    <td style={{ padding: '0.75rem' }}>
-                      {s.provider
-                        ? <Tag label={s.provider === 'claude' ? 'Claude' : 'OpenAI'} type={s.provider === 'claude' ? 'amber' : 'teal'} />
-                        : <span style={{ color: 'var(--mute-soft)', fontSize: '12px' }}>—</span>}
-                    </td>
-                    <td style={{ padding: '0.75rem', color: 'var(--body)' }}>{(s.tasks_completed || []).join(', ') || '—'}</td>
-                    <td style={{ padding: '0.75rem' }}>
-                      {avg !== '—'
-                        ? <span style={{ display: 'inline-block', padding: '0.2rem 0.65rem', background: frictionBg(parseFloat(avg)), color: frictionColor(parseFloat(avg)), borderRadius: '5px', fontWeight: 600 }}>{avg}</span>
-                        : '—'}
-                    </td>
-                    <td style={{ padding: '0.75rem' }}><Tag label={outcome} type={outcomeType} /></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </>
-      )}
+        return (
+          <div key={task.task_id} style={{ marginBottom: '2rem' }}>
+            {/* Task header */}
+            <div style={{
+              display: 'flex', alignItems: 'baseline', gap: '0.75rem',
+              padding: '0.875rem 0', borderTop: ti === 0 ? '1px solid var(--border)' : 'none',
+              borderBottom: '1px solid var(--border)', marginBottom: '0.875rem',
+            }}>
+              <span style={{ fontSize: '11px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue)' }}>{task.task_id}</span>
+              <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink)', flex: 1, margin: 0 }}>{task.task_name}</h3>
+            </div>
+
+            {task.instruction && (
+              <div style={{ fontSize: '12px', color: 'var(--mute)', lineHeight: 1.6, marginBottom: '0.875rem', fontStyle: 'italic' }}>
+                "{task.instruction}"
+              </div>
+            )}
+
+            {/* Task summary stats */}
+            <div style={{ display: 'flex', gap: '2rem', marginBottom: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.2rem' }}>Completed</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: pct >= 60 ? 'var(--teal)' : pct >= 40 ? 'var(--amber)' : 'var(--red)' }}>
+                  {pct}%
+                </div>
+                <div style={{ fontSize: '10px', color: 'var(--mute-soft)' }}>{completedCount} of {sessions.length} personas</div>
+              </div>
+              {avgTurns !== null && (
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.2rem' }}>Avg turns to complete</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ink)' }}>{avgTurns}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--mute-soft)' }}>turns per persona</div>
+                </div>
+              )}
+            </div>
+
+            {/* Raw data per persona */}
+            {sessions.map((session, si) => (
+              <PersonaTaskBlock key={si} session={session} taskId={task.task_id} />
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
