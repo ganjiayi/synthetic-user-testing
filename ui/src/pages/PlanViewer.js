@@ -35,7 +35,6 @@ function SectionContent({ id, editable, goTo, onRunClick }) {
       <F label="Product lifecycle phase" value="Live — mature / optimising" />
       <F label="Design thinking phase" value="Test — validating with real designs" />
       <F label="Agent expectation signal" value="Minimal tolerance — agent treats friction as production-grade issues. All P0 and P1 signals escalated immediately." />
-      <F label="Input format → API mode" value="Figma URL → url_fetch" />
       <F label="Fidelity → friction sensitivity" value="High-fidelity → high — agent flags issues with high confidence at this fidelity level" />
     </>
   );
@@ -173,11 +172,10 @@ function SectionContent({ id, editable, goTo, onRunClick }) {
   if (id === 'method') return (
     <>
       <F label="Method" value="Synthetic usability testing — agentic, moderated by orchestrator, parallel persona sessions" />
-      <F label="API mode" value="url_fetch — derived from Figma URL input format" />
       <F label="Session flow" value="Test config → Persona generator → Parallel agent sessions → Interaction loop → Eval aggregator → Report writer" />
-      <F label="Eval approach" value="Two-layer: (1) turn-level interaction log scored per eval key; (2) second Claude call as UX analyst synthesising session across all personas" />
+      <F label="Eval approach" value="Two-layer: (1) turn-level interaction log scored per eval key; (2) second Claude call as UX analyst synthesising patterns across all personas" />
       <F label="Tools" value="Anthropic SDK · Node.js · runner.js · Claude Sonnet · Persona v4 library" />
-      <F label="Limitations" value="Synthetic testing cannot validate real payment behaviour, emotional responses to visual design, or device-specific rendering. The Figma URL artefact does not include the checkout subdomain (shop.astro.com.my) — T2 and T3 simulate as far as pack selection only." />
+      <F label="Limitations" value="Synthetic testing cannot validate real payment behaviour, emotional responses to visual design, or device-specific rendering. Session agents reason from artefact descriptions and links — they cannot directly interact with uploaded images or live UI." />
     </>
   );
 

@@ -83,12 +83,12 @@ Respond with your JSON turn object.`;
 function buildArtefactContext(plan) {
   const cfg   = plan.study_context?.artefact_config || {};
   const parts = [];
-  if (cfg.artefact_link)  parts.push(`URL / Link: ${cfg.artefact_link}`);
-  if (cfg.input_format)   parts.push(`Format: ${cfg.input_format}`);
+  if (cfg.artefact_link) parts.push(`URL / Link: ${cfg.artefact_link}`);
+  if (Array.isArray(cfg.files) && cfg.files.length > 0) parts.push(`Uploaded files: ${cfg.files.join(', ')}`);
   if (cfg.fidelity_level) parts.push(`Fidelity: ${cfg.fidelity_level}`);
   if (cfg.artefact_notes) parts.push(`Notes: ${cfg.artefact_notes}`);
   parts.push(`Friction sensitivity: ${cfg.friction_sensitivity || 'moderate'} — calibrate your friction scores accordingly`);
-  return parts.join('\n') || 'No artefact link provided — reason from description only';
+  return parts.join('\n') || 'No artefact provided — reason from task descriptions only';
 }
 
 function parseTurnResponse(rawText, turnNumber, taskId, personaId) {
