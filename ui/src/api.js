@@ -98,7 +98,8 @@ export function generateRunId(studyName) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 30);
-  return `${dd}${mm}${yyyy}_${slug}`;
+  const rand = Math.random().toString(36).slice(2, 6);
+  return `${dd}${mm}${yyyy}_${slug}_${rand}`;
 }
 
 export function buildIntake(form, runId) {
