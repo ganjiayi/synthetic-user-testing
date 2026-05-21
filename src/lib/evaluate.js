@@ -17,7 +17,7 @@ function buildDefaultSimulationPrompt() {
 You will be given:
 1. A persona profile describing who you are — your background, tech literacy, motivations, and frustrations
 2. A task instruction telling you what to attempt
-3. The current screen or artefact state
+3. The current screen or artefact state — this may include a screenshot of the actual UI. If an image is provided, treat it as the real screen in front of you and reason from what you visually observe.
 
 At each turn you must respond with a JSON object containing exactly these keys:
 
@@ -160,7 +160,7 @@ function parseTurnResponse(rawText, turnNumber, taskId, personaId) {
   }
 }
 
-async function callModel(provider, systemPrompt, conversationHistory) {
+async function callModel(provider, systemPrompt, conversationHistory, image = null) {
   let userMessage;
   if (conversationHistory.length === 1) {
     userMessage = conversationHistory[0].content;
@@ -172,10 +172,12 @@ async function callModel(provider, systemPrompt, conversationHistory) {
     const current = conversationHistory[conversationHistory.length - 1];
     userMessage = `[CONVERSATION HISTORY]\n${prior}\n\n---\n\n[CURRENT TURN]\n${current.content}`;
   }
-  return await provider.call(systemPrompt, userMessage);
+  // Pass image only on turn 1 of each task to establish visual context
+  const img = conversationHistory.length === 1 ? image : null;
+  return await provider.call(systemPrompt, userMessage, img);
 }
 
-async function runPersonaSession(provider, persona, tasks, plan, personaLibrary, simulationPrompt) {
+async function runPersonaSession(provider, persona, tasks, plan, personaLibrary, simulationPrompt, image = null) {
   const personaId       = persona.persona_library_ref || persona.name.toLowerCase().replace(/\s+/g, '_');
   const artefactContext = buildArtefactContext(plan);
   const systemPrompt    = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan);
@@ -198,7 +200,7 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
       conversationHistory.push({ role: 'user', content: userMessage });
 
       try {
-        const rawText = await callModel(provider, systemPrompt, conversationHistory);
+        const rawText = await callModel(provider, systemPrompt, conversationHistory, image);
         const turn    = parseTurnResponse(rawText, turnNumber, task.task_id, personaId);
         sessionTurns.push(turn);
         conversationHistory.push({ role: 'assistant', content: rawText });

@@ -30,11 +30,32 @@ async function handler(req, res) {
     const activePersonas = (plan.user_segments?.segments || []).filter(s => s.include !== false);
     const activeTasks    = plan.test_scenarios?.scenarios || [];
 
+    // Load artefact image from Supabase Storage if files were uploaded
+    let artefactImage = null;
+    const uploadedFiles = plan.study_context?.artefact_config?.files || [];
+    if (uploadedFiles.length > 0) {
+      const imageExts = new Set(['jpg','jpeg','png','gif','webp']);
+      const imageFile = uploadedFiles.find(f => imageExts.has(f.split('.').pop().toLowerCase()));
+      if (imageFile) {
+        try {
+          const { data: blob } = await supabase.storage.from('materials').download(`${id}/${imageFile}`);
+          if (blob) {
+            const buf      = Buffer.from(await blob.arrayBuffer());
+            const ext      = imageFile.split('.').pop().toLowerCase();
+            const mimeMap  = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
+            artefactImage  = { b64: buf.toString('base64'), mediaType: mimeMap[ext] || 'image/jpeg' };
+          }
+        } catch {}
+      }
+    }
+
     const sessions = [];
     for (const providerName of providerNames) {
       const provider = require(`../../../src/providers/${providerName}`);
+      // Only pass image to providers that support vision (OpenAI gpt-4o, Claude)
+      const img = artefactImage;
       for (const persona of activePersonas) {
-        const session = await runPersonaSession(provider, persona, activeTasks, plan, personaLib, simPrompt);
+        const session = await runPersonaSession(provider, persona, activeTasks, plan, personaLib, simPrompt, img);
         session.provider = providerName;
         sessions.push(session);
 

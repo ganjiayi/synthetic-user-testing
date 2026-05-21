@@ -12,13 +12,19 @@ function getClient() {
   return _client;
 }
 
-async function callClaude(systemPrompt, userMessage) {
+async function callClaude(systemPrompt, userMessage, image = null) {
   const client = getClient();
+  const userContent = image
+    ? [
+        { type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.b64 } },
+        { type: 'text',  text: userMessage },
+      ]
+    : userMessage;
   const message = await client.messages.create({
     model:      DEFAULT_MODEL,
     max_tokens: 8192,
     system:     systemPrompt,
-    messages:   [{ role: 'user', content: userMessage }],
+    messages:   [{ role: 'user', content: userContent }],
   });
   return message.content[0]?.text || '';
 }
