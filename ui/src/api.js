@@ -32,8 +32,7 @@ export const api = {
 
   async isAvailable() {
     try {
-      const url = BASE ? `${BASE}/api/health` : '/api/health';
-      const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+      const res = await fetch('/api/health', { signal: AbortSignal.timeout(4000) });
       return res.ok;
     } catch {
       return false;
@@ -69,7 +68,7 @@ export const api = {
     for (const file of files) {
       const form = new FormData();
       form.append('file', file);
-      const res = await fetch(`${BASE}/api/runs/${runId}/upload`, {
+      const res = await fetch(`/api/runs/${runId}/upload`, {
         method: 'POST',
         body:   form,
       });
