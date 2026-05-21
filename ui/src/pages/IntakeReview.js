@@ -36,67 +36,122 @@ const PERSONA_NAMES = {
   RC: 'Routine Conservative',
 };
 
+/* ── Loading overlay shown during plan generation ── */
+function PlanLoadingScreen({ step }) {
+  const steps = [
+    { key: 'run',    label: 'Creating study run',          done: step > 0 },
+    { key: 'upload', label: 'Uploading test materials',    done: step > 1 },
+    { key: 'plan',   label: 'Generating research plan',    done: step > 2 },
+    { key: 'fetch',  label: 'Finalising plan',             done: step > 3 },
+  ];
+  const active = steps.findIndex(s => !s.done);
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'var(--paper)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '2rem',
+    }}>
+      {/* Spinner */}
+      <div style={{
+        width: '44px', height: '44px', borderRadius: '50%',
+        border: '3px solid var(--border)',
+        borderTopColor: 'var(--ink)',
+        animation: 'intake-spin 0.8s linear infinite',
+        marginBottom: '2rem',
+      }} />
+
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: '28px', color: 'var(--ink)', marginBottom: '0.5rem', textAlign: 'center' }}>
+        Generating your research plan
+      </h2>
+      <p style={{ fontSize: '13px', color: 'var(--mute)', marginBottom: '2.5rem', textAlign: 'center' }}>
+        Your inputs are being processed by the AI. This usually takes 30–60 seconds.
+      </p>
+
+      {/* Step list */}
+      <div style={{ width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {steps.map((s, i) => {
+          const isActive  = i === active;
+          const isDone    = s.done;
+          const isPending = !isDone && !isActive;
+          return (
+            <div key={s.key} style={{
+              display: 'flex', alignItems: 'center', gap: '0.875rem',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-sm)',
+              background: isDone ? 'var(--teal-lt)' : isActive ? 'var(--blue-lt)' : 'var(--cream)',
+              border: `1px solid ${isDone ? 'rgba(15,138,110,.2)' : isActive ? 'rgba(27,79,216,.2)' : 'var(--border)'}`,
+            }}>
+              <div style={{
+                width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '11px', fontWeight: 700,
+                background: isDone ? 'var(--teal)' : isActive ? 'var(--blue)' : 'var(--border)',
+                color: isDone || isActive ? '#fff' : 'var(--mute)',
+              }}>
+                {isDone ? '✓' : i + 1}
+              </div>
+              <span style={{
+                fontSize: '13px',
+                fontWeight: isActive ? 500 : 400,
+                color: isDone ? 'var(--teal)' : isActive ? 'var(--blue)' : 'var(--mute)',
+              }}>
+                {s.label}{isActive ? '…' : ''}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <style>{`@keyframes intake-spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
 export default function IntakeReview({ goTo, draft }) {
-  const [submitting, setSubmitting] = useState(false);
-  const [msg,        setMsg]        = useState('');
+  const [loadingStep, setLoadingStep] = useState(-1); // -1 = not loading
   const form = draft || {};
 
   const tasks = (form.tasks || []).filter(t => t.name || t.instruction);
   const personas = (form.personas || []).map(code => PERSONA_NAMES[code] || code);
   const materials = form.testMaterials || { files: [], urls: [] };
 
+  const isLoading = loadingStep >= 0;
+
   const handleConfirm = async () => {
-    setSubmitting(true);
-
-    const live = await api.isAvailable();
-
-    if (!live) {
-      // No backend — go to demo plan
-      setSubmitting(false);
-      goTo('plan', { draft: form });
-      return;
-    }
-
+    setLoadingStep(0);
     try {
       const runId  = generateRunId(form.feature || form.product || 'study');
       const intake = buildIntake(form, runId);
 
-      setMsg('Creating study run…');
       await api.createRun(runId, intake);
+      setLoadingStep(1);
 
-      // Upload test materials
       const filesToUpload = (materials.files || []).filter(f => f.file instanceof File);
       if (filesToUpload.length > 0) {
-        setMsg(`Uploading ${filesToUpload.length} test material${filesToUpload.length > 1 ? 's' : ''}…`);
         await api.uploadFiles(runId, filesToUpload.map(f => f.file));
       }
+      setLoadingStep(2);
 
-      setMsg('Generating research plan…');
       await api.startPlan(runId);
-
-      // Poll until plan is ready
-      let attempts = 0;
-      while (attempts < 60) {
-        await new Promise(r => setTimeout(r, 3000));
-        const status = await api.getStatus(runId);
-        if (status.status === 'plan_ready') break;
-        if (status.status === 'error') throw new Error(status.error || 'Plan generation failed');
-        attempts++;
-      }
+      setLoadingStep(3);
 
       const plan = await api.getPlan(runId);
-      setSubmitting(false);
+      setLoadingStep(-1);
       goTo('plan', { runId, plan, draft: form });
 
     } catch (err) {
-      setSubmitting(false);
-      setMsg('');
+      setLoadingStep(-1);
       alert(`Could not generate plan: ${err.message}`);
     }
   };
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+      {isLoading && <PlanLoadingScreen step={loadingStep} />}
 
       {/* Toolbar */}
       <div style={{
@@ -111,33 +166,28 @@ export default function IntakeReview({ goTo, draft }) {
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {submitting && (
-            <span style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>{msg}</span>
-          )}
           <button
             onClick={() => goTo('questionnaire', { draft: form })}
-            disabled={submitting}
+            disabled={isLoading}
             style={{
               padding: '0.5rem 1.1rem', border: '1px solid var(--hairline)',
               borderRadius: 'var(--radius-sm)', background: 'var(--canvas)',
               fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--body)',
-              cursor: submitting ? 'default' : 'pointer',
+              cursor: isLoading ? 'default' : 'pointer',
             }}
           >← Edit</button>
           <button
             onClick={handleConfirm}
-            disabled={submitting}
+            disabled={isLoading}
             style={{
               padding: '0.5rem 1.5rem', border: 'none',
               borderRadius: 'var(--radius-sm)',
-              background: submitting ? 'var(--mute-soft)' : 'var(--primary)',
+              background: isLoading ? 'var(--mute-soft)' : 'var(--primary)',
               color: 'var(--on-primary)',
               fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500,
-              cursor: submitting ? 'default' : 'pointer',
+              cursor: isLoading ? 'default' : 'pointer',
             }}
-          >
-            {submitting ? msg || 'Working…' : 'Generate plan →'}
-          </button>
+          >Generate plan →</button>
         </div>
       </div>
 
