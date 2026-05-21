@@ -8,9 +8,16 @@ async function req(method, path, body) {
     headers: body ? { 'Content-Type': 'application/json' } : {},
     body:    body ? JSON.stringify(body) : undefined,
   });
+  const isJson = (res.headers.get('content-type') || '').includes('application/json');
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || `HTTP ${res.status}`);
+    if (isJson) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    throw new Error(`HTTP ${res.status} — API unreachable. Ensure REACT_APP_API_URL is not set in Vercel.`);
+  }
+  if (!isJson) {
+    throw new Error(`API returned HTML instead of JSON. Remove REACT_APP_API_URL from Vercel environment variables and redeploy.`);
   }
   return res.json();
 }
