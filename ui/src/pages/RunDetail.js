@@ -2,6 +2,185 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Tag } from '../components/UI';
 
+/* ── Download utilities ──────────────────────────────────────────────────── */
+function triggerDownload(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeCsv(val) {
+  if (val === null || val === undefined) return '';
+  const s = String(val).replace(/"/g, '""');
+  return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+}
+
+function buildCsv(run) {
+  const plan     = run.plan || {};
+  const sessions = run.sessions || [];
+  const tasks    = plan.test_scenarios?.scenarios || [];
+  const taskMap  = Object.fromEntries(tasks.map(t => [t.task_id, t.task_name]));
+  const product  = run.intake?.q5_product_context?.product_name || run.intake?.q1_product || run.id;
+  const feature  = run.intake?.q5_product_context?.feature_under_test || '';
+  const method   = plan.study_context?.methodology || run.intake?.q6_methodology?.methodology || '';
+
+  const cols = [
+    'run_id','date','product','feature','methodology',
+    'persona','priority','model',
+    'task_id','task_name','turn_number',
+    'action','friction_score','task_completion',
+    'confusion_signal','trust_signal','abandon_trigger',
+    'persona_alignment','inner_monologue',
+  ];
+
+  const rows = [cols.join(',')];
+  for (const session of sessions) {
+    for (const turn of (session.turns || [])) {
+      const es = turn.eval_scores || {};
+      rows.push([
+        run.id,
+        run.created_at ? new Date(run.created_at).toISOString().slice(0, 10) : '',
+        product, feature, method,
+        session.persona_name, session.persona_priority || '', session.provider || '',
+        turn.task_id, taskMap[turn.task_id] || turn.task_id, turn.turn_number,
+        turn.action || '',
+        es.friction_score ?? '',
+        es.task_completion || '',
+        es.confusion_signal || '', es.trust_signal || '', es.abandon_trigger || '',
+        es.persona_alignment || '',
+        turn.inner_monologue || '',
+      ].map(escapeCsv).join(','));
+    }
+  }
+  return rows.join('\n');
+}
+
+function buildPresentation(run) {
+  const plan     = run.plan || {};
+  const sessions = run.sessions || [];
+  const tasks    = plan.test_scenarios?.scenarios || [];
+  const product  = run.intake?.q5_product_context?.product_name || run.intake?.q1_product || run.id;
+  const feature  = run.intake?.q5_product_context?.feature_under_test || '';
+  const method   = plan.study_context?.methodology || run.intake?.q6_methodology?.methodology || '';
+  const rq       = plan.research_goals?.primary_rq || run.intake?.q3_goals?.primary_rq || '';
+  const date     = run.created_at ? new Date(run.created_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const evalKeys = plan.eval_metrics?.default_keys || [];
+
+  const allTurns      = sessions.flatMap(s => s.turns || []);
+  const frictionScores = allTurns.map(t => t.eval_scores?.friction_score).filter(n => typeof n === 'number');
+  const avgFriction   = frictionScores.length ? (frictionScores.reduce((a,b)=>a+b,0)/frictionScores.length).toFixed(1) : '—';
+  const completedAll  = sessions.filter(s => s.session_outcome === 'all_tasks_completed').length;
+
+  const taskSlides = tasks.map(task => {
+    const completedCount = sessions.filter(s => (s.tasks_completed || []).includes(task.task_id)).length;
+    const pct = sessions.length ? Math.round(completedCount / sessions.length * 100) : 0;
+    const personaRows = sessions.map(s => {
+      const turns    = (s.turns || []).filter(t => t.task_id === task.task_id);
+      const done     = (s.tasks_completed || []).includes(task.task_id);
+      const lastNote = turns.slice().reverse().find(t => t.inner_monologue)?.inner_monologue || '';
+      return `<tr>
+        <td>${s.persona_name}</td>
+        <td style="color:${done ? '#16a34a' : '#dc2626'};font-weight:600">${done ? 'Completed' : 'Abandoned'}</td>
+        <td>${turns.length}</td>
+        <td style="font-style:italic;color:#555">${lastNote ? `"${lastNote.slice(0,120)}${lastNote.length>120?'…':''}"` : '—'}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="slide">
+      <div class="label">${task.task_id}</div>
+      <h2>${task.task_name}</h2>
+      ${task.instruction ? `<p class="instr">"${task.instruction}"</p>` : ''}
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n" style="color:${pct>=60?'#16a34a':pct>=40?'#d97706':'#dc2626'}">${pct}%</div><div class="stat-label">Completed</div></div>
+        <div class="stat"><div class="stat-n">${completedCount} / ${sessions.length}</div><div class="stat-label">Personas</div></div>
+      </div>
+      <table><thead><tr><th>Persona</th><th>Outcome</th><th>Turns</th><th>Final quote</th></tr></thead><tbody>${personaRows}</tbody></table>
+    </div>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${product}${feature ? ' — ' + feature : ''} · SynthUX Report</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#111;color:#111}
+  .slide{width:1280px;min-height:720px;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:64px 80px;margin:0 auto 4px;page-break-after:always}
+  .slide.cover{background:#080808;color:#fff;justify-content:flex-end;padding:80px}
+  .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:#6b7280;margin-bottom:.75rem}
+  h1{font-size:52px;font-weight:700;line-height:1.05;letter-spacing:-.03em;margin-bottom:.75rem}
+  h2{font-size:32px;font-weight:600;letter-spacing:-.02em;margin-bottom:1rem}
+  p{font-size:16px;line-height:1.7;color:#374151}
+  .instr{font-style:italic;color:#6b7280;font-size:14px;margin-bottom:1.5rem}
+  .meta{display:flex;gap:2.5rem;margin-top:1.5rem}
+  .meta-item{font-size:13px;color:rgba(255,255,255,.6)}
+  .meta-item strong{display:block;font-size:15px;color:#fff;font-weight:500;margin-bottom:.2rem}
+  .stat-row{display:flex;gap:3rem;margin-bottom:2rem}
+  .stat-n{font-size:48px;font-weight:700;line-height:1}
+  .stat-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;margin-top:.25rem}
+  .rq{font-size:18px;line-height:1.7;color:#1f2937;max-width:900px;font-style:italic;margin-bottom:2rem;padding-left:1.5rem;border-left:3px solid #6b7280}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:.5rem .75rem;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;border-bottom:1px solid #e5e7eb}
+  td{padding:.75rem;color:#374151;border-bottom:1px solid #f3f4f6;vertical-align:top}
+  .chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1rem}
+  .chip{font-size:11px;padding:.2rem .6rem;background:#f3f4f6;border-radius:4px;color:#374151}
+  @media print{body{background:#fff}.slide{margin:0;page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="slide cover">
+  <div class="label" style="color:rgba(255,255,255,.4)">SynthUX Research Report</div>
+  <h1 style="color:#fff">${product}${feature ? '<br><span style="font-weight:400;opacity:.6">' + feature + '</span>' : ''}</h1>
+  <div class="meta">
+    <div class="meta-item"><strong>${method || 'Synthetic UX Study'}</strong>Methodology</div>
+    <div class="meta-item"><strong>${sessions.length}</strong>Synthetic users</div>
+    <div class="meta-item"><strong>${date}</strong>Date of study</div>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="label">Research question</div>
+  <h2>What we set out to learn</h2>
+  ${rq ? `<div class="rq">${rq}</div>` : ''}
+  <div class="stat-row" style="margin-top:1rem">
+    <div class="stat"><div class="stat-n" style="color:${completedAll/sessions.length>=.6?'#16a34a':'#dc2626'}">${sessions.length ? Math.round(completedAll/sessions.length*100) : 0}%</div><div class="stat-label">Task completion rate</div></div>
+    <div class="stat"><div class="stat-n">${avgFriction}</div><div class="stat-label">Avg friction score</div></div>
+    <div class="stat"><div class="stat-n">${completedAll} / ${sessions.length}</div><div class="stat-label">Personas completed all tasks</div></div>
+  </div>
+  ${evalKeys.length ? `<div class="label" style="margin-top:1.5rem">Metrics measured</div><div class="chips">${evalKeys.map(k=>`<span class="chip">${k}</span>`).join('')}</div>` : ''}
+</div>
+
+${taskSlides}
+
+<div class="slide">
+  <div class="label">Synthetic users</div>
+  <h2>Who participated</h2>
+  <table>
+    <thead><tr><th>Persona</th><th>Priority</th><th>Outcome</th><th>Avg friction</th></tr></thead>
+    <tbody>
+      ${sessions.map(s => {
+        const scores = (s.turns||[]).map(t=>t.eval_scores?.friction_score).filter(n=>typeof n==='number');
+        const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
+        const done = s.session_outcome === 'all_tasks_completed';
+        return `<tr>
+          <td style="font-weight:500">${s.persona_name}</td>
+          <td>${s.persona_priority || '—'}</td>
+          <td style="color:${done?'#16a34a':'#dc2626'};font-weight:600">${done ? 'All tasks completed' : s.session_outcome === 'partial_completion' ? 'Partial' : 'No tasks completed'}</td>
+          <td>${avg}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+  <p style="margin-top:2rem;font-size:12px;color:#9ca3af">Generated by SynthUX · ${new Date().toLocaleDateString()}</p>
+</div>
+
+</body>
+</html>`;
+}
+
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 function formatDate(iso) {
   if (!iso) return '—';
@@ -633,7 +812,19 @@ export default function RunDetail({ goTo, runId }) {
             {product}{feature ? <span style={{ fontWeight: 400, color: 'var(--mute)' }}> — {feature}</span> : ''}
           </h2>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {run && run.sessions?.length > 0 && (
+            <>
+              <button
+                onClick={() => triggerDownload(buildCsv(run), `${run.id}_raw_data.csv`, 'text/csv')}
+                style={{ padding: '0.4rem 0.875rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)', background: '#fff', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--ink)', cursor: 'pointer' }}
+              >↓ Excel / CSV</button>
+              <button
+                onClick={() => triggerDownload(buildPresentation(run), `${run.id}_presentation.html`, 'text/html')}
+                style={{ padding: '0.4rem 0.875rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)', background: '#fff', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--ink)', cursor: 'pointer' }}
+              >↓ Presentation</button>
+            </>
+          )}
           {run && statusTag(run.status)}
         </div>
       </div>

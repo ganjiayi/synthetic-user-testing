@@ -110,11 +110,19 @@ export default function Results({ goTo, runId }) {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
             onClick={() => {
-              if (isLive && runId) {
-                window.open(api.downloadUrl(runId, `${runId}_raw_data.xlsx`), '_blank');
-              } else {
-                alert('Download available after a live study run.');
-              }
+              const rows = [
+                ['persona','archetype','task','friction','outcome','signal','summary'].join(','),
+                ...sessions.map(s =>
+                  Object.entries(s.friction?.outcomes || s.outcomes || {}).map(([task, outcome]) =>
+                    [s.persona, s.archetype, task, s.friction?.[task] ?? '', outcome, s.signal || '', `"${(s.summary||'').replace(/"/g,'""')}"`].join(',')
+                  ).join('\n')
+                ),
+              ].join('\n');
+              const blob = new Blob([rows], { type: 'text/csv' });
+              const url  = URL.createObjectURL(blob);
+              const a    = document.createElement('a');
+              a.href = url; a.download = `${runId || 'study'}_results.csv`; a.click();
+              URL.revokeObjectURL(url);
             }}
             style={{
               padding: '0.45rem 1rem', border: '1px solid var(--border-md)',
