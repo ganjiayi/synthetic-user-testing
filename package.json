@@ -4,6 +4,7 @@
   "description": "Synthetic UX research pipeline — pipeline + API server",
   "private": true,
   "scripts": {
+    "build": "cd ui && npm install --legacy-peer-deps && npm run build",
     "start": "node src/server/index.js",
     "parse": "node src/pipeline/parseIntake.js",
     "plan": "NODE_EXTRA_CA_CERTS=certs.pem node src/pipeline/generatePlan.js",
