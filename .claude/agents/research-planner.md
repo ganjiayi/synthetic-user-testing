@@ -65,28 +65,30 @@ For each included segment carry over exactly: `name`, `context`, `priority`, `pe
 
 Build from `q6_methodology.tasks` (array of objects with `name` and `instruction`).
 
-For each task, produce:
+The `test_scenarios` object must have exactly two keys: `scenarios` (the task array) and `session_config`.
+
 ```json
-{
-  "task_id":           "T1",
-  "task_name":         "<task.name>",
-  "instruction":       "<task.instruction>",
-  "success_condition": "<derived — see Methodology rules below>",
-  "abandon_condition": "<derived — see Methodology rules below>"
+"test_scenarios": {
+  "scenarios": [
+    {
+      "task_id":           "T1",
+      "task_name":         "<task.name>",
+      "instruction":       "<task.instruction>",
+      "success_condition": "<derived — see Methodology rules below>",
+      "abandon_condition": "<derived — see Methodology rules below>"
+    }
+  ],
+  "session_config": {
+    "max_turns": 20,
+    "stuck_loop_threshold": 3,
+    "session_mode": "single-pass"
+  }
 }
 ```
 
 - Skip tasks where both `name` and `instruction` are empty.
 - Number task_ids sequentially: T1, T2, T3 …
-
-Session config (always use these defaults):
-```json
-"session_config": {
-  "max_turns": 20,
-  "stuck_loop_threshold": 3,
-  "session_mode": "single-pass"
-}
-```
+- Do NOT put tasks directly on `test_scenarios` — they must be nested under `scenarios`.
 
 ### eval_metrics
 

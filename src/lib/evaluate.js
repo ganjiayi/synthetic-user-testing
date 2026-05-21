@@ -42,7 +42,7 @@ Rules:
 - Respond with ONLY the JSON object — no preamble, no explanation`;
 }
 
-function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt) {
+function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan) {
   let personaBlock = '';
 
   if (personaLibrary) {
@@ -63,7 +63,25 @@ function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt) {
     personaBlock = `## ${persona.name}\n${persona.context || 'Malaysian consumer, general profile.'}`;
   }
 
-  return `${simulationPrompt}\n\n---\n\n## Your Persona\n\n${personaBlock}\n\n## Study Context for This Session\n\n${persona.context || ''}`;
+  const evalKeys   = plan?.eval_metrics?.default_keys || [];
+  const methodology = plan?.study_context?.methodology || '';
+  const hypotheses  = (plan?.hypotheses?.list || []).map(h => `${h.id}: ${h.statement}`).join('\n');
+  const forbidden   = plan?.hypotheses?.forbidden_assumptions || '';
+  const knownRisks  = plan?.hypotheses?.known_ux_risks || '';
+
+  const methodologyBlock = methodology || evalKeys.length
+    ? `\n\n## Study Methodology\n\nMethodology: ${methodology || 'Not specified'}\n\nYou must include these eval keys in every JSON turn response:\n${evalKeys.map(k => `- ${k}`).join('\n')}`
+    : '';
+
+  const hypothesesBlock = hypotheses
+    ? `\n\n## Hypotheses Being Tested\n\n${hypotheses}`
+    : '';
+
+  const risksBlock = (forbidden || knownRisks)
+    ? `\n\n## Research Constraints\n\n${forbidden ? `Do NOT assume:\n${forbidden}\n\n` : ''}${knownRisks ? `Known UX risks to watch for:\n${knownRisks}` : ''}`
+    : '';
+
+  return `${simulationPrompt}${methodologyBlock}${hypothesesBlock}${risksBlock}\n\n---\n\n## Your Persona\n\n${personaBlock}\n\n## Study Context for This Session\n\n${persona.context || ''}`;
 }
 
 function buildTaskPrompt(task, artefactContext, turnNumber) {
@@ -91,11 +109,23 @@ function buildArtefactContext(plan) {
   return parts.join('\n') || 'No artefact provided — reason from task descriptions only';
 }
 
+const BASE_EVAL_KEYS = new Set([
+  'friction_score', 'confusion_signal', 'trust_signal', 'task_completion',
+  'abandon_trigger', 'persona_alignment_note',
+  'action', 'screen_or_step', 'inner_monologue',
+]);
+
 function parseTurnResponse(rawText, turnNumber, taskId, personaId) {
   const cleaned = rawText
     .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
   try {
     const parsed = JSON.parse(cleaned);
+
+    const extraEvalKeys = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (!BASE_EVAL_KEYS.has(k)) extraEvalKeys[k] = v;
+    }
+
     return {
       turn_number:     turnNumber,
       task_id:         taskId,
@@ -110,6 +140,7 @@ function parseTurnResponse(rawText, turnNumber, taskId, personaId) {
         task_completion:   parsed.task_completion || 'in_progress',
         abandon_trigger:   parsed.abandon_trigger || null,
         persona_alignment: parsed.persona_alignment_note || null,
+        ...extraEvalKeys,
       },
       raw_response: parsed,
     };
@@ -147,7 +178,7 @@ async function callModel(provider, systemPrompt, conversationHistory) {
 async function runPersonaSession(provider, persona, tasks, plan, personaLibrary, simulationPrompt) {
   const personaId       = persona.persona_library_ref || persona.name.toLowerCase().replace(/\s+/g, '_');
   const artefactContext = buildArtefactContext(plan);
-  const systemPrompt    = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt);
+  const systemPrompt    = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan);
   const maxTurns        = plan.test_scenarios?.session_config?.max_turns || 20;
   const stuckThreshold  = plan.test_scenarios?.session_config?.stuck_loop_threshold || 3;
 

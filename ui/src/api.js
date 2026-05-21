@@ -124,7 +124,7 @@ export function buildIntake(form, runId) {
       fidelity:        form.fidelity || '',
       artefact_notes:  form.artefactNotes || '',
       test_materials: {
-      files: (form.testMaterials?.files || []).map(({ file, ...meta }) => meta),
+      files: (form.testMaterials?.files || []).map(f => f.name).filter(Boolean),
       urls:  form.testMaterials?.urls || [],
     },
     },
