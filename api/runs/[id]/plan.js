@@ -26,6 +26,23 @@ async function handler(req, res) {
       const promptPath   = path.join(process.cwd(), '.claude/agents/research-planner.md');
       const systemPrompt = fs.readFileSync(promptPath, 'utf8');
 
+      const productId  = run.intake?.q5_product_context?.product_id || run.intake?.q1_product;
+      let productBlock = '';
+      if (productId) {
+        const productPath = path.join(process.cwd(), `products/${productId}.json`);
+        if (fs.existsSync(productPath)) {
+          const productDB = JSON.parse(fs.readFileSync(productPath, 'utf8'));
+          productBlock = [
+            '',
+            `Here is the product database context for ${productId}. Use it to enrich the study plan with product-specific flows, known pain points, UX history, and audience context:`,
+            '',
+            '```json',
+            JSON.stringify(productDB, null, 2),
+            '```',
+          ].join('\n');
+        }
+      }
+
       const userMessage = [
         'You are generating a Synthetic UX Research Study Plan from a validated intake config.',
         '',
@@ -34,7 +51,7 @@ async function handler(req, res) {
         '```json',
         JSON.stringify(run.intake, null, 2),
         '```',
-        '',
+        productBlock,
         'Generate a complete study plan as a single JSON object following the plan schema exactly.',
         'Respond with ONLY the JSON object — no preamble, no markdown fences, no explanation.',
       ].join('\n');

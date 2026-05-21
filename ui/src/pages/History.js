@@ -148,7 +148,27 @@ export default function History({ goTo }) {
                 </button>
                 <button
                   disabled={run.status !== 'evaluation_complete' && run.status !== 'complete'}
-                  onClick={() => alert('Download coming soon')}
+                  onClick={async () => {
+                    try {
+                      const full    = await api.getRun(run.id);
+                      const sessions = full.sessions || [];
+                      const tasks    = full.plan?.test_scenarios?.scenarios || [];
+                      const taskMap  = Object.fromEntries(tasks.map(t => [t.task_id, t.task_name]));
+                      const cols     = ['run_id','date','product','persona','task_id','task_name','turn_number','action','friction_score','task_completion','confusion_signal','trust_signal','abandon_trigger','inner_monologue'];
+                      const esc      = v => { const s = String(v ?? '').replace(/"/g,'""'); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s}"` : s; };
+                      const rows     = [cols.join(',')];
+                      for (const s of sessions) {
+                        for (const t of (s.turns || [])) {
+                          const es = t.eval_scores || {};
+                          rows.push([run.id, run.created_at ? new Date(run.created_at).toISOString().slice(0,10) : '', full.intake?.q5_product_context?.product_name || run.product, s.persona_name, t.task_id, taskMap[t.task_id] || t.task_id, t.turn_number, t.action || '', es.friction_score ?? '', es.task_completion || '', es.confusion_signal || '', es.trust_signal || '', es.abandon_trigger || '', t.inner_monologue || ''].map(esc).join(','));
+                        }
+                      }
+                      const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+                      const url  = URL.createObjectURL(blob);
+                      const a    = document.createElement('a'); a.href = url; a.download = `${run.id}_raw_data.csv`; a.click();
+                      URL.revokeObjectURL(url);
+                    } catch { goTo('runDetail', { runId: run.id }); }
+                  }}
                   style={{ padding: '0.35rem 0.875rem', fontSize: '12px', fontFamily: 'var(--sans)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--cream)', color: run.status === 'evaluation_complete' || run.status === 'complete' ? 'var(--ink)' : 'var(--mute-soft)', cursor: run.status === 'evaluation_complete' || run.status === 'complete' ? 'pointer' : 'default' }}
                 >
                   Download

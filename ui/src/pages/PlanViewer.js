@@ -360,7 +360,17 @@ export default function PlanViewer({ goTo, runId, plan }) {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {!isLive && <TBtn label={editMode ? '✎ Editing…' : '✎ Edit'} onClick={() => setEditMode(e => !e)} />}
-          <TBtn label="↓ Download DOCX" onClick={() => alert('Downloading research plan as DOCX…')} />
+          <TBtn label="↓ Download plan" onClick={() => {
+            if (isLive && plan) {
+              const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
+              const url  = URL.createObjectURL(blob);
+              const a    = document.createElement('a');
+              a.href = url; a.download = `${plan._meta?.run_id || 'study-plan'}.json`; a.click();
+              URL.revokeObjectURL(url);
+            } else {
+              alert('Download is available after generating a live study plan.');
+            }
+          }} />
           <TBtn label="▶  Run research" onClick={handleRunClick} primary />
         </div>
       </div>

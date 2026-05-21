@@ -1,60 +1,26 @@
-/**
- * Claude provider
- * Calls the Claude Code CLI via spawnSync. No API key required —
- * uses the local Claude Code subscription.
- */
-
-const { spawnSync } = require('child_process');
-const fs             = require('fs');
-const os             = require('os');
-const path           = require('path');
+require('dotenv').config();
+const Anthropic = require('@anthropic-ai/sdk');
 
 const DEFAULT_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
 
-function findClaudeBinary() {
-  const fromPath = spawnSync('which', ['claude'], { encoding: 'utf8' });
-  if (fromPath.status === 0 && fromPath.stdout.trim()) return fromPath.stdout.trim();
-
-  const baseDir = path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude-code');
-  if (fs.existsSync(baseDir)) {
-    const versions = fs.readdirSync(baseDir).sort().reverse();
-    for (const v of versions) {
-      const bin = path.join(baseDir, v, 'claude.app', 'Contents', 'MacOS', 'claude');
-      if (fs.existsSync(bin)) return bin;
-    }
-  }
-  throw new Error('Claude CLI binary not found. Ensure Claude Code is installed.');
+let _client = null;
+function getClient() {
+  if (_client) return _client;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY environment variable is not set');
+  _client = new Anthropic({ apiKey });
+  return _client;
 }
 
-/**
- * @param {string} systemPrompt
- * @param {string} userMessage
- * @returns {string} model response text
- */
-function callClaude(systemPrompt, userMessage) {
-  const claudeBin = findClaudeBinary();
-
-  const tmpSystem = path.join(os.tmpdir(), `claude-sys-${Date.now()}.txt`);
-  const tmpMsg    = path.join(os.tmpdir(), `claude-msg-${Date.now()}.txt`);
-  fs.writeFileSync(tmpSystem, systemPrompt, 'utf8');
-  fs.writeFileSync(tmpMsg,    userMessage,  'utf8');
-
-  let result;
-  try {
-    result = spawnSync(claudeBin, [
-      '--print', '--model', DEFAULT_MODEL,
-      '--system-prompt', fs.readFileSync(tmpSystem, 'utf8'),
-      '--tools', '', '--no-session-persistence',
-      fs.readFileSync(tmpMsg, 'utf8'),
-    ], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, timeout: 180000 });
-  } finally {
-    try { fs.unlinkSync(tmpSystem); } catch {}
-    try { fs.unlinkSync(tmpMsg);    } catch {}
-  }
-
-  if (result.error) throw new Error(`Claude CLI spawn failed: ${result.error.message}`);
-  if (result.status !== 0) throw new Error(`Claude CLI exited ${result.status}:\n${result.stderr}`);
-  return result.stdout;
+async function callClaude(systemPrompt, userMessage) {
+  const client = getClient();
+  const message = await client.messages.create({
+    model:      DEFAULT_MODEL,
+    max_tokens: 8192,
+    system:     systemPrompt,
+    messages:   [{ role: 'user', content: userMessage }],
+  });
+  return message.content[0]?.text || '';
 }
 
 module.exports = {

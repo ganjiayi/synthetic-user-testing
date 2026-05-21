@@ -216,18 +216,6 @@ export default function IntakeReview({ goTo, draft }) {
             }
           </Section>
 
-          <Section title="Hypotheses">
-            {[form.h1, form.h2, form.h3].filter(Boolean).length === 0
-              ? <div style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>No hypotheses added.</div>
-              : [form.h1, form.h2, form.h3].filter(Boolean).map((h, i) => (
-                <div key={i} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.5rem', fontSize: '13px' }}>
-                  <span style={{ fontWeight: 600, color: 'var(--red)', fontFamily: 'monospace', flexShrink: 0 }}>H{i + 1}</span>
-                  <span style={{ color: 'var(--body)', lineHeight: 1.6 }}>{h}</span>
-                </div>
-              ))
-            }
-          </Section>
-
           <Section title="Output">
             <Field label="AI models" value={(form.modelProviders || []).map(p => p === 'openai' ? 'OpenAI — gpt-4o' : 'Claude — claude-sonnet-4-6').join(', ') || 'Not selected'} />
             <Field label="Primary audience" value={form.audience} />

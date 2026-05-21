@@ -420,39 +420,8 @@ function StepTasks({ form, setForm }) {
           }}
         >+ Add task</button>
       </FieldGroup>
-    </>
-  );
-}
 
-function StepHypotheses({ form, setForm }) {
-  return (
-    <>
-      {form.product === 'ACM' && (
-        <AutofillNotice>
-          7 known pain points from the Astro.com.my product database have been pre-loaded into Known UX Risks below. Review and add any study-specific risks.
-        </AutofillNotice>
-      )}
-      <FieldGroup label="Hypotheses to test">
-        <TextInput rows={2}
-          placeholder="H1: If the homepage leads with 'boxless streaming' messaging, then users will understand they do not need a set-top box without reading the FAQ."
-          value={form.h1 || ''} onChange={e => setForm(f => ({ ...f, h1: e.target.value }))}
-          style={{ marginBottom: '0.5rem' }} />
-        <div style={{ marginTop: '0.5rem' }}>
-          <TextInput rows={2}
-            placeholder="H2: If pack names are shown with descriptions, then users will identify the right plan for their household without calling support."
-            value={form.h2 || ''} onChange={e => setForm(f => ({ ...f, h2: e.target.value }))} />
-        </div>
-        <div style={{ marginTop: '0.5rem' }}>
-          <TextInput rows={2} placeholder="H3: Add a hypothesis…"
-            value={form.h3 || ''} onChange={e => setForm(f => ({ ...f, h3: e.target.value }))} />
-        </div>
-      </FieldGroup>
-      <FieldGroup label="Known UX risks and pain points">
-        <TextInput rows={5}
-          placeholder={'From product database (Astro.com.my):\nPP1 [P0] Boxless messaging confusion\nPP2 [P1] Pack pricing complexity\nPP3 [P1] Subdomain fragmentation across 4 domains\nAdd study-specific risks below…'}
-          value={form.knownRisks || ''} onChange={e => setForm(f => ({ ...f, knownRisks: e.target.value }))} />
-      </FieldGroup>
-      <FieldGroup label="What must NOT be assumed">
+      <FieldGroup label="What must NOT be assumed" hint="Optional — agents will actively avoid making these assumptions during sessions.">
         <TextInput rows={3}
           placeholder={'Do NOT assume users know Astro One does not require a set-top box.\nDo NOT assume users understand pack names indicate content type.\nDo NOT assume users will scroll to the FAQ.'}
           value={form.forbiddenAssumptions || ''} onChange={e => setForm(f => ({ ...f, forbiddenAssumptions: e.target.value }))} />
@@ -579,7 +548,7 @@ function StepOutput({ form, setForm }) {
   );
 }
 
-const stepComponents = [StepProduct, StepContext, StepGoals, StepPersonas, StepTasks, StepHypotheses, StepOutput];
+const stepComponents = [StepProduct, StepContext, StepGoals, StepPersonas, StepTasks, StepOutput];
 
 /* ══════════════════════════════════════════════════════
    Questionnaire Page

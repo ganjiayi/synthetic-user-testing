@@ -565,7 +565,11 @@ function Recommendations() {
             <div style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,.15)', borderRadius: '8px', color: '#fff', fontSize: '13px' }}>
               ✓ Deck ready — <span style={{ fontWeight: 500 }}>Astro_Homepage_Research.pptx</span>
             </div>
-            <button onClick={() => alert('Downloading…')} style={{
+            <button onClick={() => {
+              const data = { study: 'Astro.com.my — Homepage Revamp', generated: new Date().toISOString(), verdict: 'No Go', completion_rate: '0/5', avg_friction: 5.0, sessions: ['Hakim: No Go','Syafiqah: No Go','Marcus: No Go','Puan Rohani: No Go','David: Conditional'] };
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const url  = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Astro_Homepage_Research_summary.json'; a.click(); URL.revokeObjectURL(url);
+            }} style={{
               padding: '0.75rem 1.25rem', background: 'var(--on-primary)', color: 'var(--primary)',
               border: 'none', borderRadius: '8px', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
             }}>↓ Download</button>
@@ -670,9 +674,28 @@ export default function Report({ goTo }) {
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <TBtn label="↓ DOCX"  onClick={() => alert('Downloading as DOCX…')} />
-          <TBtn label="↓ Excel" onClick={() => alert('Downloading as Excel…')} />
-          <TBtn label="↓ PDF"   onClick={() => alert('Downloading as PDF…')} />
+          <TBtn label="↓ CSV" onClick={() => {
+            const rows = [
+              ['persona','archetype','task','friction_score','outcome','signal','summary'].join(','),
+              ...[
+                ['Hakim','Spontaneous Traditionalist','T1',4,'success_with_friction','no_go','Understood the product category but could not confirm boxless setup without external help.'],
+                ['Hakim','Spontaneous Traditionalist','T2',6,'abandon','no_go','Would escalate to WhatsApp rather than self-convert.'],
+                ['Syafiqah','Progressive Influencer','T1',4,'success_with_friction','no_go','No pack relevant to solo young female viewer.'],
+                ['Syafiqah','Progressive Influencer','T2',6,'abandon','no_go','Would exit and seek peer validation on TikTok.'],
+                ['Marcus','Trendsetter Explorer','T1',4,'success_with_friction','no_go','Found no justification to switch from Netflix + Disney+ stack.'],
+                ['Marcus','Trendsetter Explorer','T2',7,'abandon','no_go','24-month contract with brand trust deficit was a clear rejection.'],
+                ['Puan Rohani','Family-Centric Devotee','T1',6,'success_with_friction','no_go','Highest friction of all personas.'],
+                ['Puan Rohani','Family-Centric Devotee','T2',8,'abandon','no_go','Contract contradiction caused trust collapse.'],
+                ['David','Routine Conservative','T1',3,'success_with_friction','conditional','Strongest near-conversion.'],
+                ['David','Routine Conservative','T2',4,'shortlisted','conditional','Entertainment 12 shortlisted — needs channel list to commit.'],
+              ].map(r => r.map(v => { const s = String(v ?? '').replace(/"/g,'""'); return (s.includes(',') || s.includes('"')) ? `"${s}"` : s; }).join(','))
+            ].join('\n');
+            const blob = new Blob([rows], { type: 'text/csv' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a'); a.href = url; a.download = 'astro_homepage_revamp_results.csv'; a.click();
+            URL.revokeObjectURL(url);
+          }} />
+          <TBtn label="↓ PDF" onClick={() => window.print()} />
           <TBtn label="⊞ Generate PowerPoint" onClick={() => setActive('recommendations')} primary />
         </div>
       </div>
