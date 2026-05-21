@@ -9,7 +9,7 @@ async function handler(req, res) {
   const { id } = req.query;
   const supabase = getClient();
 
-  const form = formidable({ maxFileSize: 15 * 1024 * 1024 });
+  const form = formidable({ maxFileSize: 15 * 1024 * 1024, uploadDir: '/tmp', keepExtensions: true });
 
   let files;
   try {

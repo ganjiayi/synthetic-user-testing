@@ -72,7 +72,10 @@ export const api = {
         method: 'POST',
         body:   form,
       });
-      if (!res.ok) throw new Error(`Upload failed for ${file.name}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(err.error || `Upload failed for ${file.name}`);
+      }
       results.push(await res.json());
     }
     return results;
