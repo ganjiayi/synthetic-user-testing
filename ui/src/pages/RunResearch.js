@@ -2,16 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
 
 const DEMO_STEPS = [
-  { persona: 'Hakim',       archetype: 'Spontaneous Traditionalist', task: 'T1 — Homepage' },
-  { persona: 'Hakim',       archetype: 'Spontaneous Traditionalist', task: 'T2 — TV Pack Page' },
-  { persona: 'Syafiqah',    archetype: 'Progressive Influencer',     task: 'T1 — Homepage' },
-  { persona: 'Syafiqah',    archetype: 'Progressive Influencer',     task: 'T2 — TV Pack Page' },
-  { persona: 'Marcus',      archetype: 'Trendsetter Explorer',       task: 'T1 — Homepage' },
-  { persona: 'Marcus',      archetype: 'Trendsetter Explorer',       task: 'T2 — TV Pack Page' },
-  { persona: 'Puan Rohani', archetype: 'Family-Centric Devotee',     task: 'T1 — Homepage' },
-  { persona: 'Puan Rohani', archetype: 'Family-Centric Devotee',     task: 'T2 — TV Pack Page' },
-  { persona: 'David',       archetype: 'Routine Conservative',       task: 'T1 — Homepage' },
-  { persona: 'David',       archetype: 'Routine Conservative',       task: 'T2 — TV Pack Page' },
+  { persona: 'Persona 1', archetype: 'Primary segment',   task: 'T1 — Task 1' },
+  { persona: 'Persona 1', archetype: 'Primary segment',   task: 'T2 — Task 2' },
+  { persona: 'Persona 2', archetype: 'Secondary segment', task: 'T1 — Task 1' },
+  { persona: 'Persona 2', archetype: 'Secondary segment', task: 'T2 — Task 2' },
+  { persona: 'Persona 3', archetype: 'Secondary segment', task: 'T1 — Task 1' },
+  { persona: 'Persona 3', archetype: 'Secondary segment', task: 'T2 — Task 2' },
+  { persona: 'Persona 4', archetype: 'Primary segment',   task: 'T1 — Task 1' },
+  { persona: 'Persona 4', archetype: 'Primary segment',   task: 'T2 — Task 2' },
+  { persona: 'Persona 5', archetype: 'Secondary segment', task: 'T1 — Task 1' },
+  { persona: 'Persona 5', archetype: 'Secondary segment', task: 'T2 — Task 2' },
 ];
 
 const STEP_MS = 2600;
@@ -44,6 +44,7 @@ export default function RunResearch({ goTo, runId }) {
             clearInterval(pollRef.current);
             setDone(true);
             setStep(DEMO_STEPS.length);
+            setTimeout(() => goTo('runDetail', { runId }), 1200);
           }
           if (status.status === 'error') {
             clearInterval(pollRef.current);
@@ -171,7 +172,7 @@ export default function RunResearch({ goTo, runId }) {
             </div>
             <div style={{ textAlign: 'center' }}>
               <button
-                onClick={() => goTo('results')}
+                onClick={() => goTo(runId ? 'runDetail' : 'results', { runId })}
                 style={{
                   padding: '0.875rem 2.5rem',
                   background: 'var(--primary)', color: 'var(--on-primary)',

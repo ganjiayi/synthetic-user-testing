@@ -55,10 +55,6 @@ export const api = {
     return req('GET', `/api/runs/${runId}/sessions`);
   },
 
-  startReport(runId) {
-    return req('POST', `/api/runs/${runId}/report`);
-  },
-
   getStatus(runId) {
     return req('GET', `/api/runs/${runId}/status`);
   },
@@ -76,10 +72,6 @@ export const api = {
       results.push(await res.json());
     }
     return results;
-  },
-
-  downloadUrl(runId, filename) {
-    return `${BASE}/api/runs/${runId}/download/${filename}`;
   },
 
 };
