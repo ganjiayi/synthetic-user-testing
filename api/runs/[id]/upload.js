@@ -3,8 +3,8 @@ const formidable = require('formidable');
 const fs         = require('fs');
 const { getClient } = require('../../../src/lib/supabase');
 
-async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') return res.status(405).json({ error: `Method ${req.method} not allowed` });
 
   const { id } = req.query;
   const supabase = getClient();
@@ -38,9 +38,4 @@ async function handler(req, res) {
   }
 
   res.json({ filename: safe, url: `/api/runs/${id}/materials/${safe}` });
-}
-
-// Disable Vercel's built-in body parser so formidable can handle the stream
-handler.config = { api: { bodyParser: false } };
-
-module.exports = handler;
+};
