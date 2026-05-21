@@ -1,20 +1,24 @@
-const webpack = require('webpack');
+// Inline webpack plugin — no require('webpack') needed.
+// Rewrites node: URI scheme requests before webpack tries to handle them.
+class NodeUriSchemePlugin {
+  apply(compiler) {
+    compiler.hooks.normalModuleFactory.tap('NodeUriSchemePlugin', nmf => {
+      nmf.hooks.beforeResolve.tap('NodeUriSchemePlugin', result => {
+        if (result && result.request && result.request.startsWith('node:')) {
+          result.request = result.request.slice(5);
+        }
+      });
+    });
+  }
+}
 
 module.exports = {
   webpack: {
     configure: (config) => {
-      // pptxgenjs (and other modern packages) use node: URI scheme.
-      // webpack 5 doesn't handle this by default — strip the prefix so
-      // webpack resolves them through the normal fallback mechanism.
-      config.plugins.push(
-        new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
-          resource.request = resource.request.replace(/^node:/, '');
-        })
-      );
+      config.plugins.push(new NodeUriSchemePlugin());
 
-      // Tell webpack these Node built-ins don't exist in the browser.
-      // pptxgenjs uses fs only for server-side file writes; in the
-      // browser it uses FileSaver instead, so false is correct here.
+      // After stripping node: prefix, tell webpack these Node built-ins
+      // don't exist in the browser (pptxgenjs uses FileSaver instead of fs).
       config.resolve.fallback = {
         ...(config.resolve.fallback || {}),
         fs:      false,
