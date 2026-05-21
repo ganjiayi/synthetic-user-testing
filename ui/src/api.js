@@ -1,9 +1,7 @@
 import { PRODUCTS } from './data/questionnaire';
 
-const BASE = process.env.REACT_APP_API_URL || '';
-
 async function req(method, path, body) {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(path, {
     method,
     headers: body ? { 'Content-Type': 'application/json' } : {},
     body:    body ? JSON.stringify(body) : undefined,
@@ -14,10 +12,10 @@ async function req(method, path, body) {
       const err = await res.json().catch(() => ({ error: res.statusText }));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-    throw new Error(`HTTP ${res.status} — API unreachable. Ensure REACT_APP_API_URL is not set in Vercel.`);
+    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
   }
   if (!isJson) {
-    throw new Error(`API returned HTML instead of JSON. Remove REACT_APP_API_URL from Vercel environment variables and redeploy.`);
+    throw new Error(`Server returned an unexpected response (${res.status}). Check Vercel function logs.`);
   }
   return res.json();
 }
