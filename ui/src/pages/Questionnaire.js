@@ -71,7 +71,7 @@ function StepContext({ form, setForm }) {
 
       <FieldGroup
         label="Test materials"
-        hint="Upload Figma JPEG exports, screenshots, or documents — or paste a Figma prototype link, staging URL, or any live URL. Add as many files and links as needed."
+        hint="Upload Figma JPEG exports, screenshots, or documents — or paste a Figma prototype link, staging URL, or any live URL. Add as many files and links as needed. Tip: use only letters, numbers, dots and hyphens in filenames (e.g. Homepage.jpg not Homepage test.jpg) — spaces and special characters will be stripped."
       >
         <UploadZone
           value={form.testMaterials}
