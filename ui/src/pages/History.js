@@ -24,12 +24,12 @@ function truncate(text, n = 80) {
 }
 
 const COL = {
-  id:     { label: 'Study ID',                   w: '18%' },
-  date:   { label: 'Date and time created',       w: '16%' },
-  prod:   { label: 'Product',                     w: '12%' },
-  rq:     { label: 'Main research question',      w: '34%' },
-  status: { label: 'Research status',             w: '10%' },
-  action: { label: 'Action',                      w: '10%' },
+  id:     { label: 'Study ID',                   w: '170px',  flex: 0 },
+  date:   { label: 'Date and time created',       w: '150px',  flex: 0 },
+  prod:   { label: 'Product',                     w: '110px',  flex: 0 },
+  rq:     { label: 'Main research question',      w: '160px',  flex: 1 },
+  status: { label: 'Research status',             w: '110px',  flex: 0 },
+  action: { label: 'Action',                      w: '160px',  flex: 0 },
 };
 
 export default function History({ goTo }) {
@@ -88,11 +88,12 @@ export default function History({ goTo }) {
 
       {/* Table */}
       {runs !== null && runs.length > 0 && (
-        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflowX: 'auto' }}>
+          <div style={{ minWidth: '860px' }}>
           {/* Table head */}
           <div style={{ display: 'flex', background: 'var(--cream)', borderBottom: '1px solid var(--border)' }}>
             {Object.values(COL).map(c => (
-              <div key={c.label} style={{ width: c.w, padding: '0.625rem 1rem', fontSize: '11px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', flexShrink: 0 }}>
+              <div key={c.label} style={{ width: c.w, minWidth: c.w, flex: c.flex, padding: '0.625rem 1rem', fontSize: '11px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', flexShrink: 0 }}>
                 {c.label}
               </div>
             ))}
@@ -112,34 +113,34 @@ export default function History({ goTo }) {
               onMouseLeave={e => e.currentTarget.style.background = '#fff'}
             >
               {/* Study ID */}
-              <div style={{ width: COL.id.w, padding: '1rem', flexShrink: 0 }}>
-                <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--blue)', fontWeight: 500 }}>
+              <div style={{ width: COL.id.w, minWidth: COL.id.w, padding: '1rem', flexShrink: 0, overflow: 'hidden' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--blue)', fontWeight: 500, wordBreak: 'break-all' }}>
                   {run.id}
                 </span>
               </div>
 
               {/* Date */}
-              <div style={{ width: COL.date.w, padding: '1rem', fontSize: '12px', color: 'var(--body)', flexShrink: 0 }}>
+              <div style={{ width: COL.date.w, minWidth: COL.date.w, padding: '1rem', fontSize: '12px', color: 'var(--body)', flexShrink: 0 }}>
                 {formatDate(run.created_at)}
               </div>
 
               {/* Product */}
-              <div style={{ width: COL.prod.w, padding: '1rem', fontSize: '13px', fontWeight: 500, color: 'var(--ink)', flexShrink: 0 }}>
+              <div style={{ width: COL.prod.w, minWidth: COL.prod.w, padding: '1rem', fontSize: '13px', fontWeight: 500, color: 'var(--ink)', flexShrink: 0 }}>
                 {run.product || '—'}
               </div>
 
               {/* Main RQ */}
-              <div style={{ width: COL.rq.w, padding: '1rem', fontSize: '12px', color: 'var(--body)', lineHeight: 1.5, flexShrink: 0 }}>
+              <div style={{ flex: 1, minWidth: COL.rq.w, padding: '1rem', fontSize: '12px', color: 'var(--body)', lineHeight: 1.5 }}>
                 {truncate(run.primary_rq)}
               </div>
 
               {/* Status */}
-              <div style={{ width: COL.status.w, padding: '1rem', flexShrink: 0 }}>
+              <div style={{ width: COL.status.w, minWidth: COL.status.w, padding: '1rem', flexShrink: 0 }}>
                 {statusTag(run.status)}
               </div>
 
               {/* Actions */}
-              <div style={{ width: COL.action.w, padding: '1rem', display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+              <div style={{ width: COL.action.w, minWidth: COL.action.w, padding: '1rem', display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
                 <button
                   onClick={() => goTo('runDetail', { runId: run.id })}
                   style={{ padding: '0.35rem 0.875rem', fontSize: '12px', fontFamily: 'var(--sans)', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)', background: '#fff', color: 'var(--ink)', cursor: 'pointer', fontWeight: 500 }}
@@ -176,6 +177,7 @@ export default function History({ goTo }) {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
     </div>
