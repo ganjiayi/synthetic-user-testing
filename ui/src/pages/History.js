@@ -43,7 +43,7 @@ export default function History({ goTo }) {
   }, []);
 
   return (
-    <div style={{ flex: 1, padding: '2.5rem 2.5rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+    <div style={{ flex: 1, padding: '24px 16px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
 
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
@@ -88,7 +88,7 @@ export default function History({ goTo }) {
 
       {/* Table */}
       {runs !== null && runs.length > 0 && (
-        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflowX: 'auto' }}>
+        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflowX: 'auto', padding: '24px 16px' }}>
           <div style={{ minWidth: '860px' }}>
           {/* Table head */}
           <div style={{ display: 'flex', background: 'var(--cream)', borderBottom: '1px solid var(--border)' }}>
