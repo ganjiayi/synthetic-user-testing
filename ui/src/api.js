@@ -79,8 +79,6 @@ export const api = {
         .from('materials')
         .upload(`${runId}/${safe}`, file, { contentType: file.type, upsert: true });
       if (error) throw new Error(`Upload failed for ${file.name}: ${error.message}`);
-      // Notify server to update run's materials list
-      await req('POST', `/api/runs/${runId}/upload`, { filename: safe });
       results.push({ filename: safe });
     }
     return results;
