@@ -1,4 +1,11 @@
 import { PRODUCTS } from './data/questionnaire';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl    = process.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabaseBrowser = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 async function req(method, path, body) {
   const res = await fetch(path, {
@@ -64,19 +71,17 @@ export const api = {
   },
 
   async uploadFiles(runId, files) {
+    if (!supabaseBrowser) throw new Error('Supabase browser client not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
     const results = [];
     for (const file of files) {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch(`/api/runs/${runId}/upload`, {
-        method: 'POST',
-        body:   form,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-        throw new Error(err.error || `Upload failed for ${file.name}`);
-      }
-      results.push(await res.json());
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const { error } = await supabaseBrowser.storage
+        .from('materials')
+        .upload(`${runId}/${safe}`, file, { contentType: file.type, upsert: true });
+      if (error) throw new Error(`Upload failed for ${file.name}: ${error.message}`);
+      // Notify server to update run's materials list
+      await req('POST', `/api/runs/${runId}/upload`, { filename: safe });
+      results.push({ filename: safe });
     }
     return results;
   },
