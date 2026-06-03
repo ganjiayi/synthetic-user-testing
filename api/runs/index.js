@@ -28,10 +28,17 @@ module.exports = async (req, res) => {
     const { runId, intake } = req.body;
     if (!runId || !intake) return res.status(400).json({ error: 'runId and intake required' });
 
+    // Pre-populate materials from intake so run record tracks uploaded files
+    // without needing a separate upload notification endpoint
+    const materials = (intake.q2_context?.test_materials?.files || [])
+      .map(f => String(f).replace(/[^a-zA-Z0-9._-]/g, '_'))
+      .filter(Boolean);
+
     const { error } = await supabase.from('runs').insert({
-      id:     runId,
+      id:       runId,
       intake,
-      status: 'intake_saved',
+      status:   'intake_saved',
+      materials: materials.length > 0 ? materials : null,
     });
 
     if (error) return res.status(500).json({ error: error.message });
