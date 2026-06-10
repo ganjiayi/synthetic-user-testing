@@ -115,9 +115,18 @@ const BASE_EVAL_KEYS = new Set([
   'action', 'screen_or_step', 'inner_monologue',
 ]);
 
+const VALID_COMPLETION_STATES = new Set(['in_progress', 'completed', 'abandoned']);
+
 function parseTurnResponse(rawText, turnNumber, taskId, personaId) {
-  const cleaned = rawText
+  let cleaned = rawText
     .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+
+  // If the model added prose before/after the JSON object, extract just the object
+  if (cleaned[0] !== '{' || cleaned[cleaned.length - 1] !== '}') {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) cleaned = match[0];
+  }
+
   try {
     const parsed = JSON.parse(cleaned);
 
@@ -135,10 +144,10 @@ function parseTurnResponse(rawText, turnNumber, taskId, personaId) {
       inner_monologue: parsed.inner_monologue || '',
       eval_scores: {
         friction_score:    typeof parsed.friction_score === 'number' ? parsed.friction_score : null,
-        confusion_signal:  parsed.confusion_signal || null,
-        trust_signal:      parsed.trust_signal || null,
-        task_completion:   parsed.task_completion || 'in_progress',
-        abandon_trigger:   parsed.abandon_trigger || null,
+        confusion_signal:  typeof parsed.confusion_signal === 'string' ? parsed.confusion_signal : null,
+        trust_signal:      typeof parsed.trust_signal === 'string' ? parsed.trust_signal : null,
+        task_completion:   VALID_COMPLETION_STATES.has(parsed.task_completion) ? parsed.task_completion : 'in_progress',
+        abandon_trigger:   typeof parsed.abandon_trigger === 'string' ? parsed.abandon_trigger : null,
         persona_alignment: parsed.persona_alignment_note || null,
         ...extraEvalKeys,
       },
