@@ -182,7 +182,7 @@ async function callModel(provider, systemPrompt, conversationHistory, image = nu
   return await provider.call(systemPrompt, userMessage, img);
 }
 
-async function runPersonaSession(provider, persona, tasks, plan, personaLibrary, simulationPrompt, image = null) {
+async function runPersonaSession(provider, persona, tasks, plan, personaLibrary, simulationPrompt, image = null, onTaskComplete = null) {
   const personaId       = getPersonaId(persona);
   const artefactContext = buildArtefactContext(plan);
   const systemPrompt    = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan);
@@ -234,6 +234,10 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
         });
       }
       turnNumber++;
+    }
+
+    if (onTaskComplete) {
+      try { await onTaskComplete({ task_id: task.task_id }); } catch {}
     }
   }
 

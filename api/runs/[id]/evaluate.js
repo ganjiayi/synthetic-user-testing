@@ -49,13 +49,28 @@ async function handler(req, res) {
       }
     }
 
+    const totalTasks     = providerNames.length * activePersonas.length * (activeTasks.length || 1);
+    let   completedTasks = 0;
+
     const sessions = [];
     for (const providerName of providerNames) {
       const provider = require(`../../../src/providers/${providerName}`);
       // Only pass image to providers that support vision (OpenAI gpt-4o, Claude)
       const img = artefactImage;
       for (const persona of activePersonas) {
-        const session = await runPersonaSession(provider, persona, activeTasks, plan, personaLib, simPrompt, img);
+        const session = await runPersonaSession(provider, persona, activeTasks, plan, personaLib, simPrompt, img, async ({ task_id }) => {
+          completedTasks++;
+          await supabase.from('runs').update({
+            stage:      JSON.stringify({
+              completed: completedTasks,
+              total:     totalTasks,
+              provider:  providerName,
+              persona:   persona.name,
+              task:      task_id,
+            }),
+            updated_at: new Date(),
+          }).eq('id', id);
+        });
         session.provider = providerName;
         sessions.push(session);
 
