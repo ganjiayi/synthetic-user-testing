@@ -8,7 +8,11 @@ function loadPersonaPrompts() {
 
 function loadSimulationPrompt() {
   const p = path.join(process.cwd(), '.claude/agents/simulation-runner.md');
-  return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : buildDefaultSimulationPrompt();
+  if (fs.existsSync(p)) {
+    const content = fs.readFileSync(p, 'utf8').trim();
+    if (content) return content;
+  }
+  return buildDefaultSimulationPrompt();
 }
 
 function buildDefaultSimulationPrompt() {
