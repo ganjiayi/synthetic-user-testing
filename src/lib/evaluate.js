@@ -1,5 +1,6 @@
 const path = require('path');
 const fs   = require('fs');
+const { extractJsonObject, getPersonaId } = require('./utils');
 
 function loadPersonaPrompts() {
   const p = path.join(process.cwd(), 'personas/v4_system_prompts.md');
@@ -122,17 +123,8 @@ const BASE_EVAL_KEYS = new Set([
 const VALID_COMPLETION_STATES = new Set(['in_progress', 'completed', 'abandoned']);
 
 function parseTurnResponse(rawText, turnNumber, taskId, personaId) {
-  let cleaned = rawText
-    .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-
-  // If the model added prose before/after the JSON object, extract just the object
-  if (cleaned[0] !== '{' || cleaned[cleaned.length - 1] !== '}') {
-    const match = cleaned.match(/\{[\s\S]*\}/);
-    if (match) cleaned = match[0];
-  }
-
   try {
-    const parsed = JSON.parse(cleaned);
+    const parsed = extractJsonObject(rawText);
 
     const extraEvalKeys = {};
     for (const [k, v] of Object.entries(parsed)) {
@@ -191,7 +183,7 @@ async function callModel(provider, systemPrompt, conversationHistory, image = nu
 }
 
 async function runPersonaSession(provider, persona, tasks, plan, personaLibrary, simulationPrompt, image = null) {
-  const personaId       = persona.persona_library_ref || persona.name.toLowerCase().replace(/\s+/g, '_');
+  const personaId       = getPersonaId(persona);
   const artefactContext = buildArtefactContext(plan);
   const systemPrompt    = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan);
   const maxTurns        = plan.test_scenarios?.session_config?.max_turns || 20;

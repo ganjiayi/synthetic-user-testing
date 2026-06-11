@@ -1,3 +1,5 @@
+const { extractJsonObject, getPersonaId } = require('./utils');
+
 /**
  * Methodology-specific output structures for session report synthesis.
  *
@@ -139,10 +141,7 @@ function stripProviderPrefix(personaId) {
 function findPersonaContext(session, plan) {
   const segments = plan?.user_segments?.segments || [];
   const targetId = stripProviderPrefix(session.persona_id || '');
-  const match = segments.find(s => {
-    const ref = s.persona_library_ref || (s.name || '').toLowerCase().replace(/\s+/g, '_');
-    return ref === targetId;
-  });
+  const match = segments.find(s => getPersonaId(s) === targetId);
   return match || { name: session.persona_name, context: '' };
 }
 
@@ -197,15 +196,7 @@ Synthesize the deliverables JSON object as instructed.`;
 }
 
 function parseDeliverables(rawText, config) {
-  let cleaned = rawText
-    .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-
-  if (cleaned[0] !== '{' || cleaned[cleaned.length - 1] !== '}') {
-    const match = cleaned.match(/\{[\s\S]*\}/);
-    if (match) cleaned = match[0];
-  }
-
-  const parsed = JSON.parse(cleaned);
+  const parsed = extractJsonObject(rawText);
 
   const keyMoments = {};
   for (const c of config.keyMoments) {
