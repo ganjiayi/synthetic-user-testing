@@ -253,6 +253,12 @@ export default function IntakeReview({ goTo, draft }) {
             }
           </Section>
 
+          {form.scenario && (
+            <Section title="Scenario">
+              <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.6 }}>{form.scenario}</div>
+            </Section>
+          )}
+
           <Section title="Tasks">
             {tasks.length === 0
               ? <div style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>No tasks defined.</div>
@@ -260,7 +266,12 @@ export default function IntakeReview({ goTo, draft }) {
                 <div key={i} style={{ marginBottom: '0.875rem', padding: '0.75rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)' }}>
                   <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace', marginBottom: '0.25rem' }}>T{i + 1}</div>
                   <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.15rem' }}>{t.name || '—'}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--body)' }}>{t.instruction || '—'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--body)', whiteSpace: 'pre-line', marginBottom: t.whatToTest ? '0.4rem' : 0 }}>{t.instruction || '—'}</div>
+                  {t.whatToTest && (
+                    <div style={{ fontSize: '11px', color: 'var(--mute)', whiteSpace: 'pre-line' }}>
+                      <span style={{ fontWeight: 500 }}>Testing: </span>{t.whatToTest}
+                    </div>
+                  )}
                 </div>
               ))
             }

@@ -328,9 +328,9 @@ function buildEvalMatrix(sessions) {
   return { rows, summary: Object.values(summary) };
 }
 
-module.exports = {
+module.exports = { buildPersonaSystemPrompt, buildTaskPrompt, buildArtefactContext, ___orig: {
   loadPersonaPrompts,
   loadSimulationPrompt,
   runPersonaSession,
   buildEvalMatrix,
-};
+} };

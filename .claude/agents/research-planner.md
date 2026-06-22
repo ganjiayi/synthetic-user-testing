@@ -32,11 +32,12 @@ Respond with a single valid JSON object. No preamble, no markdown fences, no exp
 - `study_context.lifecycle`                        ← `q2_context.lifecycle`
 - `study_context.design_phase`                     ← `q2_context.design_phase`
 - `study_context.methodology`                      ← `q6_methodology.methodology`
+- `study_context.scenario`                         ← `q6_methodology.scenario` (null if empty — do NOT invent one)
 - `study_context.artefact_config.fidelity_level`   ← `q2_context.fidelity`
 - `study_context.artefact_config.artefact_notes`   ← `q2_context.artefact_notes`
 - `study_context.artefact_config.artefact_link`    ← first entry in `q2_context.test_materials.urls` (null if empty; do NOT invent a URL)
 - `study_context.artefact_config.files`            ← `q2_context.test_materials.files` (array of filenames; null if empty)
-- `study_context.artefact_config.artefact_type`    ← derive: `"url"` if artefact_link is non-null, `"uploaded_files"` if files are non-empty, `"description_only"` otherwise. Do NOT add any `input_format` or `api_mode` fields.
+- `study_context.artefact_config.artefact_type`    ← derive, in this order: `"interactive_prototype"` if `q2_context.is_interactive_prototype` is `true` AND artefact_link is non-null; else `"url"` if artefact_link is non-null; else `"uploaded_files"` if files are non-empty; else `"description_only"`. Do NOT add any `input_format` or `api_mode` fields.
 - `study_context.artefact_config.friction_sensitivity` ← derive from fidelity:
   - "High-fidelity prototype" or "Live product" → `"high"`
   - "Mid-fidelity prototype" → `"moderate"`
@@ -63,7 +64,7 @@ For each included segment carry over exactly: `name`, `context`, `priority`, `pe
 
 ### test_scenarios
 
-Build from `q6_methodology.tasks` (array of objects with `name` and `instruction`).
+Build from `q6_methodology.tasks` (array of objects with `name`, `instruction`, and `whatToTest`).
 
 The `test_scenarios` object must have exactly two keys: `scenarios` (the task array) and `session_config`.
 
@@ -75,7 +76,8 @@ The `test_scenarios` object must have exactly two keys: `scenarios` (the task ar
       "task_name":         "<task.name>",
       "instruction":       "<task.instruction>",
       "success_condition": "<derived — see Methodology rules below>",
-      "abandon_condition": "<derived — see Methodology rules below>"
+      "abandon_condition": "<derived — see Methodology rules below>",
+      "test_intent":       "<task.whatToTest, verbatim — null if empty>"
     }
   ],
   "session_config": {
@@ -89,6 +91,7 @@ The `test_scenarios` object must have exactly two keys: `scenarios` (the task ar
 - Skip tasks where both `name` and `instruction` are empty.
 - Number task_ids sequentially: T1, T2, T3 …
 - Do NOT put tasks directly on `test_scenarios` — they must be nested under `scenarios`.
+- `test_intent` is researcher-facing framing for the analysis stage — copy it verbatim, do not rephrase or merge it into `success_condition`/`abandon_condition`.
 
 ### eval_metrics
 

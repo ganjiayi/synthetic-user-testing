@@ -79,6 +79,16 @@ function StepContext({ form, setForm }) {
         />
       </FieldGroup>
 
+      {(form.testMaterials?.urls || []).length > 0 && (
+        <FieldGroup label="Prototype interactivity" hint="Turn this on if the linked URL is a real, clickable prototype (e.g. a Claude Design HTML export, a Figma prototype, or a staging build) that synthetic users should navigate turn by turn. Leave off if it's just a reference link or a static screenshot.">
+          <Pill
+            label={form.isInteractivePrototype ? 'Live, clickable prototype' : 'Static reference link'}
+            selected={!!form.isInteractivePrototype}
+            onClick={() => setForm(f => ({ ...f, isInteractivePrototype: !f.isInteractivePrototype }))}
+          />
+        </FieldGroup>
+      )}
+
       <FieldGroup label="Fidelity level">
         <div style={pillRow}>
           {fidelity.map(fi => (
@@ -173,10 +183,15 @@ function StepTasks({ form, setForm }) {
 
   const methodologies = [
     { id: 'Usability Testing',    desc: 'Task-based — where do users get stuck or abandon?' },
-    { id: 'UX Testing',           desc: 'Holistic — does the design communicate its intent?' },
-    { id: 'Concept Testing',      desc: 'Reaction-based — is the concept clear and appealing?' },
-    { id: 'Desirability Testing', desc: 'Impression-based — does the design resonate emotionally?' },
   ];
+
+  // Only one methodology is offered right now — select it by default so the
+  // eval metrics preview shows without requiring a click.
+  React.useEffect(() => {
+    if (!form.methodology) {
+      setForm(f => ({ ...f, methodology: 'Usability Testing' }));
+    }
+  }, [form.methodology, setForm]);
 
   const METHODOLOGY_METRICS = {
     'Usability Testing': {
@@ -256,10 +271,25 @@ function StepTasks({ form, setForm }) {
     ],
   };
 
+  const EXAMPLE_TASK = {
+    name:        'Home/Impression',
+    instruction: `Without clicking on anything, explore the information here and tell me:
+a) What do you expect you can do with this website?
+b) How would you make your decision on choosing between the TV packages and broadband speeds?
+c) Which other internet service provider would you compare with?
+d) What do you understand about the descriptions given?
+e) Is there anything you find confusing within this page?
+f) Is there any missing information you'd like to see but is not available here?
+g) Are you aware of the available promotions when you subscribe to a broadband plan?`,
+    whatToTest:  `1. Users' impression of what they can do with the website
+2. Are users confused about the information presented?
+3. What information would users like to know before purchasing?`,
+  };
+
   const tasks = form.tasks || [
-    { name: '', instruction: '' },
-    { name: '', instruction: '' },
-    { name: '', instruction: '' },
+    EXAMPLE_TASK,
+    { name: '', instruction: '', whatToTest: '' },
+    { name: '', instruction: '', whatToTest: '' },
   ];
 
   const updateTask = (i, field, val) => {
@@ -267,7 +297,7 @@ function StepTasks({ form, setForm }) {
     setForm(f => ({ ...f, tasks: next }));
   };
 
-  const addTask = () => setForm(f => ({ ...f, tasks: [...tasks, { name: '', instruction: '' }] }));
+  const addTask = () => setForm(f => ({ ...f, tasks: [...tasks, { name: '', instruction: '', whatToTest: '' }] }));
 
   return (
     <>
@@ -383,29 +413,42 @@ function StepTasks({ form, setForm }) {
 
       <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
 
+      {/* Scenario */}
+      <FieldGroup label="Scenario" hint="Set the situation the persona is in before they attempt the tasks below — what brought them here, what they already know, what they're trying to decide.">
+        <TextInput rows={3}
+          placeholder="e.g. You are a homeowner whose current broadband contract is ending soon. You've landed on this provider's website for the first time to see what they offer."
+          value={form.scenario || ''}
+          onChange={e => setForm(f => ({ ...f, scenario: e.target.value }))} />
+      </FieldGroup>
+
       {/* Tasks table */}
       <FieldGroup label="Tasks">
-        <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr', gap: '8px', marginBottom: '6px' }}>
-          {['Task', 'Top task', 'Task instruction for synthetic users'].map(h => (
+        <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1.6fr 1.2fr', gap: '8px', marginBottom: '6px' }}>
+          {['Task', 'Screen/Task', 'Task for User', 'What do we want to test?'].map(h => (
             <div key={h} style={{ fontSize: '10px', color: 'var(--mute-soft)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</div>
           ))}
         </div>
 
         {tasks.map((task, i) => (
-          <div key={i} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr', gap: '8px', marginBottom: '8px', alignItems: 'start' }}>
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1.6fr 1.2fr', gap: '8px', marginBottom: '8px', alignItems: 'start' }}>
             <div style={{
               fontSize: '12px', fontWeight: 600, color: 'var(--blue)',
               fontFamily: 'monospace', paddingTop: '0.65rem', textAlign: 'center',
             }}>T{i + 1}</div>
             <TextInput
-              placeholder={i === 0 ? 'e.g. Find warranty information' : i === 1 ? 'e.g. Compare subscription plans' : 'Type of task…'}
+              placeholder="e.g. Home/Impression"
               value={task.name}
               onChange={e => updateTask(i, 'name', e.target.value)}
             />
-            <TextInput
-              placeholder={i === 0 ? 'Type task instruction here' : i === 1 ? 'Type task instruction here' : ''}
+            <TextInput rows={6}
+              placeholder="What should the synthetic user be asked to do on this screen?"
               value={task.instruction}
               onChange={e => updateTask(i, 'instruction', e.target.value)}
+            />
+            <TextInput rows={6}
+              placeholder="What insight is this task meant to surface?"
+              value={task.whatToTest || ''}
+              onChange={e => updateTask(i, 'whatToTest', e.target.value)}
             />
           </div>
         ))}

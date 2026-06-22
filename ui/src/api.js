@@ -126,6 +126,7 @@ export function buildIntake(form, runId) {
       design_phase:    form.designPhase || '',
       fidelity:        form.fidelity || '',
       artefact_notes:  form.artefactNotes || '',
+      is_interactive_prototype: !!form.isInteractivePrototype,
       test_materials: {
       files: (form.testMaterials?.files || []).map(f => f.name).filter(Boolean),
       urls:  form.testMaterials?.urls || [],
@@ -162,6 +163,7 @@ export function buildIntake(form, runId) {
     },
     q6_methodology: {
       methodology:   form.methodology || '',
+      scenario:      form.scenario || '',
       tasks:         form.tasks || [],
     },
     q7_hypotheses: {

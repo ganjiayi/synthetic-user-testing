@@ -165,8 +165,9 @@ function buildTranscriptBlock(session) {
 
 function buildDeliverablesUserPrompt(session, persona, plan) {
   const studyContext = plan?.study_context?.artefact_config?.artefact_notes || '';
+  const scenario      = plan?.study_context?.scenario || '';
   const tasks = (plan?.test_scenarios?.scenarios || [])
-    .map(t => `- ${t.task_id}: ${t.task_name} — success: ${t.success_condition || 'n/a'}, abandon: ${t.abandon_condition || 'n/a'}`)
+    .map(t => `- ${t.task_id}: ${t.task_name} — success: ${t.success_condition || 'n/a'}, abandon: ${t.abandon_condition || 'n/a'}${t.test_intent ? ` — testing: ${t.test_intent}` : ''}`)
     .join('\n');
 
   return `## Persona
@@ -177,10 +178,13 @@ ${persona.context || ''}
 ## Study Context
 
 ${studyContext}
+${scenario ? `\nScenario the persona was placed in: ${scenario}` : ''}
 
 ## Tasks Attempted
 
 ${tasks || 'Not specified'}
+
+Use the "testing:" framing on each task above to ground your findings — when synthesizing key_moments and findings, prioritise evidence that speaks directly to what each task was meant to surface.
 
 ## Session Outcome
 

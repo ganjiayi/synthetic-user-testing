@@ -730,13 +730,15 @@ function QuestionnaireTab({ intake }) {
 
       <SectionHead>Methodology</SectionHead>
       <Field label="Methodology" value={q.q6_methodology?.methodology} />
+      <Field label="Scenario" value={q.q6_methodology?.scenario} />
       {(q.q6_methodology?.tasks || []).length > 0 && (
         <div style={{ marginBottom: '1rem' }}>
           <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Tasks</div>
           {q.q6_methodology.tasks.filter(t => t.name || t.instruction).map((t, i) => (
             <div key={i} style={{ padding: '0.625rem 0.875rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)', fontSize: '13px', color: 'var(--body)', lineHeight: 1.6, marginBottom: '0.4rem' }}>
               <div style={{ fontWeight: 500, color: 'var(--ink)', marginBottom: t.instruction ? '0.2rem' : 0 }}>{t.name || '—'}</div>
-              {t.instruction && <div style={{ fontSize: '12px', color: 'var(--mute)' }}>{t.instruction}</div>}
+              {t.instruction && <div style={{ fontSize: '12px', color: 'var(--mute)', whiteSpace: 'pre-line' }}>{t.instruction}</div>}
+              {t.whatToTest && <div style={{ fontSize: '11px', color: 'var(--mute-soft)', marginTop: '0.25rem', whiteSpace: 'pre-line' }}><strong>Testing:</strong> {t.whatToTest}</div>}
             </div>
           ))}
         </div>
