@@ -234,6 +234,73 @@ async function buildPresentation(run) {
     x: 0.5, y: 6.8, w: 12, h: 0.2, fontSize: 8, color: 'CCCCCC',
   });
 
+  /* ── Appendix: full turn-by-turn transcripts (raw data) ───────────────── */
+  const TURNS_PER_SLIDE = 2;
+
+  const appendixCover = pptx.addSlide();
+  appendixCover.background = { color: INK };
+  appendixCover.addText('APPENDIX', { x: 0.5, y: 3.0, w: 12, h: 0.3, fontSize: 9, color: '555555', bold: true, charSpacing: 3 });
+  appendixCover.addText('Full turn-by-turn transcripts', { x: 0.5, y: 3.35, w: 12, h: 0.8, fontSize: 32, color: WHITE, bold: true });
+  appendixCover.addText('Raw per-turn actions, think-aloud, and eval scores for every persona and task below.', { x: 0.5, y: 4.15, w: 11, h: 0.5, fontSize: 13, color: '888888' });
+
+  for (const s of sessions) {
+    for (const task of tasks) {
+      const taskTurns = (s.turns || []).filter(t => t.task_id === task.task_id);
+      if (taskTurns.length === 0) continue;
+
+      for (let i = 0; i < taskTurns.length; i += TURNS_PER_SLIDE) {
+        const chunk = taskTurns.slice(i, i + TURNS_PER_SLIDE);
+        const tSlide = pptx.addSlide();
+        tSlide.background = { color: WHITE };
+
+        tSlide.addText(`${task.task_id} — TRANSCRIPT — ${s.persona_name.toUpperCase()}`, {
+          x: 0.5, y: 0.3, w: 12, h: 0.25, fontSize: 9, color: BLUE, bold: true, charSpacing: 1.5,
+        });
+        tSlide.addText(`Turns ${i + 1}–${Math.min(i + TURNS_PER_SLIDE, taskTurns.length)} of ${taskTurns.length}`, {
+          x: 0.5, y: 0.58, w: 12, h: 0.3, fontSize: 11, color: MUTE,
+        });
+
+        let y = 1.05;
+        const blockH = (6.9 - y) / TURNS_PER_SLIDE;
+        for (const t of chunk) {
+          if (t.parse_error || t.model_error) {
+            tSlide.addText(`Turn ${t.turn_number} — [no usable data: ${t.parse_error || t.model_error}]`, {
+              x: 0.5, y, w: 12.3, h: blockH - 0.15, fontSize: 11, color: RED, italic: true,
+            });
+            y += blockH;
+            continue;
+          }
+
+          const actionLine = [
+            `Turn ${t.turn_number}`,
+            t.screen_or_step ? `· ${t.screen_or_step}` : '',
+          ].filter(Boolean).join(' ');
+
+          const actionDetail = [
+            `Action: ${t.action || '—'}`,
+            t.click_target ? `→ clicking "${t.click_target}"` : '',
+            t.scroll_direction ? `→ scrolling ${t.scroll_direction}` : '',
+          ].filter(Boolean).join('  ');
+
+          const evalLine = Object.entries(t.eval_scores || {})
+            .map(([k, v]) => `${k}: ${v === null || v === undefined ? '—' : v}`)
+            .join('   ·   ');
+
+          tSlide.addText(actionLine, { x: 0.5, y, w: 12.3, h: 0.28, fontSize: 13, color: INK, bold: true });
+          tSlide.addText(actionDetail, { x: 0.5, y: y + 0.3, w: 12.3, h: 0.25, fontSize: 10.5, color: BLUE });
+          tSlide.addText(`"${t.inner_monologue || '—'}"`, {
+            x: 0.5, y: y + 0.58, w: 12.3, h: blockH - 1.05, fontSize: 11, color: '374151', italic: true, valign: 'top',
+          });
+          tSlide.addText(evalLine, {
+            x: 0.5, y: y + blockH - 0.42, w: 12.3, h: 0.32, fontSize: 8.5, color: MUTE, fontFace: 'Courier New',
+          });
+
+          y += blockH;
+        }
+      }
+    }
+  }
+
   await pptx.writeFile({ fileName: `${run.id}_presentation.pptx` });
 }
 
@@ -481,6 +548,7 @@ function ReportTab({ run }) {
   const intake   = run.intake;
 
   const methodology = plan?.study_context?.methodology || intake?.q6_methodology?.methodology || '';
+  const scenario    = plan?.study_context?.scenario || intake?.q6_methodology?.scenario || '';
   const tasks       = plan?.test_scenarios?.scenarios || [];
   const personas    = plan?.user_segments?.segments || [];
   const evalKeys    = plan?.eval_metrics?.default_keys || [];
@@ -489,6 +557,18 @@ function ReportTab({ run }) {
   const feature     = plan?.research_goals?.feature_under_test || intake?.q5_product_context?.feature_under_test || '';
   const artefact    = plan?.study_context?.artefact_config || {};
   const orchestration = plan?.method?.orchestration || '';
+  const limitations = plan?.method?.limitations || '';
+
+  const productName  = plan?.study_context?.product || intake?.q5_product_context?.product_name || intake?.q1_product || '';
+  const productDesc  = plan?.study_context?.product_description || intake?.q5_product_context?.product_desc || '';
+  const lifecycle    = plan?.study_context?.lifecycle || intake?.q2_context?.lifecycle || '';
+  const designPhase  = plan?.study_context?.design_phase || intake?.q2_context?.design_phase || '';
+  const decisionToSupport = plan?.research_goals?.decision_to_support || intake?.q3_goals?.decision_to_support || '';
+  const modelProviders = intake?.q8_output?.model_providers || [];
+
+  const hypothesesList   = plan?.hypotheses?.list || [];
+  const knownUxRisks     = plan?.hypotheses?.known_ux_risks || '';
+  const forbiddenAssumptions = plan?.hypotheses?.forbidden_assumptions || '';
 
   if (!plan && sessions.length === 0) {
     return (
@@ -544,6 +624,28 @@ function ReportTab({ run }) {
         <SectionHead>Research overview</SectionHead>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem 2rem', marginBottom: '1.25rem' }}>
+          {productName && (
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Product</div>
+              <div style={{ fontSize: '13px', color: 'var(--body)' }}>{productName}{productDesc ? ` — ${productDesc}` : ''}</div>
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Date of study</div>
+            <div style={{ fontSize: '13px', color: 'var(--body)' }}>{formatDate(run.created_at)}</div>
+          </div>
+          {methodology && (
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Methodology</div>
+              <div style={{ fontSize: '13px', color: 'var(--body)' }}>{methodology}</div>
+            </div>
+          )}
+          {(lifecycle || designPhase) && (
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Product stage</div>
+              <div style={{ fontSize: '13px', color: 'var(--body)' }}>{[lifecycle, designPhase].filter(Boolean).join(' · ')}</div>
+            </div>
+          )}
           {rqPrimary && (
             <div>
               <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Primary research question</div>
@@ -556,14 +658,16 @@ function ReportTab({ run }) {
               <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65, whiteSpace: 'pre-line' }}>{rqSecondary}</div>
             </div>
           )}
-          <div>
-            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Date of study</div>
-            <div style={{ fontSize: '13px', color: 'var(--body)' }}>{formatDate(run.created_at)}</div>
-          </div>
-          {methodology && (
+          {decisionToSupport && (
             <div>
-              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Methodology</div>
-              <div style={{ fontSize: '13px', color: 'var(--body)' }}>{methodology}</div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Decision this study supports</div>
+              <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65 }}>{decisionToSupport}</div>
+            </div>
+          )}
+          {modelProviders.length > 0 && (
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>AI models used</div>
+              <div style={{ fontSize: '13px', color: 'var(--body)' }}>{modelProviders.map(p => p === 'openai' ? 'OpenAI — gpt-4o' : p === 'claude' ? 'Claude — claude-sonnet-4-6' : p).join(', ')}</div>
             </div>
           )}
         </div>
@@ -598,19 +702,50 @@ function ReportTab({ run }) {
           </div>
         )}
 
-        {/* Tasks list */}
+        {/* Artefact tested */}
+        {(artefact.artefact_link || artefact.files?.length || artefact.fidelity_level || artefact.artefact_notes) && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Artefact tested</div>
+            <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65 }}>
+              {artefact.artefact_link && (
+                <div>Link: <a href={artefact.artefact_link} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)' }}>{artefact.artefact_link}</a></div>
+              )}
+              {artefact.files?.length > 0 && <div>Files: {artefact.files.join(', ')}</div>}
+              {artefact.fidelity_level && <div>Fidelity: {artefact.fidelity_level}{artefact.artefact_type ? ` (${artefact.artefact_type})` : ''}</div>}
+              {artefact.artefact_notes && <div style={{ whiteSpace: 'pre-line' }}>Notes: {artefact.artefact_notes}</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Scenario */}
+        {scenario && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>Scenario</div>
+            <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65, fontStyle: 'italic', whiteSpace: 'pre-line' }}>{scenario}</div>
+          </div>
+        )}
+
+        {/* Tasks table */}
         {tasks.length > 0 && (
           <div style={{ marginBottom: '1rem' }}>
             <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.5rem' }}>
-              Participants were asked to complete
+              Tasks
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1.6fr 1.2fr', gap: '8px', marginBottom: '6px' }}>
+              {['Task', 'Screen/Task', 'Task for User', 'What we tested'].map(h => (
+                <div key={h} style={{ fontSize: '10px', color: 'var(--mute-soft)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</div>
+              ))}
             </div>
             {tasks.map((t, i) => (
-              <div key={i} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.35rem', fontSize: '13px' }}>
-                <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)', flexShrink: 0 }}>{t.task_id}</span>
-                <span style={{ color: 'var(--body)' }}>
-                  <strong style={{ fontWeight: 500, color: 'var(--ink)' }}>{t.task_name}</strong>
-                  {t.instruction ? ` — ${t.instruction}` : ''}
-                </span>
+              <div key={i} style={{
+                display: 'grid', gridTemplateColumns: '52px 1fr 1.6fr 1.2fr', gap: '8px',
+                marginBottom: '8px', padding: '0.625rem', alignItems: 'start',
+                background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)',
+              }}>
+                <div style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)', fontSize: '12px' }}>{t.task_id}</div>
+                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)' }}>{t.task_name || '—'}</div>
+                <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.5, whiteSpace: 'pre-line' }}>{t.instruction || '—'}</div>
+                <div style={{ fontSize: '12px', color: 'var(--mute)', lineHeight: 1.5, whiteSpace: 'pre-line' }}>{t.test_intent || '—'}</div>
               </div>
             ))}
           </div>
@@ -618,7 +753,7 @@ function ReportTab({ run }) {
 
         {/* Metrics collected */}
         {evalKeys.length > 0 && (
-          <div>
+          <div style={{ marginBottom: '1rem' }}>
             <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.4rem' }}>
               Metrics collected and measured
             </div>
@@ -629,6 +764,44 @@ function ReportTab({ run }) {
                 </span>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Hypotheses & research constraints */}
+        {(hypothesesList.length > 0 || knownUxRisks || forbiddenAssumptions) && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.4rem' }}>
+              Hypotheses & research constraints
+            </div>
+            {hypothesesList.length > 0 && (
+              <div style={{ marginBottom: '0.6rem' }}>
+                {hypothesesList.map((h, i) => (
+                  <div key={i} style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.6, marginBottom: '0.25rem' }}>
+                    <strong style={{ color: 'var(--blue)', fontFamily: 'monospace' }}>{h.id}:</strong> {h.statement}
+                  </div>
+                ))}
+              </div>
+            )}
+            {knownUxRisks && (
+              <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.6, marginBottom: '0.4rem', whiteSpace: 'pre-line' }}>
+                <strong style={{ color: 'var(--ink)' }}>Known UX risks:</strong> {knownUxRisks}
+              </div>
+            )}
+            {forbiddenAssumptions && (
+              <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                <strong style={{ color: 'var(--ink)' }}>Must not assume:</strong> {forbiddenAssumptions}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Limitations */}
+        {limitations && (
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.3rem' }}>
+              What this study cannot validate
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65 }}>{limitations}</div>
           </div>
         )}
       </div>
