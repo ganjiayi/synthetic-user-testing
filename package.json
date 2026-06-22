@@ -4,14 +4,7 @@
   "description": "Synthetic UX research pipeline — pipeline + API server",
   "private": true,
   "scripts": {
-    "build": "cd ui && npm install --legacy-peer-deps && npm run build",
-    "start": "node src/server/index.js",
-    "parse": "node src/pipeline/parseIntake.js",
-    "plan": "NODE_EXTRA_CA_CERTS=certs.pem node src/pipeline/generatePlan.js",
-    "run-study": "NODE_EXTRA_CA_CERTS=certs.pem node src/pipeline/evaluator.js",
-    "compare": "NODE_EXTRA_CA_CERTS=certs.pem node src/pipeline/compare.js",
-    "compare-plan": "NODE_EXTRA_CA_CERTS=certs.pem node src/pipeline/comparePlan.js",
-    "certs": "security find-certificate -a -p /Library/Keychains/System.keychain > certs.pem && security find-certificate -a -p ~/Library/Keychains/login.keychain-db >> certs.pem && echo 'certs.pem updated'"
+    "build": "cd ui && npm install --legacy-peer-deps && npm run build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",

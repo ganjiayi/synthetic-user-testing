@@ -4,8 +4,43 @@ const { extractJsonObject, getPersonaId } = require('./utils');
 const browserSessionLib = require('./browser-session');
 
 function loadPersonaPrompts() {
-  const p = path.join(process.cwd(), 'personas/v4_system_prompts.md');
-  return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null;
+  const p = path.join(process.cwd(), 'personas/v4_library.json');
+  if (!fs.existsSync(p)) return null;
+  try {
+    const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+    return Array.isArray(data.personas) ? data.personas : null;
+  } catch {
+    return null;
+  }
+}
+
+function formatPersonaProfile(p) {
+  const lines = [`## ${p.name}${p.archetype ? ` — ${p.archetype}` : ''}`];
+  if (p.tagline) lines.push(`"${p.tagline}"`);
+  if (p.age || p.identity) {
+    lines.push([
+      p.age ? `Age: ${p.age}` : '',
+      p.identity?.location ? `Location: ${p.identity.location}` : '',
+      p.identity?.role ? `Role: ${p.identity.role}` : '',
+      p.identity?.primary_device ? `Device: ${p.identity.primary_device}` : '',
+    ].filter(Boolean).join(' · '));
+  }
+  if (p.personality?.temperament) lines.push(`Temperament: ${p.personality.temperament}`);
+  if (p.motivations?.length) lines.push(`Motivations: ${p.motivations.join('; ')}`);
+  if (p.pain_points?.length) lines.push(`Pain points: ${p.pain_points.join('; ')}`);
+  if (p.decision_making?.dealbreakers?.length) lines.push(`Dealbreakers: ${p.decision_making.dealbreakers.join('; ')}`);
+  if (p.behavioural_tendencies?.length) lines.push(`Behavioural tendencies: ${p.behavioural_tendencies.join('; ')}`);
+  if (p.signature_quotes?.length) lines.push(`In her/his own words: ${p.signature_quotes.map(q => `"${q}"`).join(' / ')}`);
+  if (p.technology_literacy) {
+    const t = p.technology_literacy;
+    lines.push(`Tech literacy: ${t.overall_score ?? '—'}/100. Strengths: ${(t.strengths || []).join(', ') || '—'}. Weaknesses: ${(t.weaknesses || []).join(', ') || '—'}.`);
+  }
+  if (p.ux_change_response?.complex_flow_behaviour) lines.push(`Response to complex flows: ${p.ux_change_response.complex_flow_behaviour}`);
+  if (p.astro_pain_points?.applicable_issues?.length) {
+    const issues = p.astro_pain_points.applicable_issues.map(i => `${i.theme} (${i.severity}): ${i.description}`).join(' | ');
+    lines.push(`Known Astro-specific friction: ${issues}`);
+  }
+  return lines.join('\n');
 }
 
 function loadSimulationPrompt() {
@@ -53,18 +88,10 @@ Rules:
 function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan) {
   let personaBlock = '';
 
-  if (personaLibrary) {
-    const nameVariants = [
-      persona.name,
-      persona.name.toLowerCase(),
-      persona.persona_library_ref,
-    ].filter(Boolean);
-
-    for (const variant of nameVariants) {
-      const re = new RegExp(`#{1,3}[^\\n]*${variant}[^\\n]*\\n([\\s\\S]*?)(?=#{1,3}|$)`, 'i');
-      const m = personaLibrary.match(re);
-      if (m) { personaBlock = m[0]; break; }
-    }
+  if (Array.isArray(personaLibrary)) {
+    const slug = (persona.persona_library_ref || '').replace(/^v4_/, '').replace(/_/g, '-');
+    const match = personaLibrary.find(p => p.name === persona.name || (slug && p.slug === slug));
+    if (match) personaBlock = formatPersonaProfile(match);
   }
 
   if (!personaBlock) {

@@ -7,7 +7,6 @@ import IntakeReview   from './pages/IntakeReview';
 import PlanViewer     from './pages/PlanViewer';
 import RunResearch    from './pages/RunResearch';
 import Results        from './pages/Results';
-import Report         from './pages/Report';
 import History        from './pages/History';
 import RunDetail      from './pages/RunDetail';
 import Nav            from './components/Nav';
@@ -46,7 +45,6 @@ export default function App() {
       {page === 'plan'           && <PlanViewer     goTo={goTo} runId={runId} plan={planData} />}
       {page === 'running'        && <RunResearch    goTo={goTo} runId={runId} />}
       {page === 'results'        && <Results        goTo={goTo} runId={runId} />}
-      {page === 'report'         && <Report         goTo={goTo} runId={runId} />}
       {page === 'history'        && <History        goTo={goTo} />}
       {page === 'runDetail'      && <RunDetail      goTo={goTo} runId={runId} />}
     </div>

@@ -8,12 +8,11 @@ const labels = {
   plan:          'Study plan',
   running:       'Running sessions',
   results:       'Session results',
-  report:        'Research report',
   history:       'Research history',
   runDetail:     'Study detail',
 };
 
-const AUTH_PAGES = new Set(['dashboard', 'questionnaire', 'review', 'plan', 'running', 'results', 'report', 'history', 'runDetail']);
+const AUTH_PAGES = new Set(['dashboard', 'questionnaire', 'review', 'plan', 'running', 'results', 'history', 'runDetail']);
 
 function NavLink({ label, active, onClick }) {
   return (

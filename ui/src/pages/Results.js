@@ -131,7 +131,7 @@ export default function Results({ goTo, runId }) {
             }}
           >↓ Download Excel</button>
           <button
-            onClick={() => goTo('report')}
+            onClick={() => goTo('runDetail', { runId })}
             style={{
               padding: '0.45rem 1.25rem', border: 'none',
               borderRadius: 'var(--radius-sm)', background: 'var(--primary)', color: 'var(--on-primary)',
@@ -306,7 +306,7 @@ export default function Results({ goTo, runId }) {
             </div>
           </div>
           <button
-            onClick={() => goTo('report')}
+            onClick={() => goTo('runDetail', { runId })}
             style={{
               padding: '0.75rem 2rem', background: '#fff', color: 'var(--primary)',
               border: 'none', borderRadius: '8px',
