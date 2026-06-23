@@ -2,6 +2,7 @@ require('dotenv').config();
 const path = require('path');
 const fs   = require('fs');
 const { getClient } = require('../../../src/lib/supabase');
+const { getMethodologyConfig } = require('../../../src/lib/methodology-config');
 
 async function handler(req, res) {
   const { id } = req.query;
@@ -43,6 +44,23 @@ async function handler(req, res) {
         }
       }
 
+      const methodology       = run.intake?.q6_methodology?.methodology || '';
+      const methodologyConfig = getMethodologyConfig(methodology);
+      const methodologyBlock  = [
+        '',
+        `Here is the pre-resolved Methodology Configuration block for "${methodology || methodologyConfig.methodology_id}". Use its values directly as instructed in the system prompt:`,
+        '',
+        '```json',
+        JSON.stringify({
+          eval_metrics_keys: methodologyConfig.eval_schema.fields.map(f => f.key)
+            .concat(['task_completion', 'abandon_trigger', 'persona_alignment_note']),
+          success_condition: methodologyConfig.task_derivation.success_condition,
+          abandon_condition: methodologyConfig.task_derivation.abandon_condition,
+          session_config:    methodologyConfig.session_config,
+        }, null, 2),
+        '```',
+      ].join('\n');
+
       const userMessage = [
         'You are generating a Synthetic UX Research Study Plan from a validated intake config.',
         '',
@@ -52,6 +70,7 @@ async function handler(req, res) {
         JSON.stringify(run.intake, null, 2),
         '```',
         productBlock,
+        methodologyBlock,
         'Generate a complete study plan as a single JSON object following the plan schema exactly.',
         'Respond with ONLY the JSON object — no preamble, no markdown fences, no explanation.',
       ].join('\n');
@@ -63,6 +82,10 @@ async function handler(req, res) {
       const cleaned = rawResponse
         .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
       const plan = JSON.parse(cleaned);
+
+      // Persisted verbatim (not re-resolved by methodology name) so this run's
+      // behaviour stays stable even if methodology-config.js changes later.
+      plan.methodology_config = methodologyConfig;
 
       plan._meta = {
         run_id:       id,

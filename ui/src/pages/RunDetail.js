@@ -18,21 +18,42 @@ function escapeCsv(val) {
   return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
 }
 
+// Legacy fallback for runs generated before plan.methodology_config existed —
+// matches exactly what every run produced before this field was introduced.
+const LEGACY_EVAL_FIELDS = [
+  { key: 'friction_score',   type: 'number 0-10' },
+  { key: 'confusion_signal', type: 'string or null' },
+  { key: 'trust_signal',     type: 'string or null' },
+  { key: 'abandon_trigger',  type: 'string or null' },
+];
+
+function getMethodologyEvalFields(plan) {
+  return plan?.methodology_config?.eval_schema?.fields || LEGACY_EVAL_FIELDS;
+}
+
+// The single number-typed field a methodology surfaces as its "headline" score
+// (friction_score for task-based methodologies, appeal_rating for reaction/
+// impression-based ones, etc) — falls back to friction_score for legacy plans.
+function headlineNumericField(fields) {
+  return fields.find(f => f.type.startsWith('number'))?.key || 'friction_score';
+}
+
 function buildCsv(run) {
-  const plan     = run.plan || {};
-  const sessions = run.sessions || [];
-  const tasks    = plan.test_scenarios?.scenarios || [];
-  const taskMap  = Object.fromEntries(tasks.map(t => [t.task_id, t.task_name]));
-  const product  = run.intake?.q5_product_context?.product_name || run.intake?.q1_product || run.id;
-  const feature  = run.intake?.q5_product_context?.feature_under_test || '';
-  const method   = plan.study_context?.methodology || run.intake?.q6_methodology?.methodology || '';
+  const plan       = run.plan || {};
+  const sessions    = run.sessions || [];
+  const tasks       = plan.test_scenarios?.scenarios || [];
+  const taskMap      = Object.fromEntries(tasks.map(t => [t.task_id, t.task_name]));
+  const product      = run.intake?.q5_product_context?.product_name || run.intake?.q1_product || run.id;
+  const feature      = run.intake?.q5_product_context?.feature_under_test || '';
+  const method       = plan.study_context?.methodology || run.intake?.q6_methodology?.methodology || '';
+  const evalFields    = getMethodologyEvalFields(plan);
 
   const cols = [
     'run_id','date','product','feature','methodology',
     'persona','priority','model',
     'task_id','task_name','turn_number',
-    'action','friction_score','task_completion',
-    'confusion_signal','trust_signal','abandon_trigger',
+    'action','task_completion',
+    ...evalFields.map(f => f.key),
     'persona_alignment','inner_monologue',
   ];
 
@@ -46,10 +67,8 @@ function buildCsv(run) {
         product, feature, method,
         session.persona_name, session.persona_priority || '', session.provider || '',
         turn.task_id, taskMap[turn.task_id] || turn.task_id, turn.turn_number,
-        turn.action || '',
-        es.friction_score ?? '',
-        es.task_completion || '',
-        es.confusion_signal || '', es.trust_signal || '', es.abandon_trigger || '',
+        turn.action || '', es.task_completion || '',
+        ...evalFields.map(f => es[f.key] ?? ''),
         es.persona_alignment || '',
         turn.inner_monologue || '',
       ].map(escapeCsv).join(','));
@@ -83,8 +102,12 @@ async function buildPresentation(run) {
   const BLUE   = '1B4FD8';
   const CREAM  = 'F9F8F6';
 
+  const evalFields     = getMethodologyEvalFields(plan);
+  const headlineKey    = headlineNumericField(evalFields);
+  const headlineLabel  = headlineKey.replace(/_/g, ' ').toUpperCase();
+
   const allTurns       = sessions.flatMap(s => s.turns || []);
-  const frictionScores = allTurns.map(t => t.eval_scores?.friction_score).filter(n => typeof n === 'number');
+  const frictionScores = allTurns.map(t => t.eval_scores?.[headlineKey]).filter(n => typeof n === 'number');
   const avgFriction    = frictionScores.length ? (frictionScores.reduce((a,b)=>a+b,0)/frictionScores.length).toFixed(1) : '—';
   const completedAll   = sessions.filter(s => s.session_outcome === 'all_tasks_completed').length;
   const completionPct  = sessions.length ? Math.round(completedAll / sessions.length * 100) : 0;
@@ -136,7 +159,7 @@ async function buildPresentation(run) {
   const metricsY = rq ? 3.0 : 2.0;
   [
     { label: 'TASK COMPLETION', value: `${completionPct}%`, color: completionPct >= 60 ? GREEN : RED },
-    { label: 'AVG FRICTION SCORE', value: avgFriction, color: parseFloat(avgFriction) >= 7 ? RED : parseFloat(avgFriction) >= 4 ? AMBER : GREEN },
+    { label: `AVG ${headlineLabel}`, value: avgFriction, color: parseFloat(avgFriction) >= 7 ? RED : parseFloat(avgFriction) >= 4 ? AMBER : GREEN },
     { label: 'PERSONAS', value: `${completedAll} / ${sessions.length}`, color: INK },
   ].forEach((m, i) => {
     const x = 0.5 + i * 4.2;
@@ -206,10 +229,10 @@ async function buildPresentation(run) {
       { text: 'PRIORITY',  options: { fontSize: 8, bold: true, color: MUTE, fill: CREAM } },
       { text: 'MODEL',     options: { fontSize: 8, bold: true, color: MUTE, fill: CREAM } },
       { text: 'OUTCOME',   options: { fontSize: 8, bold: true, color: MUTE, fill: CREAM } },
-      { text: 'AVG FRICTION', options: { fontSize: 8, bold: true, color: MUTE, fill: CREAM } },
+      { text: `AVG ${headlineLabel}`, options: { fontSize: 8, bold: true, color: MUTE, fill: CREAM } },
     ],
     ...sessions.map(s => {
-      const scores = (s.turns||[]).map(t=>t.eval_scores?.friction_score).filter(n=>typeof n==='number');
+      const scores = (s.turns||[]).map(t=>t.eval_scores?.[headlineKey]).filter(n=>typeof n==='number');
       const avg    = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
       const done   = s.session_outcome === 'all_tasks_completed';
       const outcomeText = done ? 'All tasks completed' : s.session_outcome === 'partial_completion' ? 'Partial' : 'No tasks completed';
@@ -276,9 +299,16 @@ async function buildPresentation(run) {
             t.screen_or_step ? `· ${t.screen_or_step}` : '',
           ].filter(Boolean).join(' ');
 
+          const clickResultLabel = t.click_result && ({
+            not_found:   '(element not found)',
+            click_error: '(click failed)',
+            no_change:   '(no page change — likely non-functional)',
+            changed:     '(page changed)',
+          })[t.click_result.reason];
+
           const actionDetail = [
             `Action: ${t.action || '—'}`,
-            t.click_target ? `→ clicking "${t.click_target}"` : '',
+            t.click_target ? `→ clicking "${t.click_target}" ${clickResultLabel || ''}`.trim() : '',
             t.scroll_direction ? `→ scrolling ${t.scroll_direction}` : '',
           ].filter(Boolean).join('  ');
 
@@ -341,54 +371,50 @@ function SectionHead({ children }) {
   );
 }
 
-/* ── Methodology metric card definitions ─────────────────────────────────── */
-const METHODOLOGY_CARDS = {
-  'Usability Testing': [
-    { label: 'Task completion rate', key: 'completion_rate', format: 'pct', desc: 'Personas completing all tasks' },
-    { label: 'Avg friction score',   key: 'avg_friction',    format: 'score', desc: 'Out of 10 across all turns' },
-    { label: 'Confusion signals',    key: 'confusion_count', format: 'count', desc: 'Turns flagged with confusion' },
-    { label: 'Sessions abandoned',   key: 'abandon_count',   format: 'count', desc: 'Personas who did not finish' },
-  ],
-  'UX Testing': [
-    { label: 'Task completion rate',  key: 'completion_rate',     format: 'pct',   desc: 'Personas completing all tasks' },
-    { label: 'Avg friction score',    key: 'avg_friction',        format: 'score', desc: 'Out of 10 across all turns' },
-    { label: 'Comprehension signals', key: 'comprehension_count', format: 'count', desc: 'Turns showing correct understanding' },
-    { label: 'Confusion signals',     key: 'confusion_count',     format: 'count', desc: 'Turns flagged with confusion' },
-  ],
-  'Concept Testing': [
-    { label: 'Concept clarity',   key: 'concept_clarity_count', format: 'count', desc: 'Turns with clarity signal' },
-    { label: 'Trust signals',     key: 'trust_count',           format: 'count', desc: 'Positive trust reactions' },
-    { label: 'Confusion signals', key: 'confusion_count',       format: 'count', desc: 'Turns flagged with confusion' },
-    { label: 'Avg friction score',key: 'avg_friction',          format: 'score', desc: 'Out of 10 across all turns' },
-  ],
-  'Desirability Testing': [
-    { label: 'Emotional resonance', key: 'emotional_resonance_count', format: 'count', desc: 'Turns with resonance signal' },
-    { label: 'Brand alignment',     key: 'brand_alignment_count',     format: 'count', desc: 'Turns with alignment signal' },
-    { label: 'Trust signals',       key: 'trust_count',               format: 'count', desc: 'Positive trust reactions' },
-    { label: 'Confusion signals',   key: 'confusion_count',           format: 'count', desc: 'Turns flagged with confusion' },
-  ],
-};
+/* ── Methodology metric cards ─────────────────────────────────────────────
+ * Derived from plan.methodology_config.eval_schema.fields rather than a
+ * hand-maintained per-methodology map, so the cards shown always match
+ * whatever fields that methodology's turns actually carry. Falls back to
+ * LEGACY_EVAL_FIELDS for runs generated before methodology_config existed.
+ */
+function humanizeFieldKey(key) {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
 
-function computeMetrics(sessions) {
+function buildMetricCards(evalFields) {
+  const cards = [
+    { label: 'Task completion rate', key: 'completion_rate', format: 'pct', desc: 'Personas completing all tasks' },
+  ];
+  for (const field of evalFields.slice(0, 3)) {
+    if (field.type.startsWith('number')) {
+      cards.push({ label: `Avg ${humanizeFieldKey(field.key)}`, key: `avg__${field.key}`, format: 'score', desc: field.description || '' });
+    } else {
+      cards.push({ label: `${humanizeFieldKey(field.key)} signals`, key: `count__${field.key}`, format: 'count', desc: field.description || 'Turns with this signal present' });
+    }
+  }
+  return cards.slice(0, 4);
+}
+
+function computeMetrics(sessions, evalFields) {
   const allTurns = sessions.flatMap(s => s.turns || []);
   const total    = sessions.length;
 
-  const frictionScores = allTurns.map(t => t.eval_scores?.friction_score).filter(n => typeof n === 'number');
-  const avgFriction    = frictionScores.length
-    ? (frictionScores.reduce((a, b) => a + b, 0) / frictionScores.length)
-    : null;
-
-  return {
-    completion_rate:          total ? sessions.filter(s => s.session_outcome === 'all_tasks_completed').length / total : null,
-    avg_friction:             avgFriction,
-    confusion_count:          allTurns.filter(t => t.eval_scores?.confusion_signal && t.eval_scores.confusion_signal !== 'null').length,
-    abandon_count:            sessions.filter(s => s.session_outcome !== 'all_tasks_completed').length,
-    comprehension_count:      allTurns.filter(t => t.eval_scores?.comprehension_signal && t.eval_scores.comprehension_signal !== 'null').length,
-    concept_clarity_count:    allTurns.filter(t => t.eval_scores?.concept_clarity     && t.eval_scores.concept_clarity     !== 'null').length,
-    emotional_resonance_count:allTurns.filter(t => t.eval_scores?.emotional_resonance && t.eval_scores.emotional_resonance !== 'null').length,
-    brand_alignment_count:    allTurns.filter(t => t.eval_scores?.brand_alignment     && t.eval_scores.brand_alignment     !== 'null').length,
-    trust_count:              allTurns.filter(t => t.eval_scores?.trust_signal        && t.eval_scores.trust_signal        !== 'null').length,
+  const metrics = {
+    completion_rate: total ? sessions.filter(s => s.session_outcome === 'all_tasks_completed').length / total : null,
+    abandon_count:   sessions.filter(s => s.session_outcome !== 'all_tasks_completed').length,
   };
+
+  for (const field of evalFields) {
+    const values = allTurns.map(t => t.eval_scores?.[field.key]);
+    if (field.type.startsWith('number')) {
+      const numeric = values.filter(v => typeof v === 'number');
+      metrics[`avg__${field.key}`] = numeric.length ? numeric.reduce((a, b) => a + b, 0) / numeric.length : null;
+    } else {
+      metrics[`count__${field.key}`] = values.filter(v => v && v !== 'null' && v !== false).length;
+    }
+  }
+
+  return metrics;
 }
 
 function MetricCard({ label, value, format, desc }) {
@@ -415,7 +441,19 @@ function MetricCard({ label, value, format, desc }) {
 }
 
 /* ── Collapsible persona session block ───────────────────────────────────── */
-function PersonaTaskBlock({ session, taskId }) {
+// Color heuristic for generic eval-field chips, keyed by substring rather
+// than an exact list, so new methodology fields (e.g. fit_signal,
+// preference_signal) still get a sensible color without a per-key map.
+function evalSignalStyle(key) {
+  if (key.includes('confusion')) return { bg: 'var(--amber-lt)', border: 'rgba(194,113,4,.2)', color: 'var(--amber)' };
+  if (key.includes('trust'))     return { bg: 'var(--blue-lt)',  border: 'rgba(27,79,216,.15)', color: 'var(--blue)' };
+  if (key.includes('abandon'))   return { bg: 'var(--red-lt)',   border: 'rgba(196,43,43,.2)',  color: 'var(--red)' };
+  return { bg: 'var(--cream)', border: 'var(--hairline)', color: 'var(--body)' };
+}
+
+const HIDDEN_SIGNAL_KEYS = new Set(['task_completion', 'persona_alignment']);
+
+function PersonaTaskBlock({ session, taskId, headlineKey }) {
   const [open, setOpen] = React.useState(false);
   const turns    = (session.turns || []).filter(t => t.task_id === taskId);
   const completed = (session.tasks_completed || []).includes(taskId);
@@ -426,7 +464,7 @@ function PersonaTaskBlock({ session, taskId }) {
   if (turns.length === 0) return null;
 
   const avgFriction = (() => {
-    const scores = turns.map(t => t.eval_scores?.friction_score).filter(n => typeof n === 'number');
+    const scores = turns.map(t => t.eval_scores?.[headlineKey]).filter(n => typeof n === 'number');
     return scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : null;
   })();
 
@@ -457,7 +495,7 @@ function PersonaTaskBlock({ session, taskId }) {
           <span style={{ fontSize: '11px', color: 'var(--mute)' }}>{turns.length} turn{turns.length !== 1 ? 's' : ''}</span>
           {avgFriction !== null && (
             <span style={{ fontSize: '11px', fontWeight: 600, color: frictionColor(parseFloat(avgFriction)) }}>
-              friction {avgFriction}
+              {humanizeFieldKey(headlineKey).toLowerCase()} {avgFriction}
             </span>
           )}
           <span style={{ fontSize: '11px', fontWeight: 600, color: outcomeColor }}>{outcome}</span>
@@ -486,9 +524,9 @@ function PersonaTaskBlock({ session, taskId }) {
                       {turn.action}
                     </span>
                   )}
-                  {typeof es.friction_score === 'number' && (
-                    <span style={{ fontSize: '10px', fontWeight: 600, color: frictionColor(es.friction_score), marginLeft: 'auto', flexShrink: 0 }}>
-                      friction {es.friction_score}
+                  {typeof es[headlineKey] === 'number' && (
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: frictionColor(es[headlineKey]), marginLeft: 'auto', flexShrink: 0 }}>
+                      {humanizeFieldKey(headlineKey).toLowerCase()} {es[headlineKey]}
                     </span>
                   )}
                   {isDone && (
@@ -512,26 +550,28 @@ function PersonaTaskBlock({ session, taskId }) {
                   </div>
                 )}
 
-                {/* Signals row */}
-                {(es.confusion_signal || es.trust_signal || es.abandon_trigger) && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.3rem' }}>
-                    {es.confusion_signal && es.confusion_signal !== 'null' && (
-                      <span style={{ fontSize: '10px', padding: '0.15rem 0.5rem', background: 'var(--amber-lt)', border: '1px solid rgba(194,113,4,.2)', borderRadius: '4px', color: 'var(--amber)' }}>
-                        Confusion: {es.confusion_signal}
-                      </span>
-                    )}
-                    {es.trust_signal && es.trust_signal !== 'null' && (
-                      <span style={{ fontSize: '10px', padding: '0.15rem 0.5rem', background: 'var(--blue-lt)', border: '1px solid rgba(27,79,216,.15)', borderRadius: '4px', color: 'var(--blue)' }}>
-                        Trust: {es.trust_signal}
-                      </span>
-                    )}
-                    {es.abandon_trigger && es.abandon_trigger !== 'null' && (
-                      <span style={{ fontSize: '10px', padding: '0.15rem 0.5rem', background: 'var(--red-lt)', border: '1px solid rgba(196,43,43,.2)', borderRadius: '4px', color: 'var(--red)' }}>
-                        Abandon: {es.abandon_trigger}
-                      </span>
-                    )}
-                  </div>
-                )}
+                {/* Signals row — every other eval field present on this turn,
+                    rendered generically so methodology-specific fields show
+                    up without needing a hardcoded list per methodology */}
+                {(() => {
+                  const signalEntries = Object.entries(es).filter(([k, v]) =>
+                    k !== headlineKey && !HIDDEN_SIGNAL_KEYS.has(k) &&
+                    v !== null && v !== undefined && v !== '' && v !== 'null' && v !== false
+                  );
+                  if (signalEntries.length === 0) return null;
+                  return (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.3rem' }}>
+                      {signalEntries.map(([k, v]) => {
+                        const style = evalSignalStyle(k);
+                        return (
+                          <span key={k} style={{ fontSize: '10px', padding: '0.15rem 0.5rem', background: style.bg, border: `1px solid ${style.border}`, borderRadius: '4px', color: style.color }}>
+                            {humanizeFieldKey(k)}: {String(v)}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}
@@ -582,8 +622,10 @@ function ReportTab({ run }) {
     );
   }
 
-  const metrics     = sessions.length > 0 ? computeMetrics(sessions) : null;
-  const cardDefs    = METHODOLOGY_CARDS[methodology] || METHODOLOGY_CARDS['Usability Testing'];
+  const evalFields  = getMethodologyEvalFields(plan);
+  const headlineKey = headlineNumericField(evalFields);
+  const metrics     = sessions.length > 0 ? computeMetrics(sessions, evalFields) : null;
+  const cardDefs    = buildMetricCards(evalFields);
 
   /* "How it was conducted" narrative */
   const artefactDesc = artefact.artefact_link
@@ -854,11 +896,121 @@ function ReportTab({ run }) {
 
             {/* Raw data per persona */}
             {sessions.map((session, si) => (
-              <PersonaTaskBlock key={si} session={session} taskId={task.task_id} />
+              <PersonaTaskBlock key={si} session={session} taskId={task.task_id} headlineKey={headlineKey} />
             ))}
           </div>
         );
       })}
+
+      {/* ── AI-synthesized qualitative findings ──────────────────────────── */}
+      {sessions.length > 0 && <DeliverablesSection run={run} />}
+    </div>
+  );
+}
+
+function humanizeKey(key) {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/* ── AI-synthesized deliverables (think-aloud transcript, key moments, findings) ── */
+function DeliverablesSection({ run }) {
+  const [deliverables, setDeliverables] = useState(null);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState('');
+
+  const generate = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await api.getDeliverables(run.id);
+      setDeliverables(result.deliverables || []);
+    } catch (err) {
+      setError(err.message || 'Failed to generate deliverables');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '1rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+        <SectionHead>AI-synthesized qualitative findings</SectionHead>
+        <button
+          onClick={generate}
+          disabled={loading}
+          style={{
+            padding: '0.5rem 1.1rem', border: '1px solid var(--blue-md)',
+            borderRadius: 'var(--radius-sm)', background: loading ? 'var(--blue-lt)' : 'var(--blue)',
+            color: loading ? 'var(--blue)' : '#fff', fontFamily: 'var(--sans)',
+            fontSize: '12px', fontWeight: 500, cursor: loading ? 'default' : 'pointer',
+          }}
+        >{loading ? 'Generating…' : deliverables ? 'Regenerate' : 'Generate'}</button>
+      </div>
+
+      {!deliverables && !loading && !error && (
+        <div style={{ fontSize: '12px', color: 'var(--mute)' }}>
+          Runs a per-persona LLM synthesis pass over the full transcript — think-aloud narrative, key moments, and methodology-specific findings. Not generated automatically since it makes one model call per persona.
+        </div>
+      )}
+
+      {error && (
+        <div style={{ fontSize: '12px', color: 'var(--red)', padding: '0.75rem', background: 'var(--red-lt)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
+
+      {deliverables && deliverables.map((d, i) => (
+        <div key={i} style={{ marginBottom: '1.75rem', padding: '1rem', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)' }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '0.75rem' }}>
+            {d.persona_name} <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--mute)' }}>· {d.provider}</span>
+          </div>
+
+          {d.error && (
+            <div style={{ fontSize: '12px', color: 'var(--red)' }}>Could not generate: {d.error}</div>
+          )}
+
+          {d.think_aloud_transcript?.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.5rem' }}>Think-aloud transcript</div>
+              {d.think_aloud_transcript.map((step, si) => (
+                <div key={si} style={{ marginBottom: '0.6rem', fontSize: '12px' }}>
+                  <div style={{ color: 'var(--mute)', marginBottom: '0.15rem' }}>{step.step}</div>
+                  <div style={{ fontStyle: 'italic', color: 'var(--body)' }}>"{step.quote}"</div>
+                  {step.outcome_detail && (
+                    <div style={{ color: step.outcome === 'failure' ? 'var(--red)' : step.outcome === 'confusion' ? 'var(--amber)' : 'var(--teal)', fontSize: '11px', marginTop: '0.15rem' }}>
+                      {step.outcome}: {step.outcome_detail}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {d.key_moments && Object.entries(d.key_moments).filter(([, v]) => v?.length).map(([category, moments]) => (
+            <div key={category} style={{ marginBottom: '0.75rem' }}>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.4rem' }}>{humanizeKey(category)}</div>
+              {moments.map((m, mi) => (
+                <div key={mi} style={{ fontSize: '12px', color: 'var(--body)', marginBottom: '0.3rem' }}>
+                  <span style={{ fontStyle: 'italic' }}>"{m.quote}"</span>{m.context ? <span style={{ color: 'var(--mute)' }}> — {m.context}</span> : null}
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {Object.entries(d).filter(([k, v]) => k.endsWith('_findings') && v && typeof v === 'object').map(([, findings]) => (
+            Object.entries(findings).filter(([, v]) => v?.length).map(([category, items]) => (
+              <div key={category} style={{ marginBottom: '0.6rem' }}>
+                <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.3rem' }}>{humanizeKey(category)}</div>
+                <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+                  {items.map((item, ii) => (
+                    <li key={ii} style={{ fontSize: '12px', color: 'var(--body)', marginBottom: '0.2rem' }}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

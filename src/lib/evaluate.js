@@ -2,6 +2,7 @@ const path = require('path');
 const fs   = require('fs');
 const { extractJsonObject, getPersonaId } = require('./utils');
 const browserSessionLib = require('./browser-session');
+const { getMethodologyConfig, navigationRequired } = require('./methodology-config');
 
 function loadPersonaPrompts() {
   const p = path.join(process.cwd(), 'personas/v4_library.json');
@@ -53,6 +54,9 @@ function loadSimulationPrompt() {
 }
 
 function buildDefaultSimulationPrompt() {
+  // Fallback used only if .claude/agents/simulation-runner.md is missing from
+  // disk. The exact turn JSON schema is appended dynamically per methodology
+  // by buildTurnSchemaBlock — this just sets up the character and framing.
   return `You are a synthetic UX testing agent simulating a real Malaysian consumer interacting with a website or app.
 
 You will be given:
@@ -60,32 +64,47 @@ You will be given:
 2. A task instruction telling you what to attempt
 3. The current screen or artefact state — this may include a screenshot of the actual UI. If an image is provided, treat it as the real screen in front of you and reason from what you visually observe.
 
-At each turn you must respond with a JSON object containing exactly these keys:
-
-{
-  "action": "string — what you do next (click, scroll, read, type, abandon, complete)",
-  "screen_or_step": "string — which screen or element you are looking at",
-  "inner_monologue": "string — what you are thinking in your own words, as this persona",
-  "click_target": "string or null — what you are clicking, by visible label or short visual description. Required when action is 'click', null otherwise",
-  "scroll_direction": "'up' or 'down' or null — required when action is 'scroll', null otherwise",
-  "friction_score": number 0-10,
-  "confusion_signal": "string or null — describe confusion if present, null if not",
-  "trust_signal": "string or null — describe trust/distrust reaction if present, null if not",
-  "task_completion": "in_progress | completed | abandoned",
-  "abandon_trigger": "string or null — why you abandoned, null if still in progress or completed",
-  "persona_alignment_note": "string — one sentence on how your behaviour reflects your persona traits"
-}
-
 Rules:
 - Stay in character as the persona at all times
-- friction_score 0 = completely smooth, 10 = blocked entirely
 - Only set task_completion to 'completed' when you have reached the defined success condition
 - Only set task_completion to 'abandoned' when you hit the defined abandon condition
 - Your inner_monologue must sound like this specific persona — use their vocabulary, concerns, and communication style
 - Respond with ONLY the JSON object — no preamble, no explanation`;
 }
 
-function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan) {
+function buildTurnSchemaBlock(methodologyConfig) {
+  const navRequired = navigationRequired(methodologyConfig);
+
+  const coreFields = [
+    '"action": "string — what you do next"',
+    '"screen_or_step": "string — which screen, element, or stimulus you are looking at"',
+    '"inner_monologue": "string, 2-5 sentences — what you are thinking, in your own voice"',
+  ];
+  if (navRequired) {
+    coreFields.push(
+      '"click_target": "string or null — required when action is \\"click\\", null otherwise"',
+      '"scroll_direction": "\\"up\\" or \\"down\\" or null — required when action is \\"scroll\\", null otherwise"',
+    );
+  }
+  coreFields.push('"task_completion": "in_progress | completed | abandoned"');
+  coreFields.push('"abandon_trigger": "string or null — why you abandoned, null unless task_completion is \\"abandoned\\""');
+  coreFields.push('"persona_alignment_note": "string — one sentence on how your behaviour reflects your persona traits"');
+
+  const evalFieldLines = methodologyConfig.eval_schema.fields.map(
+    f => `"${f.key}": "${f.type} — ${f.description}"`
+  );
+
+  const allFieldLines = [...coreFields, ...evalFieldLines];
+
+  return `\n\n## Study Methodology\n\n` +
+    `Methodology: ${methodologyConfig.methodology_id}\n\n` +
+    `${methodologyConfig.persona_instruction_mode}\n\n` +
+    `Respond with a JSON object containing EXACTLY these keys — no more, no fewer, no renaming:\n\n` +
+    `{\n  ${allFieldLines.join(',\n  ')}\n}` +
+    (navRequired ? '' : '\n\nThis methodology has no UI to navigate — never produce click_target or scroll_direction.');
+}
+
+function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan, methodologyConfig) {
   let personaBlock = '';
 
   if (Array.isArray(personaLibrary)) {
@@ -98,16 +117,12 @@ function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, pla
     personaBlock = `## ${persona.name}\n${persona.context || 'Malaysian consumer, general profile.'}`;
   }
 
-  const evalKeys   = plan?.eval_metrics?.default_keys || [];
-  const methodology = plan?.study_context?.methodology || '';
   const scenario    = plan?.study_context?.scenario || '';
   const hypotheses  = (plan?.hypotheses?.list || []).map(h => `${h.id}: ${h.statement}`).join('\n');
   const forbidden   = plan?.hypotheses?.forbidden_assumptions || '';
   const knownRisks  = plan?.hypotheses?.known_ux_risks || '';
 
-  const methodologyBlock = methodology || evalKeys.length
-    ? `\n\n## Study Methodology\n\nMethodology: ${methodology || 'Not specified'}\n\nYou must include these eval keys in every JSON turn response:\n${evalKeys.map(k => `- ${k}`).join('\n')}`
-    : '';
+  const methodologyBlock = buildTurnSchemaBlock(methodologyConfig);
 
   const hypothesesBlock = hypotheses
     ? `\n\n## Hypotheses Being Tested\n\n${hypotheses}`
@@ -153,25 +168,49 @@ function buildArtefactContext(plan) {
   return parts.join('\n') || 'No artefact provided — reason from task descriptions only';
 }
 
-const BASE_EVAL_KEYS = new Set([
-  'friction_score', 'confusion_signal', 'trust_signal', 'task_completion',
-  'abandon_trigger', 'persona_alignment_note',
+const CORE_KEYS = new Set([
   'action', 'screen_or_step', 'inner_monologue',
   'click_target', 'scroll_direction',
+  'task_completion', 'abandon_trigger', 'persona_alignment_note',
 ]);
 
 const VALID_SCROLL_DIRECTIONS = new Set(['up', 'down']);
 
 const VALID_COMPLETION_STATES = new Set(['in_progress', 'completed', 'abandoned']);
 
-function parseTurnResponse(rawText, turnNumber, taskId, personaId) {
+// Coerces a raw eval-field value to the type declared in methodology-config.js
+// (e.g. "number 0-10" → number, "categorical: likely | unlikely | unsure" → string).
+function coerceEvalValue(rawValue, fieldType) {
+  if (fieldType.startsWith('number')) {
+    return typeof rawValue === 'number' ? rawValue : null;
+  }
+  if (fieldType === 'binary') {
+    return typeof rawValue === 'boolean' ? rawValue : (rawValue ?? null);
+  }
+  return typeof rawValue === 'string' ? rawValue : null;
+}
+
+function parseTurnResponse(rawText, turnNumber, taskId, personaId, methodologyConfig) {
+  const evalFields  = methodologyConfig.eval_schema.fields;
+  const knownKeys   = new Set([...CORE_KEYS, ...evalFields.map(f => f.key)]);
+
   try {
     const parsed = extractJsonObject(rawText);
 
+    const evalScores = {
+      task_completion:   VALID_COMPLETION_STATES.has(parsed.task_completion) ? parsed.task_completion : 'in_progress',
+      abandon_trigger:   typeof parsed.abandon_trigger === 'string' ? parsed.abandon_trigger : null,
+      persona_alignment: parsed.persona_alignment_note || null,
+    };
+    for (const field of evalFields) {
+      evalScores[field.key] = coerceEvalValue(parsed[field.key], field.type);
+    }
+
     const extraEvalKeys = {};
     for (const [k, v] of Object.entries(parsed)) {
-      if (!BASE_EVAL_KEYS.has(k)) extraEvalKeys[k] = v;
+      if (!knownKeys.has(k)) extraEvalKeys[k] = v;
     }
+    Object.assign(evalScores, extraEvalKeys);
 
     return {
       turn_number:     turnNumber,
@@ -182,29 +221,20 @@ function parseTurnResponse(rawText, turnNumber, taskId, personaId) {
       inner_monologue:  parsed.inner_monologue || '',
       click_target:     typeof parsed.click_target === 'string' ? parsed.click_target : null,
       scroll_direction: VALID_SCROLL_DIRECTIONS.has(parsed.scroll_direction) ? parsed.scroll_direction : null,
-      eval_scores: {
-        friction_score:    typeof parsed.friction_score === 'number' ? parsed.friction_score : null,
-        confusion_signal:  typeof parsed.confusion_signal === 'string' ? parsed.confusion_signal : null,
-        trust_signal:      typeof parsed.trust_signal === 'string' ? parsed.trust_signal : null,
-        task_completion:   VALID_COMPLETION_STATES.has(parsed.task_completion) ? parsed.task_completion : 'in_progress',
-        abandon_trigger:   typeof parsed.abandon_trigger === 'string' ? parsed.abandon_trigger : null,
-        persona_alignment: parsed.persona_alignment_note || null,
-        ...extraEvalKeys,
-      },
+      eval_scores: evalScores,
       raw_response: parsed,
     };
   } catch (err) {
+    const evalScores = { task_completion: 'in_progress', abandon_trigger: null, persona_alignment: null };
+    for (const field of evalFields) evalScores[field.key] = field.key === 'confusion_signal' ? 'PARSE_ERROR' : null;
+
     return {
       turn_number:  turnNumber,
       task_id:      taskId,
       persona_id:   personaId,
       parse_error:  err.message,
       raw_text:     rawText.slice(0, 500),
-      eval_scores: {
-        friction_score: null, confusion_signal: 'PARSE_ERROR',
-        trust_signal: null, task_completion: 'in_progress',
-        abandon_trigger: null, persona_alignment: null,
-      },
+      eval_scores:  evalScores,
     };
   }
 }
@@ -231,11 +261,13 @@ async function callModel(provider, systemPrompt, conversationHistory, image = nu
 async function runPersonaSession(provider, persona, tasks, plan, personaLibrary, simulationPrompt, options = {}) {
   const { image = null, browserSession = null, onTaskComplete = null } = options;
 
+  const methodologyConfig = plan?.methodology_config || getMethodologyConfig(plan?.study_context?.methodology);
+
   const personaId       = getPersonaId(persona);
   const artefactContext = buildArtefactContext(plan);
-  const systemPrompt    = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan);
-  const maxTurns        = plan.test_scenarios?.session_config?.max_turns || 20;
-  const stuckThreshold  = plan.test_scenarios?.session_config?.stuck_loop_threshold || 3;
+  const systemPrompt    = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan, methodologyConfig);
+  const maxTurns        = plan.test_scenarios?.session_config?.max_turns || methodologyConfig.session_config.max_turns;
+  const stuckThreshold  = plan.test_scenarios?.session_config?.stuck_loop_threshold || methodologyConfig.session_config.stuck_loop_threshold;
 
   const sessionTurns          = [];
   const stuckLoopFlags        = [];
@@ -257,13 +289,13 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
           ? await browserSessionLib.screenshot(browserSession.page)
           : image;
         const rawText = await callModel(provider, systemPrompt, conversationHistory, turnImage, !!browserSession);
-        const turn    = parseTurnResponse(rawText, turnNumber, task.task_id, personaId);
+        const turn    = parseTurnResponse(rawText, turnNumber, task.task_id, personaId, methodologyConfig);
         sessionTurns.push(turn);
         conversationHistory.push({ role: 'assistant', content: rawText });
 
         if (browserSession) {
           if (turn.action === 'click' && turn.click_target) {
-            await browserSessionLib.executeClick(browserSession.page, turn.click_target);
+            turn.click_result = await browserSessionLib.executeClick(browserSession.page, turn.click_target);
           } else if (turn.action === 'scroll' && turn.scroll_direction) {
             await browserSessionLib.executeScroll(browserSession.page, turn.scroll_direction);
           }
@@ -287,10 +319,16 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
         if (completion === 'completed') { tasksCompleted.push(task.task_id); taskDone = true; }
         else if (completion === 'abandoned') { taskDone = true; }
       } catch (err) {
+        // Fail fast: a model call error is very likely to repeat on every
+        // subsequent turn (bad API key, rate limit, provider outage). Retrying
+        // up to max_turns on the same hard failure just burns API calls for
+        // no benefit, so abandon this task immediately instead.
         sessionTurns.push({
           turn_number: turnNumber, task_id: task.task_id, persona_id: personaId,
-          model_error: err.message, eval_scores: { task_completion: 'in_progress' },
+          model_error: err.message,
+          eval_scores: { task_completion: 'abandoned', abandon_trigger: `Model call failed: ${err.message}` },
         });
+        taskDone = true;
       }
       turnNumber++;
     }

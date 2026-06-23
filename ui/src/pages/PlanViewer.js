@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PLAN_SECTIONS } from '../data/questionnaire';
+import { api } from '../api';
 
 /* ── Toolbar button ── */
 function TBtn({ label, onClick, primary }) {
@@ -156,16 +157,37 @@ function RunConfirmModal({ plan, runId, onConfirm, onCancel }) {
 export default function PlanViewer({ goTo, runId, plan }) {
   const [activeSection, setActiveSection] = useState('ctx');
   const [showConfirm,   setShowConfirm]   = useState(false);
+  const [livePlan,      setLivePlan]      = useState(plan);
+  const [regenerating,  setRegenerating]  = useState(false);
+  const [regenError,    setRegenError]    = useState('');
 
-  const isLive    = !!plan;
+  const isLive    = !!livePlan;
   const current   = PLAN_SECTIONS.find(s => s.id === activeSection);
-  const product   = plan?.study_context?.product || plan?.research_goals?.product_name || '';
-  const feature   = plan?.research_goals?.feature_under_test || '';
+  const product   = livePlan?.study_context?.product || livePlan?.research_goals?.product_name || '';
+  const feature   = livePlan?.research_goals?.feature_under_test || '';
   const studyName = product ? `${product}${feature ? ' — ' + feature : ''}` : 'Study plan';
 
   const handleRunClick = () => setShowConfirm(true);
   const handleConfirm  = () => { setShowConfirm(false); goTo('running', { runId }); };
   const handleCancel   = () => setShowConfirm(false);
+
+  // Rejects the current plan and loops back to planning for this same run,
+  // instead of the only other options being "download" or "run" — the
+  // research planner is re-invoked with the same intake, producing a fresh
+  // plan in place rather than starting a brand-new run.
+  const handleRegenerate = async () => {
+    setRegenerating(true);
+    setRegenError('');
+    try {
+      await api.startPlan(runId);
+      const freshPlan = await api.getPlan(runId);
+      setLivePlan(freshPlan);
+    } catch (err) {
+      setRegenError(err.message || 'Could not regenerate plan');
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -185,19 +207,26 @@ export default function PlanViewer({ goTo, runId, plan }) {
             {studyName}
           </h2>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {regenError && (
+            <span style={{ fontSize: '12px', color: 'var(--red)', marginRight: '0.25rem' }}>{regenError}</span>
+          )}
+          <TBtn
+            label={regenerating ? '↺ Regenerating…' : '↺ Reject & regenerate'}
+            onClick={isLive && !regenerating ? handleRegenerate : undefined}
+          />
           <TBtn label="↓ Download plan" onClick={() => {
-            if (isLive && plan) {
-              const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
+            if (isLive && livePlan) {
+              const blob = new Blob([JSON.stringify(livePlan, null, 2)], { type: 'application/json' });
               const url  = URL.createObjectURL(blob);
               const a    = document.createElement('a');
-              a.href = url; a.download = `${plan._meta?.run_id || 'study-plan'}.json`; a.click();
+              a.href = url; a.download = `${livePlan._meta?.run_id || 'study-plan'}.json`; a.click();
               URL.revokeObjectURL(url);
             } else {
               alert('Download is available after generating a live study plan.');
             }
           }} />
-          <TBtn label="▶  Run research" onClick={handleRunClick} primary />
+          <TBtn label="▶  Run research" onClick={!regenerating ? handleRunClick : undefined} primary />
         </div>
       </div>
 
@@ -229,7 +258,7 @@ export default function PlanViewer({ goTo, runId, plan }) {
             <div style={{ margin: '1.5rem 0 0', padding: '0.75rem', background: 'rgba(0,215,34,0.08)', borderRadius: '7px', border: '1px solid rgba(0,215,34,0.2)' }}>
               <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--teal)', marginBottom: '0.2rem' }}>Generated plan</div>
               <div style={{ fontSize: '11px', color: 'var(--body)', lineHeight: 1.5 }}>
-                Run ID: {plan?._meta?.run_id || '—'}
+                Run ID: {livePlan?._meta?.run_id || '—'}
               </div>
             </div>
           )}
@@ -245,7 +274,7 @@ export default function PlanViewer({ goTo, runId, plan }) {
           </h2>
 
           {isLive
-            ? <LivePlanSection sectionKey={activeSection} data={plan[SECTION_MAP[activeSection]]} />
+            ? <LivePlanSection sectionKey={activeSection} data={livePlan[SECTION_MAP[activeSection]]} />
             : <NoPlanSection />
           }
         </div>
@@ -253,7 +282,7 @@ export default function PlanViewer({ goTo, runId, plan }) {
 
       {showConfirm && (
         <RunConfirmModal
-          plan={plan}
+          plan={livePlan}
           runId={runId}
           onConfirm={handleConfirm}
           onCancel={handleCancel}

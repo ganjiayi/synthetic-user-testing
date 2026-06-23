@@ -149,32 +149,6 @@ export function Tag({ label, type = 'blue' }) {
   );
 }
 
-/* ── PlanField ── */
-export function PlanField({ label, value, editable, onInput }) {
-  return (
-    <div style={{ marginBottom: '1.1rem' }}>
-      <div style={{
-        fontSize: '11px', fontWeight: 500, color: 'var(--mute)',
-        textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.3rem',
-      }}>{label}</div>
-      <div
-        contentEditable={editable}
-        suppressContentEditableWarning
-        onInput={e => onInput && onInput(e.currentTarget.textContent)}
-        style={{
-          fontSize: '13px', color: 'var(--body)', lineHeight: 1.65,
-          padding: '0.625rem 0.875rem',
-          background: editable ? 'var(--canvas)' : 'var(--cream)',
-          borderRadius: 'var(--radius-sm)',
-          border: `1px solid ${editable ? 'var(--primary)' : 'var(--hairline)'}`,
-          outline: 'none',
-          cursor: editable ? 'text' : 'default',
-        }}
-      >{value}</div>
-    </div>
-  );
-}
-
 /* ── UploadZone ── */
 export function UploadZone({ value, onChange }) {
   const { files = [], urls = [] } = value || {};

@@ -1,12 +1,10 @@
 const { extractJsonObject, getPersonaId } = require('./utils');
+const { DEFAULT_METHODOLOGY, getMethodologyConfig } = require('./methodology-config');
 
 /**
- * Methodology-specific output structures for session report synthesis.
- *
- * Each methodology gets its own "key moments" categories and "findings"
- * categories, matched to the eval keys that methodology asks the
- * simulation agent to produce (see ui/src/pages/Questionnaire.js
- * METHODOLOGY_METRICS).
+ * Deliverables-synthesis prompt structure, driven by the methodology's
+ * keyMoments/findings categories in methodology-config.js — see that file
+ * for the full per-methodology definitions.
  *
  * Every structure shares the same shape:
  *   {
@@ -15,73 +13,6 @@ const { extractJsonObject, getPersonaId } = require('./utils');
  *     <findingsKey>: { <category>: [string], ... }
  *   }
  */
-const METHODOLOGY_CONFIGS = {
-  'Usability Testing': {
-    findingsKey: 'usability_findings',
-    keyMoments: [
-      { key: 'aha_moments',         label: '"Aha" Moments',     description: 'Quote + context where the persona found value' },
-      { key: 'friction_moments',    label: 'Friction Moments',  description: 'Quote + what they were trying to do when stuck' },
-      { key: 'design_observations', label: 'Design Observations', description: 'Notable usability comments about the interface' },
-      { key: 'comparison_moments',  label: 'Comparison Moments', description: "References to the persona's current mental or physical system" },
-      { key: 'cultural_fit',        label: 'Cultural Fit',      description: 'Where the product aligns or conflicts with the persona\'s cultural/professional norms' },
-    ],
-    findings: [
-      { key: 'what_worked',     label: 'What Worked',     description: 'Features understood immediately, tasks completed easily, pain points solved, design elements that helped' },
-      { key: 'what_didnt_work', label: "What Didn't Work", description: 'Confusing functionality, things they could not figure out, tasks abandoned, design issues' },
-      { key: 'whats_missing',   label: "What's Missing",  description: 'Expected features not present, things needed for their use case, considerations not addressed' },
-    ],
-  },
-  'UX Testing': {
-    findingsKey: 'ux_findings',
-    keyMoments: [
-      { key: 'comprehension_moments', label: 'Comprehension Moments', description: 'Where the persona correctly or incorrectly understood design intent, unprompted — quote + context' },
-      { key: 'navigation_moments',    label: 'Navigation Moments',    description: 'Unexpected navigation paths, dead ends, or wrong turns — quote + context' },
-      { key: 'design_observations',   label: 'Design Observations',   description: 'Notable comments about layout, labels, or visual hierarchy' },
-      { key: 'friction_moments',      label: 'Friction Moments',      description: 'Information overload, hesitation, or re-reading the same content' },
-      { key: 'trust_moments',         label: 'Trust Moments',         description: 'Trust or distrust reactions to the interface — quote + context' },
-    ],
-    findings: [
-      { key: 'intuitive_elements', label: 'Intuitive Elements',  description: 'Design elements, labels, or flows understood correctly without help' },
-      { key: 'misinterpretations', label: 'Misinterpretations',  description: 'Labels, icons, or flows interpreted incorrectly relative to design intent' },
-      { key: 'whats_missing',      label: "What's Missing",      description: 'Cues, labels, or affordances needed but absent' },
-    ],
-  },
-  'Concept Testing': {
-    findingsKey: 'concept_findings',
-    keyMoments: [
-      { key: 'first_impression_moments', label: 'First Impression Moments', description: "The persona's immediate, unprompted reaction on first seeing the concept — quote + context" },
-      { key: 'value_prop_moments', label: 'Value Proposition Moments', description: 'Where the core value proposition landed clearly — quote + context' },
-      { key: 'confusion_moments',  label: 'Confusion Moments',         description: 'Category confusion or feature misattribution — quote + context' },
-      { key: 'skepticism_moments', label: 'Skepticism Moments',        description: 'Trust or skepticism reactions to the concept — quote + context' },
-      { key: 'comparison_moments', label: 'Comparison Moments',        description: 'Comparisons to competitors or known alternatives' },
-    ],
-    findings: [
-      { key: 'what_resonated',    label: 'What Resonated',     description: 'Aspects of the concept that were immediately understood or valued' },
-      { key: 'what_was_unclear',  label: 'What Was Unclear',   description: 'Aspects of the concept that confused or were misread' },
-      { key: 'whats_missing',     label: "What's Missing",     description: 'Information or framing needed to fully evaluate the concept' },
-    ],
-  },
-  'Desirability Testing': {
-    findingsKey: 'desirability_findings',
-    keyMoments: [
-      { key: 'emotional_highlights',     label: 'Emotional Highlights',     description: 'Positive emotional reactions — quote + context' },
-      { key: 'emotional_mismatches',     label: 'Emotional Mismatches',     description: 'Moments where the design evoked an unintended feeling — quote + context' },
-      { key: 'aesthetic_observations',   label: 'Aesthetic Observations',   description: 'Comments on visual design, tone, or style' },
-      { key: 'brand_alignment_moments',  label: 'Brand Alignment Moments',  description: "Where the design aligned or conflicted with the persona's brand expectations" },
-    ],
-    findings: [
-      { key: 'what_resonated_emotionally', label: 'What Resonated Emotionally', description: 'Design elements that evoked the intended feeling' },
-      { key: 'what_felt_off',              label: 'What Felt Off',              description: 'Elements that created emotional dissonance or mismatch' },
-      { key: 'whats_missing',              label: "What's Missing",             description: 'Emotional or brand cues needed but absent' },
-    ],
-  },
-};
-
-const DEFAULT_METHODOLOGY = 'Usability Testing';
-
-function getMethodologyConfig(methodology) {
-  return METHODOLOGY_CONFIGS[methodology] || METHODOLOGY_CONFIGS[DEFAULT_METHODOLOGY];
-}
 
 function buildSystemPrompt(config) {
   const keyMomentsSchema = config.keyMoments
@@ -156,6 +87,14 @@ function buildTranscriptBlock(session) {
       `  screen_or_step: ${turn.screen_or_step || ''}`,
       `  inner_monologue: ${turn.inner_monologue || ''}`,
     ];
+    if (turn.click_result) {
+      const r = turn.click_result;
+      const desc = r.reason === 'not_found' ? 'element described was not found on the page'
+        : r.reason === 'click_error'        ? `click failed (${r.error || 'error'})`
+        : r.reason === 'no_change'          ? 'click landed but the page did not change — likely a non-functional element'
+        : 'click landed and the page changed';
+      lines.push(`  click_result: ${desc}`);
+    }
     for (const [key, value] of Object.entries(turn.eval_scores || {})) {
       lines.push(`  ${key}: ${value}`);
     }

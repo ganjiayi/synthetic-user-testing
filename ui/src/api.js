@@ -70,6 +70,10 @@ export const api = {
     return req('GET', `/api/runs/${runId}/status`);
   },
 
+  getDeliverables(runId) {
+    return req('GET', `/api/runs/${runId}/report`);
+  },
+
   async uploadFiles(runId, files) {
     if (!supabaseBrowser) throw new Error('Supabase browser client not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
     const results = [];

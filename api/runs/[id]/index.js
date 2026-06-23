@@ -20,6 +20,9 @@ module.exports = async (req, res) => {
 
   res.json({
     ...runRes.data,
-    sessions: (sessionsRes.data || []).map(s => s.data),
+    // persona_id/persona_name come from the row, not s.data — in multi-provider
+    // runs the column is provider-prefixed (e.g. "openai::v4_...") while the
+    // JSONB blob keeps the raw, unprefixed value. Matches api/runs/[id]/sessions.js.
+    sessions: (sessionsRes.data || []).map(s => ({ ...s.data, persona_id: s.persona_id, persona_name: s.persona_name })),
   });
 };
