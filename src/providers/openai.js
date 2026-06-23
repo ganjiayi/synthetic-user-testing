@@ -4,6 +4,8 @@
  * Requires OPENAI_API_KEY in environment.
  */
 
+const { isVisionCapable } = require('../lib/vision-support');
+
 const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
 
 let _client = null;
@@ -56,7 +58,8 @@ async function callOpenAI(systemPrompt, userMessage, image = null) {
 }
 
 module.exports = {
-  id:        'openai',
-  modelName: DEFAULT_MODEL,
-  call:      callOpenAI,
+  id:            'openai',
+  modelName:     DEFAULT_MODEL,
+  call:          callOpenAI,
+  visionCapable: isVisionCapable(DEFAULT_MODEL, 'openai provider'),
 };

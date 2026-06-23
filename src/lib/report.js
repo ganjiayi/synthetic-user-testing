@@ -89,9 +89,10 @@ function buildTranscriptBlock(session) {
     ];
     if (turn.click_result) {
       const r = turn.click_result;
-      const desc = r.reason === 'not_found' ? 'element described was not found on the page'
-        : r.reason === 'click_error'        ? `click failed (${r.error || 'error'})`
-        : r.reason === 'no_change'          ? 'click landed but the page did not change — likely a non-functional element'
+      const desc = r.reason === 'not_found'        ? 'element described was not found on the page'
+        : r.reason === 'click_error'                ? `click failed (${r.error || 'error'})`
+        : r.reason === 'no_change'                  ? 'click landed but the page did not change — likely a non-functional element'
+        : r.reason === 'click_disallowed'            ? 'click attempted but blocked — this task is observation only'
         : 'click landed and the page changed';
       lines.push(`  click_result: ${desc}`);
     }

@@ -300,10 +300,11 @@ async function buildPresentation(run) {
           ].filter(Boolean).join(' ');
 
           const clickResultLabel = t.click_result && ({
-            not_found:   '(element not found)',
-            click_error: '(click failed)',
-            no_change:   '(no page change — likely non-functional)',
-            changed:     '(page changed)',
+            not_found:        '(element not found)',
+            click_error:      '(click failed)',
+            no_change:        '(no page change — likely non-functional)',
+            changed:          '(page changed)',
+            click_disallowed: '(blocked — observation-only task)',
           })[t.click_result.reason];
 
           const actionDetail = [

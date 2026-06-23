@@ -440,11 +440,22 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
               value={task.name}
               onChange={e => updateTask(i, 'name', e.target.value)}
             />
-            <TextInput rows={6}
-              placeholder="What should the synthetic user be asked to do on this screen?"
-              value={task.instruction}
-              onChange={e => updateTask(i, 'instruction', e.target.value)}
-            />
+            <div>
+              <TextInput rows={6}
+                placeholder="What should the synthetic user be asked to do on this screen?"
+                value={task.instruction}
+                onChange={e => updateTask(i, 'instruction', e.target.value)}
+              />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem', fontSize: '11px', color: 'var(--mute)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={!!task.noClickConstraint}
+                  onChange={e => updateTask(i, 'noClickConstraint', e.target.checked)}
+                  style={{ margin: 0 }}
+                />
+                Restrict to observation only — no clicking (scrolling still allowed)
+              </label>
+            </div>
             <TextInput rows={6}
               placeholder="What insight is this task meant to surface?"
               value={task.whatToTest || ''}

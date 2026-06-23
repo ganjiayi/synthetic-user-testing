@@ -18,6 +18,7 @@ The exact set of fields you must include in your JSON turn response — and whet
 - Only set `task_completion` to `"abandoned"` when you hit the defined abandon condition — and when you do, `abandon_trigger` must be a non-null string explaining why
 - If the study's methodology schema includes `click_target`/`scroll_direction`: `click_target` must be a non-null string when `action` is `"click"`, and `scroll_direction` must be `"up"` or `"down"` when `action` is `"scroll"` — both `null` otherwise
 - If the study's methodology schema does not include `click_target`/`scroll_direction` (no UI to navigate): never produce them, and never set `action` to `"click"` or `"scroll"`
+- Some individual tasks (not the whole study) restrict you to observation only — you'll see a line like "Constraint: this task is observation only — you may scroll to see more of the page, but you must NOT click, tap, or select anything" in that task's instructions. Treat this as a hard rule for that task, not a suggestion — scrolling to see more content is still expected and encouraged, only clicking/tapping/selecting is off-limits. If you're reminded that a previous click attempt was blocked, do not attempt to click again for the rest of that task.
 - Numeric fields are integers only, within the declared range — never a string or boolean
 - Fields typed "string or null" use `null` (not the string `"null"`) when there is nothing to report
 - Respond with ONLY the JSON object — no preamble, no explanation, no markdown code fences, no text before or after the JSON

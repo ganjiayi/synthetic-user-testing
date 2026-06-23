@@ -15,6 +15,46 @@ function loadPersonaPrompts() {
   }
 }
 
+// Converts raw technology_literacy scores into explicit behavioral rules
+// instead of leaving the model to infer behavior from a bare number — a
+// model told "complex_flow_tolerance: 45" has no fixed reference for what
+// that should look like in practice; a model told "show visible frustration
+// by step 3, consider abandoning by step 4-5" does.
+function buildTechLiteracyInstruction(t) {
+  const lines = [`Tech literacy: ${t.overall_score ?? '—'}/100.`];
+
+  if (typeof t.complex_flow_tolerance === 'number') {
+    const v = t.complex_flow_tolerance;
+    if (v < 40) {
+      lines.push(`Behavioral rule: LOW tolerance for multi-step flows (${v}/100) — show visible frustration or confusion by the 2nd step of any flow, and seriously consider abandoning by the 3rd-4th step.`);
+    } else if (v < 70) {
+      lines.push(`Behavioral rule: MODERATE tolerance for multi-step flows (${v}/100) — push through 3-4 steps without complaint, but voice irritation if a flow runs longer than that.`);
+    } else {
+      lines.push(`Behavioral rule: HIGH tolerance for multi-step flows (${v}/100) — multi-step flows don't bother you as long as each step makes sense; you won't abandon just because a flow is long.`);
+    }
+  }
+
+  if (typeof t.settings_comfort === 'number') {
+    const v = t.settings_comfort;
+    if (v < 40) {
+      lines.push(`Behavioral rule: avoid digging into settings/configuration menus (comfort ${v}/100) — you'd rather ask someone, search externally, or give up than explore settings yourself.`);
+    } else if (v >= 70) {
+      lines.push(`Behavioral rule: comfortable digging into settings/configuration menus (comfort ${v}/100) without hesitation or help.`);
+    }
+  }
+
+  if (t.device_competency) {
+    const comp = Object.entries(t.device_competency).map(([device, level]) => `${device}: ${level}`).join(', ');
+    lines.push(`Device competency — ${comp}. Reflect this directly: a level like "Light use only" means slower, more hesitant, more error-prone interaction on that device; "Expert" means fast and confident.`);
+  }
+
+  if (t.strengths?.length) lines.push(`Strengths: ${t.strengths.join('; ')}.`);
+  if (t.weaknesses?.length) lines.push(`Weaknesses: ${t.weaknesses.join('; ')}.`);
+  if (t.learning_style)     lines.push(`Learning style: ${t.learning_style}`);
+
+  return lines.join(' ');
+}
+
 function formatPersonaProfile(p) {
   const lines = [`## ${p.name}${p.archetype ? ` — ${p.archetype}` : ''}`];
   if (p.tagline) lines.push(`"${p.tagline}"`);
@@ -32,10 +72,7 @@ function formatPersonaProfile(p) {
   if (p.decision_making?.dealbreakers?.length) lines.push(`Dealbreakers: ${p.decision_making.dealbreakers.join('; ')}`);
   if (p.behavioural_tendencies?.length) lines.push(`Behavioural tendencies: ${p.behavioural_tendencies.join('; ')}`);
   if (p.signature_quotes?.length) lines.push(`In her/his own words: ${p.signature_quotes.map(q => `"${q}"`).join(' / ')}`);
-  if (p.technology_literacy) {
-    const t = p.technology_literacy;
-    lines.push(`Tech literacy: ${t.overall_score ?? '—'}/100. Strengths: ${(t.strengths || []).join(', ') || '—'}. Weaknesses: ${(t.weaknesses || []).join(', ') || '—'}.`);
-  }
+  if (p.technology_literacy) lines.push(buildTechLiteracyInstruction(p.technology_literacy));
   if (p.ux_change_response?.complex_flow_behaviour) lines.push(`Response to complex flows: ${p.ux_change_response.complex_flow_behaviour}`);
   if (p.astro_pain_points?.applicable_issues?.length) {
     const issues = p.astro_pain_points.applicable_issues.map(i => `${i.theme} (${i.severity}): ${i.description}`).join(' | ');
@@ -106,14 +143,24 @@ function buildTurnSchemaBlock(methodologyConfig) {
 
 function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan, methodologyConfig) {
   let personaBlock = '';
+  let personaMatch = 'fallback_generic';
 
   if (Array.isArray(personaLibrary)) {
     const slug = (persona.persona_library_ref || '').replace(/^v4_/, '').replace(/_/g, '-');
     const match = personaLibrary.find(p => p.name === persona.name || (slug && p.slug === slug));
-    if (match) personaBlock = formatPersonaProfile(match);
+    if (match) { personaBlock = formatPersonaProfile(match); personaMatch = 'exact'; }
   }
 
   if (!personaBlock) {
+    // Naming/slug drift between the plan's persona reference and the
+    // library (personas/v4_library.json) degrades silently otherwise — a
+    // typo or schema change would quietly fall back to a one-line generic
+    // context with no record anywhere. Surface it loudly instead.
+    console.warn(
+      `[evaluate] Persona library match failed for "${persona.name}" (ref: "${persona.persona_library_ref}") — ` +
+      `falling back to a one-line generic context instead of the full profile. Check for a naming/slug mismatch ` +
+      `between the plan and personas/v4_library.json.`
+    );
     personaBlock = `## ${persona.name}\n${persona.context || 'Malaysian consumer, general profile.'}`;
   }
 
@@ -140,16 +187,25 @@ function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, pla
     ? `\n\n## Scenario\n\n${scenario}`
     : '';
 
-  return `${simulationPrompt}${methodologyBlock}${hypothesesBlock}${risksBlock}\n\n---\n\n## Your Persona\n\n${personaBlock}${scenarioBlock}\n\n## Study Context for This Session\n\n${persona.context || ''}`;
+  const systemPrompt = `${simulationPrompt}${methodologyBlock}${hypothesesBlock}${risksBlock}\n\n---\n\n## Your Persona\n\n${personaBlock}${scenarioBlock}\n\n## Study Context for This Session\n\n${persona.context || ''}`;
+  return { systemPrompt, personaMatch };
 }
 
-function buildTaskPrompt(task, artefactContext, turnNumber) {
+function buildTaskPrompt(task, artefactContext, turnNumber, violationNote) {
+  const constraints = task.interaction_constraints || { click_allowed: true, scroll_allowed: true };
+  // Restated every turn (not just after a violation) so the model doesn't
+  // lose track of the constraint as conversation history grows.
+  const constraintBlock = constraints.click_allowed === false
+    ? '\nConstraint: this task is observation only — you may scroll to see more of the page, but you must NOT click, tap, or select anything.'
+    : '';
+  const violationBlock = violationNote ? `\n${violationNote}` : '';
+
   return `Turn ${turnNumber}.
 
 Task: ${task.task_name}
 Instruction: ${task.instruction || task.task_name}
 Success condition: ${task.success_condition || 'Complete the task as described'}
-Abandon condition: ${task.abandon_condition || 'Give up after repeated confusion'}
+Abandon condition: ${task.abandon_condition || 'Give up after repeated confusion'}${constraintBlock}${violationBlock}
 
 Artefact context:
 ${artefactContext}
@@ -252,20 +308,41 @@ async function callModel(provider, systemPrompt, conversationHistory, image = nu
     userMessage = `[CONVERSATION HISTORY]\n${prior}\n\n---\n\n[CURRENT TURN]\n${current.content}`;
   }
   // Static artefact image: only sent on turn 1 to establish visual context.
-  // Live prototype sessions (everyTurn) send a fresh screenshot every turn,
-  // since the screen actually changes as the persona clicks through it.
+  // It's the same unchanging image every subsequent turn for a static
+  // artefact (unlike a live prototype, where the screen genuinely changes),
+  // so re-sending it would just be repeat token cost for no new information.
+  // Live prototype sessions (everyTurn) send a fresh screenshot every turn.
   const img = (everyTurn || conversationHistory.length === 1) ? image : null;
-  return await provider.call(systemPrompt, userMessage, img);
+
+  if (img && provider.visionCapable === false) {
+    // There's an artefact image to ground against, but the configured model
+    // can't see it — proceeding would let the persona answer as if it had
+    // seen the page. Block rather than silently degrade to an ungrounded
+    // but confident-sounding response.
+    throw new Error(
+      `Model "${provider.modelName}" does not support vision, but this task requires visual grounding from an artefact image.`
+    );
+  }
+
+  const text = await provider.call(systemPrompt, userMessage, img);
+  return { text, imageAttached: !!img };
 }
 
 async function runPersonaSession(provider, persona, tasks, plan, personaLibrary, simulationPrompt, options = {}) {
-  const { image = null, browserSession = null, onTaskComplete = null } = options;
+  const { image = null, browserSession = null, onTaskComplete = null, groundingContext = {} } = options;
+  // artefactTypeResolved: 'live_screenshot' | 'static_image' | 'html_unrendered' | 'none'
+  // — set by the caller (api/runs/[id]/evaluate.js), which is where the
+  // artefact branching actually happens. Defaults cover direct callers
+  // (e.g. scripts/run-local-test.js) that don't pass it explicitly.
+  const artefactTypeResolved = groundingContext.artefactTypeResolved
+    || (browserSession ? 'live_screenshot' : image ? 'static_image' : 'none');
+  const visionCapableModel = provider.visionCapable !== false;
 
   const methodologyConfig = plan?.methodology_config || getMethodologyConfig(plan?.study_context?.methodology);
 
   const personaId       = getPersonaId(persona);
   const artefactContext = buildArtefactContext(plan);
-  const systemPrompt    = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan, methodologyConfig);
+  const { systemPrompt, personaMatch } = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan, methodologyConfig);
   const maxTurns        = plan.test_scenarios?.session_config?.max_turns || methodologyConfig.session_config.max_turns;
   const stuckThreshold  = plan.test_scenarios?.session_config?.stuck_loop_threshold || methodologyConfig.session_config.stuck_loop_threshold;
 
@@ -277,25 +354,43 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
   let conversationHistory     = [];
 
   for (const task of tasks) {
-    let turnNumber = 1;
-    let taskDone   = false;
+    let turnNumber    = 1;
+    let taskDone      = false;
+    let violationNote = null;
+    const clickAllowed = task.interaction_constraints?.click_allowed !== false;
 
     while (!taskDone && turnNumber <= maxTurns) {
-      const userMessage = buildTaskPrompt(task, artefactContext, turnNumber);
+      const userMessage = buildTaskPrompt(task, artefactContext, turnNumber, violationNote);
       conversationHistory.push({ role: 'user', content: userMessage });
+      violationNote = null;
 
       try {
         const turnImage = browserSession
           ? await browserSessionLib.screenshot(browserSession.page)
           : image;
-        const rawText = await callModel(provider, systemPrompt, conversationHistory, turnImage, !!browserSession);
+        const { text: rawText, imageAttached } = await callModel(provider, systemPrompt, conversationHistory, turnImage, !!browserSession);
         const turn    = parseTurnResponse(rawText, turnNumber, task.task_id, personaId, methodologyConfig);
+        turn.grounding_status = {
+          persona_match:            personaMatch,
+          artefact_type_resolved:   artefactTypeResolved,
+          image_attached_this_turn: imageAttached,
+          vision_capable_model:     visionCapableModel,
+        };
         sessionTurns.push(turn);
         conversationHistory.push({ role: 'assistant', content: rawText });
 
         if (browserSession) {
           if (turn.action === 'click' && turn.click_target) {
-            turn.click_result = await browserSessionLib.executeClick(browserSession.page, turn.click_target);
+            if (clickAllowed) {
+              turn.click_result = await browserSessionLib.executeClick(browserSession.page, turn.click_target);
+            } else {
+              // Task constraint blocks clicking (e.g. "without clicking on
+              // anything") — record the attempt honestly without executing
+              // it, and remind the model on the next turn so it doesn't keep
+              // repeating a blocked action until the stuck-loop threshold.
+              turn.click_result = { found: null, clicked: false, changed: false, reason: 'click_disallowed' };
+              violationNote = `Note: your last action (clicking "${turn.click_target}") was not permitted — this task is observation only. Continue without clicking; you may still scroll.`;
+            }
           } else if (turn.action === 'scroll' && turn.scroll_direction) {
             await browserSessionLib.executeScroll(browserSession.page, turn.scroll_direction);
           }
@@ -320,12 +415,19 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
         else if (completion === 'abandoned') { taskDone = true; }
       } catch (err) {
         // Fail fast: a model call error is very likely to repeat on every
-        // subsequent turn (bad API key, rate limit, provider outage). Retrying
-        // up to max_turns on the same hard failure just burns API calls for
-        // no benefit, so abandon this task immediately instead.
+        // subsequent turn (bad API key, rate limit, provider outage, or a
+        // vision-capability block from callModel). Retrying up to max_turns
+        // on the same hard failure just burns API calls for no benefit, so
+        // abandon this task immediately instead.
         sessionTurns.push({
           turn_number: turnNumber, task_id: task.task_id, persona_id: personaId,
           model_error: err.message,
+          grounding_status: {
+            persona_match:            personaMatch,
+            artefact_type_resolved:   artefactTypeResolved,
+            image_attached_this_turn: false,
+            vision_capable_model:     visionCapableModel,
+          },
           eval_scores: { task_completion: 'abandoned', abandon_trigger: `Model call failed: ${err.message}` },
         });
         taskDone = true;

@@ -68,7 +68,7 @@ For each included segment carry over exactly: `name`, `context`, `priority`, `pe
 
 ### test_scenarios
 
-Build from `q6_methodology.tasks` (array of objects with `name`, `instruction`, and `whatToTest`).
+Build from `q6_methodology.tasks` (array of objects with `name`, `instruction`, `whatToTest`, and `noClickConstraint`).
 
 The `test_scenarios` object must have exactly two keys: `scenarios` (the task array) and `session_config`.
 
@@ -76,12 +76,13 @@ The `test_scenarios` object must have exactly two keys: `scenarios` (the task ar
 "test_scenarios": {
   "scenarios": [
     {
-      "task_id":           "T1",
-      "task_name":         "<task.name>",
-      "instruction":       "<task.instruction>",
-      "success_condition": "<tailor the Methodology Configuration block's success_condition to this specific task — see rules below>",
-      "abandon_condition": "<tailor the Methodology Configuration block's abandon_condition to this specific task — see rules below>",
-      "test_intent":       "<task.whatToTest, verbatim — null if empty>"
+      "task_id":                "T1",
+      "task_name":              "<task.name>",
+      "instruction":            "<task.instruction>",
+      "success_condition":      "<tailor the Methodology Configuration block's success_condition to this specific task — see rules below>",
+      "abandon_condition":      "<tailor the Methodology Configuration block's abandon_condition to this specific task — see rules below>",
+      "test_intent":            "<task.whatToTest, verbatim — null if empty>",
+      "interaction_constraints": { "click_allowed": true, "scroll_allowed": true }
     }
   ],
   "session_config": "<copy verbatim from the Methodology Configuration block's session_config>"
@@ -92,6 +93,7 @@ The `test_scenarios` object must have exactly two keys: `scenarios` (the task ar
 - Number task_ids sequentially: T1, T2, T3 …
 - Do NOT put tasks directly on `test_scenarios` — they must be nested under `scenarios`.
 - `test_intent` is researcher-facing framing for the analysis stage — copy it verbatim, do not rephrase or merge it into `success_condition`/`abandon_condition`.
+- `interaction_constraints`: set `click_allowed: false` whenever `task.noClickConstraint` is `true` on the source task — this is a structured field, trust it directly rather than re-deriving the constraint from the instruction wording. If `task.noClickConstraint` is absent or `false`, only set `click_allowed: false` if the instruction text itself contains an explicit, unambiguous constraint against clicking/tapping (e.g. "without clicking on anything", "do not click", "do not tap") — when in doubt, leave it `true`. `scroll_allowed` should stay `true` in both cases — a no-click constraint restricts navigation, not scrolling, since the persona still needs to see content below the fold.
 
 ### eval_metrics
 

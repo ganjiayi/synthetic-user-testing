@@ -1,5 +1,6 @@
 require('dotenv').config();
 const Anthropic = require('@anthropic-ai/sdk');
+const { isVisionCapable } = require('../lib/vision-support');
 
 const DEFAULT_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
 
@@ -30,7 +31,8 @@ async function callClaude(systemPrompt, userMessage, image = null) {
 }
 
 module.exports = {
-  id:        'claude',
-  modelName: DEFAULT_MODEL,
-  call:      callClaude,
+  id:            'claude',
+  modelName:     DEFAULT_MODEL,
+  call:          callClaude,
+  visionCapable: isVisionCapable(DEFAULT_MODEL, 'claude provider'),
 };
