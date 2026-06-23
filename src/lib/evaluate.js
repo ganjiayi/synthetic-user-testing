@@ -144,11 +144,12 @@ function buildTurnSchemaBlock(methodologyConfig) {
 function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan, methodologyConfig) {
   let personaBlock = '';
   let personaMatch = 'fallback_generic';
+  let matchedProfile = null;
 
   if (Array.isArray(personaLibrary)) {
     const slug = (persona.persona_library_ref || '').replace(/^v4_/, '').replace(/_/g, '-');
     const match = personaLibrary.find(p => p.name === persona.name || (slug && p.slug === slug));
-    if (match) { personaBlock = formatPersonaProfile(match); personaMatch = 'exact'; }
+    if (match) { personaBlock = formatPersonaProfile(match); personaMatch = 'exact'; matchedProfile = match; }
   }
 
   if (!personaBlock) {
@@ -188,7 +189,10 @@ function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, pla
     : '';
 
   const systemPrompt = `${simulationPrompt}${methodologyBlock}${hypothesesBlock}${risksBlock}\n\n---\n\n## Your Persona\n\n${personaBlock}${scenarioBlock}\n\n## Study Context for This Session\n\n${persona.context || ''}`;
-  return { systemPrompt, personaMatch };
+  // technologyLiteracy is what checkPersonaDrift checks actual turn behavior
+  // against — only available when the full library profile matched. Null on
+  // the generic fallback, since there are no thresholds to verify there.
+  return { systemPrompt, personaMatch, technologyLiteracy: matchedProfile?.technology_literacy || null };
 }
 
 function buildTaskPrompt(task, artefactContext, turnNumber, violationNote) {
@@ -295,6 +299,58 @@ function parseTurnResponse(rawText, turnNumber, taskId, personaId, methodologyCo
   }
 }
 
+// Fix 7 (Option B — rule-based heuristic, confirmed over LLM-judge/embedding
+// alternatives because it costs zero extra API calls and reuses eval data
+// already collected in this session). Checks turns for a single task against
+// the persona's technology_literacy thresholds — the same thresholds Fix 6
+// turned into prompt instructions — and flags it when behavior doesn't match
+// what was instructed. Only meaningful for task_based methodologies (the
+// only ones with a multi-turn flow and confusion/friction fields to check),
+// and only when the full persona profile matched (technologyLiteracy is
+// null on the generic fallback, where there's nothing to check against).
+function checkPersonaDrift(technologyLiteracy, task, taskTurns, methodologyConfig) {
+  const flags = [];
+  if (!technologyLiteracy || !navigationRequired(methodologyConfig)) return flags;
+
+  const hasConfusionField = methodologyConfig.eval_schema.fields.some(f => f.key === 'confusion_signal');
+  const hasFrictionField  = methodologyConfig.eval_schema.fields.some(f => f.key === 'friction_score');
+  if (!hasConfusionField && !hasFrictionField) return flags;
+
+  const showsFriction = (t) =>
+    (hasConfusionField && !!t.eval_scores?.confusion_signal) ||
+    (hasFrictionField && typeof t.eval_scores?.friction_score === 'number' && t.eval_scores.friction_score >= 5);
+
+  const tolerance = technologyLiteracy.complex_flow_tolerance;
+  if (typeof tolerance === 'number' && tolerance < 40) {
+    const expectByTurn = 2;
+    const reachedExpectedTurn = taskTurns.some(t => t.turn_number === expectByTurn);
+    const anyFrictionByExpected = taskTurns.some(t => t.turn_number <= expectByTurn && showsFriction(t));
+    const abandonedByExpected   = taskTurns.some(t => t.turn_number <= expectByTurn && t.eval_scores?.task_completion === 'abandoned');
+
+    if (reachedExpectedTurn && !anyFrictionByExpected && !abandonedByExpected) {
+      flags.push({
+        task_id: task.task_id,
+        rule:    'complex_flow_tolerance',
+        note:    `Persona instructed as LOW complex_flow_tolerance (${tolerance}/100) — expected a confusion/friction signal or abandon by turn ${expectByTurn} of "${task.task_name}", but none was recorded.`,
+      });
+    }
+  }
+
+  const settingsComfort = technologyLiteracy.settings_comfort;
+  if (typeof settingsComfort === 'number' && settingsComfort < 40) {
+    const touchedSettings = taskTurns.find(t => /setting|configur/i.test(`${t.action || ''} ${t.click_target || ''} ${t.screen_or_step || ''}`));
+    if (touchedSettings && !showsFriction(touchedSettings)) {
+      flags.push({
+        task_id: task.task_id,
+        rule:    'settings_comfort',
+        note:    `Persona instructed to avoid/hesitate on settings (comfort ${settingsComfort}/100) — engaged "${touchedSettings.click_target || touchedSettings.screen_or_step}" at turn ${touchedSettings.turn_number} with no recorded hesitation.`,
+      });
+    }
+  }
+
+  return flags;
+}
+
 async function callModel(provider, systemPrompt, conversationHistory, image = null, everyTurn = false) {
   let userMessage;
   if (conversationHistory.length === 1) {
@@ -342,12 +398,13 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
 
   const personaId       = getPersonaId(persona);
   const artefactContext = buildArtefactContext(plan);
-  const { systemPrompt, personaMatch } = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan, methodologyConfig);
+  const { systemPrompt, personaMatch, technologyLiteracy } = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan, methodologyConfig);
   const maxTurns        = plan.test_scenarios?.session_config?.max_turns || methodologyConfig.session_config.max_turns;
   const stuckThreshold  = plan.test_scenarios?.session_config?.stuck_loop_threshold || methodologyConfig.session_config.stuck_loop_threshold;
 
   const sessionTurns          = [];
   const stuckLoopFlags        = [];
+  const personaDriftFlags     = [];
   const tasksCompleted        = [];
   let consecutiveSameScreen   = 0;
   let lastScreen              = '';
@@ -435,6 +492,9 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
       turnNumber++;
     }
 
+    const taskTurns = sessionTurns.filter(t => t.task_id === task.task_id);
+    personaDriftFlags.push(...checkPersonaDrift(technologyLiteracy, task, taskTurns, methodologyConfig));
+
     if (onTaskComplete) {
       try { await onTaskComplete({ task_id: task.task_id }); } catch {}
     }
@@ -445,15 +505,16 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
     : 'no_tasks_completed';
 
   return {
-    persona_id:       personaId,
-    persona_name:     persona.name,
-    persona_priority: persona.priority,
-    turns:            sessionTurns,
-    session_outcome:  sessionOutcome,
-    tasks_completed:  tasksCompleted,
-    tasks_attempted:  tasks.map(t => t.task_id),
-    stuck_loop_flags: stuckLoopFlags,
-    total_turns:      sessionTurns.length,
+    persona_id:         personaId,
+    persona_name:       persona.name,
+    persona_priority:   persona.priority,
+    turns:              sessionTurns,
+    session_outcome:    sessionOutcome,
+    tasks_completed:    tasksCompleted,
+    tasks_attempted:    tasks.map(t => t.task_id),
+    stuck_loop_flags:   stuckLoopFlags,
+    persona_drift_flags: personaDriftFlags,
+    total_turns:        sessionTurns.length,
   };
 }
 

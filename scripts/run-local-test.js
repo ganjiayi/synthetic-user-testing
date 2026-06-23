@@ -159,6 +159,7 @@ async function runEvaluation(provider, plan) {
   };
 
   fs.writeFileSync(path.join(OUT_DIR, `${RUN_ID}_plan.json`), JSON.stringify(plan, null, 2));
+  fs.writeFileSync(path.join(OUT_DIR, `${RUN_ID}_sessions.json`), JSON.stringify(run.sessions, null, 2));
   fs.writeFileSync(path.join(OUT_DIR, `${RUN_ID}_raw_data.csv`), buildCsv(run));
 
   const docxBuffer = await buildDocxTranscript(run);
