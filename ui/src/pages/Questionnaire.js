@@ -125,7 +125,7 @@ function StepGoals({ form, setForm }) {
           value={form.feature || ''}
           onChange={e => setForm(f => ({ ...f, feature: e.target.value }))} />
       </FieldGroup>
-      <FieldGroup label="Why this, why now">
+      <FieldGroup label="Reason for study">
         <TextInput rows={2}
           placeholder="Strategic reason this is being tested now"
           value={form.whyNow || ''}

@@ -1036,7 +1036,7 @@ function QuestionnaireTab({ intake }) {
 
       <SectionHead>Research goals</SectionHead>
       <Field label="Insight type"         value={q.q3_goals?.insight_type} />
-      <Field label="Why this, why now"    value={q.q3_goals?.why_now || q.q5_product_context?.why_this_why_now} />
+      <Field label="Reason for study"     value={q.q3_goals?.why_now || q.q5_product_context?.why_this_why_now} />
       <Field label="Primary research question" value={q.q3_goals?.primary_rq} />
       <Field label="Secondary questions"  value={q.q3_goals?.secondary_rqs} />
       <Field label="Decision to support"  value={q.q3_goals?.decision_to_support} />

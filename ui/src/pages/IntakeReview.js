@@ -207,7 +207,7 @@ export default function IntakeReview({ goTo, draft }) {
 
           <Section title="Research goals">
             <Field label="Insight type" value={form.insightType} />
-            <Field label="Why this, why now" value={form.whyNow} />
+            <Field label="Reason for study" value={form.whyNow} />
             <Field label="Primary research question" value={form.primaryRQ} />
             <Field label="Secondary research questions" value={form.secondaryRQs} />
           </Section>

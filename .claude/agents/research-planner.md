@@ -57,7 +57,6 @@ Respond with a single valid JSON object. No preamble, no markdown fences, no exp
 - `research_goals.insight_type`          ← `q3_goals.insight_type`
 - `research_goals.primary_rq`            ← `q3_goals.primary_rq`
 - `research_goals.secondary_rqs`         ← `q3_goals.secondary_rqs`
-- `research_goals.decision_to_support`   ← `q3_goals.decision_to_support`
 
 ### user_segments
 
@@ -130,7 +129,6 @@ Derive this section by reasoning from the intake — do not copy fields. Write c
 
 ### output_handoff
 
-- `output_handoff.primary_audience`  ← `q8_output.audience`
 - `output_handoff.output_formats`    ← `q8_output.output_formats`
 - `output_handoff.additional_notes`  ← `q8_output.additional_notes`
 - `output_handoff.report_parts`: Always include exactly:
