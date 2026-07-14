@@ -210,7 +210,6 @@ export default function IntakeReview({ goTo, draft }) {
             <Field label="Why this, why now" value={form.whyNow} />
             <Field label="Primary research question" value={form.primaryRQ} />
             <Field label="Secondary research questions" value={form.secondaryRQs} />
-            <Field label="Decision to support" value={form.decisionToSupport} />
           </Section>
 
           <Section title="Test materials">
@@ -279,7 +278,6 @@ export default function IntakeReview({ goTo, draft }) {
 
           <Section title="Output">
             <Field label="AI models" value={(form.modelProviders || []).map(p => p === 'openai' ? 'OpenAI — gpt-4o' : 'Claude — claude-sonnet-4-6').join(', ') || 'Not selected'} />
-            <Field label="Primary audience" value={form.audience} />
             <Field label="Output formats" value={form.outputFormats} />
           </Section>
         </div>

@@ -142,7 +142,6 @@ export function buildIntake(form, runId) {
       why_now:            form.whyNow || '',
       primary_rq:         form.primaryRQ || '',
       secondary_rqs:      form.secondaryRQs || '',
-      decision_to_support:form.decisionToSupport || '',
     },
     q4_personas: {
       selected:          form.personas || [],
@@ -179,7 +178,6 @@ export function buildIntake(form, runId) {
     },
     q8_output: {
       model_providers: form.modelProviders?.length ? form.modelProviders : (form.modelProvider ? [form.modelProvider] : ['openai']),
-      audience:       form.audience || [],
       output_formats: form.outputFormats || [],
       additional_notes:form.additionalNotes || '',
     },

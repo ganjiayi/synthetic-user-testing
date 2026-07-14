@@ -143,12 +143,6 @@ function StepGoals({ form, setForm }) {
           value={form.secondaryRQs || ''}
           onChange={e => setForm(f => ({ ...f, secondaryRQs: e.target.value }))} />
       </FieldGroup>
-      <FieldGroup label="Decision this research must support" hint="Optional">
-        <TextInput rows={2}
-          placeholder="e.g. Whether to proceed with the homepage launch on the scheduled date or return to design for one more sprint."
-          value={form.decisionToSupport || ''}
-          onChange={e => setForm(f => ({ ...f, decisionToSupport: e.target.value }))} />
-      </FieldGroup>
     </>
   );
 }
@@ -485,7 +479,6 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
 }
 
 function StepOutput({ form, setForm }) {
-  const audiences = ['Product team','Design team','Engineering','Marketing','Leadership','Investors'];
   const formats   = ['JSON eval log','Markdown summary','HTML report card','DOCX research plan','Slide deck'];
 
   const models = [
@@ -575,15 +568,6 @@ function StepOutput({ form, setForm }) {
 
       <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
 
-      <FieldGroup label="Primary audience">
-        <div style={pillRow}>
-          {audiences.map(a => (
-            <Pill key={a} label={a}
-              selected={(form.audience || []).includes(a)}
-              onClick={() => toggle('audience', a)} />
-          ))}
-        </div>
-      </FieldGroup>
       <FieldGroup label="Required output formats">
         <div style={pillRow}>
           {formats.map(f => (
