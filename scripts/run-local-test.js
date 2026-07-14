@@ -55,7 +55,7 @@ const intake = {
       },
     ],
   },
-  q7_personas: {
+  q4_persona_segments: {
     segments: [
       { name: 'Hakim',       context: 'Spontaneous Traditionalist — mobile-first, Sooka user, price-sensitive, impulsive.', priority: 'primary',   persona_library_ref: 'v4_spontaneous_traditionalist', include: false },
       { name: 'Syafiqah',    context: 'Progressive Influencer — urban professional, social-media driven.',                 priority: 'secondary', persona_library_ref: 'v4_progressive_influencer',     include: true },

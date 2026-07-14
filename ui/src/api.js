@@ -147,7 +147,7 @@ export function buildIntake(form, runId) {
       selected:          form.personas || [],
       priority_segment:  form.prioritySegment || '',
     },
-    q7_personas: {
+    q4_persona_segments: {
       segments: Object.entries(PERSONA_MAP).map(([code, p]) => ({
         name:                p.name,
         context:             p.context,

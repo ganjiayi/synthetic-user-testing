@@ -60,8 +60,8 @@ Respond with a single valid JSON object. No preamble, no markdown fences, no exp
 
 ### user_segments
 
-- `user_segments.segments`               ← `q7_personas.segments` filtered to where `include: true`
-- `user_segments.priority_segment`       ← `q7_personas.priority_segment`
+- `user_segments.segments`               ← `q4_persona_segments.segments` filtered to where `include: true`
+- `user_segments.priority_segment`       ← `q4_persona_segments.priority_segment`
 
 For each included segment carry over exactly: `name`, `context`, `priority`, `persona_library_ref`.
 
