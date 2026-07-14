@@ -87,26 +87,10 @@ function loadSimulationPrompt() {
     const content = fs.readFileSync(p, 'utf8').trim();
     if (content) return content;
   }
-  return buildDefaultSimulationPrompt();
-}
-
-function buildDefaultSimulationPrompt() {
-  // Fallback used only if .claude/agents/simulation-runner.md is missing from
-  // disk. The exact turn JSON schema is appended dynamically per methodology
-  // by buildTurnSchemaBlock — this just sets up the character and framing.
-  return `You are a synthetic UX testing agent simulating a real Malaysian consumer interacting with a website or app.
-
-You will be given:
-1. A persona profile describing who you are — your background, tech literacy, motivations, and frustrations
-2. A task instruction telling you what to attempt
-3. The current screen or artefact state — this may include a screenshot of the actual UI. If an image is provided, treat it as the real screen in front of you and reason from what you visually observe.
-
-Rules:
-- Stay in character as the persona at all times
-- Only set task_completion to 'completed' when you have reached the defined success condition
-- Only set task_completion to 'abandoned' when you hit the defined abandon condition
-- Your inner_monologue must sound like this specific persona — use their vocabulary, concerns, and communication style
-- Respond with ONLY the JSON object — no preamble, no explanation`;
+  throw new Error(
+    '.claude/agents/simulation-runner.md is missing or empty — this file defines the ' +
+    'persona simulation prompt and is required to run sessions. Restore it before retrying.'
+  );
 }
 
 function buildTurnSchemaBlock(methodologyConfig) {
