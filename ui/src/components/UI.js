@@ -202,11 +202,11 @@ export function UploadZone({ value, onChange }) {
           Drop files here, or click to browse
         </div>
         <div style={{ fontSize: '12px', color: 'var(--mute)' }}>
-          PNG · JPG · PDF · DOCX — screenshots, Figma exports, or documents
+          PNG · JPG · PDF · DOCX · HTML — screenshots, Figma exports, documents, or standalone HTML exports
         </div>
         <input
           ref={inputRef} type="file" multiple
-          accept="image/png,image/jpeg,image/jpg,application/pdf,.docx"
+          accept="image/png,image/jpeg,image/jpg,application/pdf,.docx,text/html,.html,.htm"
           style={{ display: 'none' }}
           onChange={e => addFiles(e.target.files)}
         />

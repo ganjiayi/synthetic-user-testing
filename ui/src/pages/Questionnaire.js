@@ -71,7 +71,7 @@ function StepContext({ form, setForm }) {
 
       <FieldGroup
         label="Test materials"
-        hint="Upload Figma JPEG exports, screenshots, or documents — or paste a Figma prototype link, staging URL, or any live URL. Add as many files and links as needed. Tip: use only letters, numbers, dots and hyphens in filenames (e.g. Homepage.jpg not Homepage test.jpg) — spaces and special characters will be stripped."
+        hint="Upload Figma JPEG exports, screenshots, documents, or standalone HTML exports — or paste a Figma prototype link, staging URL, or any live URL. Add as many files and links as needed. Tip: use only letters, numbers, dots and hyphens in filenames (e.g. Homepage.jpg not Homepage test.jpg) — spaces and special characters will be stripped."
       >
         <UploadZone
           value={form.testMaterials}
@@ -79,8 +79,8 @@ function StepContext({ form, setForm }) {
         />
       </FieldGroup>
 
-      {(form.testMaterials?.urls || []).length > 0 && (
-        <FieldGroup label="Prototype interactivity" hint="Turn this on if the linked URL is a real, clickable prototype (e.g. a Claude Design HTML export, a Figma prototype, or a staging build) that synthetic users should navigate turn by turn. Leave off if it's just a reference link or a static screenshot.">
+      {((form.testMaterials?.urls || []).length > 0 || (form.testMaterials?.files || []).some(f => /\.html?$/i.test(f.name))) && (
+        <FieldGroup label="Prototype interactivity" hint="Turn this on if the linked URL or uploaded HTML file is a real, clickable prototype (e.g. a Claude Design HTML export, a Figma prototype, or a staging build) that synthetic users should navigate turn by turn. Leave off if it's just a reference link, uploaded document, or static screenshot.">
           <Pill
             label={form.isInteractivePrototype ? 'Live, clickable prototype' : 'Static reference link'}
             selected={!!form.isInteractivePrototype}
