@@ -131,8 +131,7 @@ function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, pla
   let matchedProfile = null;
 
   if (Array.isArray(personaLibrary)) {
-    const slug = (persona.persona_library_ref || '').replace(/^v4_/, '').replace(/_/g, '-');
-    const match = personaLibrary.find(p => p.name === persona.name || (slug && p.slug === slug));
+    const match = personaLibrary.find(p => p.name === persona.name || p.slug === persona.persona_library_ref);
     if (match) { personaBlock = formatPersonaProfile(match); personaMatch = 'exact'; matchedProfile = match; }
   }
 

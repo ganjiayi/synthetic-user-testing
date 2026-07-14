@@ -57,11 +57,11 @@ const intake = {
   },
   q4_persona_segments: {
     segments: [
-      { name: 'Hakim',       context: 'Spontaneous Traditionalist — mobile-first, Sooka user, price-sensitive, impulsive.', priority: 'primary',   persona_library_ref: 'v4_spontaneous_traditionalist', include: false },
-      { name: 'Syafiqah',    context: 'Progressive Influencer — urban professional, social-media driven.',                 priority: 'secondary', persona_library_ref: 'v4_progressive_influencer',     include: true },
-      { name: 'Marcus',      context: 'Trendsetter Explorer — high tech literacy, benchmarks against Netflix.',            priority: 'secondary', persona_library_ref: 'v4_trendsetter_explorer',        include: false },
-      { name: 'Puan Rohani', context: 'Family-Centric Devotee — low tech literacy, family-first, long-term Astro customer.', priority: 'primary',  persona_library_ref: 'v4_family_centric_devotee',      include: false },
-      { name: 'David',       context: 'Routine Conservative — habitual, risk-averse, long-term Astro subscriber.',          priority: 'secondary', persona_library_ref: 'v4_routine_conservative',        include: false },
+      { name: 'Hakim',       context: 'Spontaneous Traditionalist — mobile-first, Sooka user, price-sensitive, impulsive.', priority: 'primary',   persona_library_ref: 'spontaneous-traditionalist', include: false },
+      { name: 'Syafiqah',    context: 'Progressive Influencer — urban professional, social-media driven.',                 priority: 'secondary', persona_library_ref: 'progressive-influencer',     include: true },
+      { name: 'Marcus',      context: 'Trendsetter Explorer — high tech literacy, benchmarks against Netflix.',            priority: 'secondary', persona_library_ref: 'trendsetter-explorer',        include: false },
+      { name: 'Puan Rohani', context: 'Family-Centric Devotee — low tech literacy, family-first, long-term Astro customer.', priority: 'primary',  persona_library_ref: 'family-centric-devotee',      include: false },
+      { name: 'David',       context: 'Routine Conservative — habitual, risk-averse, long-term Astro subscriber.',          priority: 'secondary', persona_library_ref: 'routine-conservative',        include: false },
     ],
     priority_segment: 'PI',
   },

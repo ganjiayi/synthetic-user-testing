@@ -91,11 +91,11 @@ export const api = {
 };
 
 export const PERSONA_MAP = {
-  ST: { name: 'Hakim',       ref: 'v4_spontaneous_traditionalist', priority: 'primary',   context: 'Spontaneous Traditionalist — mobile-first, Sooka user, price-sensitive, impulsive.' },
-  PI: { name: 'Syafiqah',    ref: 'v4_progressive_influencer',     priority: 'secondary',  context: 'Progressive Influencer — urban professional, social-media driven.' },
-  TE: { name: 'Marcus',      ref: 'v4_trendsetter_explorer',       priority: 'secondary',  context: 'Trendsetter Explorer — high tech literacy, benchmarks against Netflix.' },
-  FC: { name: 'Puan Rohani', ref: 'v4_family_centric_devotee',     priority: 'primary',   context: 'Family-Centric Devotee — low tech literacy, family-first, long-term Astro customer.' },
-  RC: { name: 'David',       ref: 'v4_routine_conservative',       priority: 'secondary',  context: 'Routine Conservative — habitual, risk-averse, long-term Astro subscriber.' },
+  ST: { name: 'Hakim',       ref: 'spontaneous-traditionalist', priority: 'primary',   context: 'Spontaneous Traditionalist — mobile-first, Sooka user, price-sensitive, impulsive.' },
+  PI: { name: 'Syafiqah',    ref: 'progressive-influencer',     priority: 'secondary',  context: 'Progressive Influencer — urban professional, social-media driven.' },
+  TE: { name: 'Marcus',      ref: 'trendsetter-explorer',       priority: 'secondary',  context: 'Trendsetter Explorer — high tech literacy, benchmarks against Netflix.' },
+  FC: { name: 'Puan Rohani', ref: 'family-centric-devotee',     priority: 'primary',   context: 'Family-Centric Devotee — low tech literacy, family-first, long-term Astro customer.' },
+  RC: { name: 'David',       ref: 'routine-conservative',       priority: 'secondary',  context: 'Routine Conservative — habitual, risk-averse, long-term Astro subscriber.' },
 };
 
 export function generateRunId(studyName) {

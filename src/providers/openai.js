@@ -50,8 +50,6 @@ async function callOpenAI(systemPrompt, userMessage, image = null) {
       { role: 'user',   content: userContent  },
     ],
     max_tokens:      8192,
-    temperature:     0.7,
-    response_format: { type: 'json_object' },
   });
 
   return response.choices[0]?.message?.content || '';
