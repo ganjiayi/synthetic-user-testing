@@ -49,15 +49,13 @@ src/
 
 ## Connecting to the pipeline
 
-The questionnaire `form` state maps directly to `intake_schema.json` in the Node.js pipeline. On submit, send the form object to your backend:
+The questionnaire `form` state is transformed into the intake payload by `buildIntake(form, runId)` in `src/api.js` (see that file for the exact `q1_product` … `q8_output` shape). Submission is a two-step call, not a single request:
 
 ```js
-// In Questionnaire.js handleSubmit()
-const res = await fetch('/api/generate-plan', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(form),
-});
-const plan = await res.json();
-goTo('plan', plan);
+// In IntakeReview.js / api.js
+const runId  = generateRunId(form.feature);
+const intake = buildIntake(form, runId);
+
+await api.createRun(runId, intake);   // POST /api/runs — persists intake, status: 'intake_saved'
+await api.startPlan(runId);           // POST /api/runs/:id/plan — generates the study plan
 ```
