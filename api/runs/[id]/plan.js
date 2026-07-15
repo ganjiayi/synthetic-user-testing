@@ -3,6 +3,7 @@ const path = require('path');
 const fs   = require('fs');
 const { getClient } = require('../../../src/lib/supabase');
 const { getMethodologyConfig } = require('../../../src/lib/methodology-config');
+const { validateProduct } = require('../../../src/lib/validate-product');
 
 async function handler(req, res) {
   const { id } = req.query;
@@ -33,6 +34,7 @@ async function handler(req, res) {
         const productPath = path.join(process.cwd(), `products/${productId}.json`);
         if (fs.existsSync(productPath)) {
           const productDB = JSON.parse(fs.readFileSync(productPath, 'utf8'));
+          validateProduct(productDB, productId);
           productBlock = [
             '',
             `Here is the product database context for ${productId}. Use it to enrich the study plan with product-specific flows, known pain points, UX history, and audience context:`,

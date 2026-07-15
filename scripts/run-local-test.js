@@ -14,6 +14,7 @@ const os   = require('os');
 
 const { getMethodologyConfig } = require('../src/lib/methodology-config');
 const { loadPersonaPrompts, loadSimulationPrompt, runPersonaSession } = require('../src/lib/evaluate');
+const { validateProduct } = require('../src/lib/validate-product');
 const browserSessionLib = require('../src/lib/browser-session');
 const { buildCsv, buildDocxTranscript, buildPptxPresentation } = require('./local-report-helpers');
 
@@ -78,6 +79,7 @@ async function generatePlan(provider) {
   const productPath = path.join(process.cwd(), `products/${productId}.json`);
   if (fs.existsSync(productPath)) {
     const productDB = JSON.parse(fs.readFileSync(productPath, 'utf8'));
+    validateProduct(productDB, productId);
     productBlock = ['', `Here is the product database context for ${productId}. Use it to enrich the study plan with product-specific flows, known pain points, UX history, and audience context:`, '', '```json', JSON.stringify(productDB, null, 2), '```'].join('\n');
   }
 

@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Persona Trait Card",
+  "description": "Schema for a single persona record inside the `personas` array in personas/v4_library.json. Derived from the actual shape of the 5 v4 personas — 'limitations' and 'technology_literacy.device_competency' are intentionally freeform (each persona's own blind spots and relevant devices differ by archetype), everything else is a fixed shape shared by every persona.",
+  "type": "object",
+  "required": [
+    "id", "slug", "name", "age", "archetype", "tagline",
+    "identity", "personality", "streaming_behaviour", "motivations",
+    "success_definition", "pain_points", "decision_making",
+    "behavioural_tendencies", "signature_quotes", "idiosyncrasies",
+    "limitations", "technology_literacy", "ux_change_response", "astro_pain_points"
+  ],
+  "properties": {
+
+    "id":        { "type": "string" },
+    "slug":      { "type": "string", "description": "Matched directly against persona_library_ref in src/lib/evaluate.js — must be unique and kebab-case." },
+    "name":      { "type": "string" },
+    "age":       { "type": "integer" },
+    "archetype": { "type": "string" },
+    "tagline":   { "type": "string" },
+
+    "identity": {
+      "type": "object",
+      "required": ["location", "role", "education", "household_income_myr", "ethnicity", "languages", "living_situation", "primary_device"],
+      "properties": {
+        "location":              { "type": "string" },
+        "role":                  { "type": "string" },
+        "education":             { "type": "string" },
+        "household_income_myr":  { "type": "string" },
+        "ethnicity":             { "type": "string" },
+        "languages":             { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "living_situation":      { "type": "string" },
+        "primary_device":        { "type": "string" },
+        "social_following":      { "type": "string", "description": "Only present on personas where it's archetype-relevant (e.g. an influencer)." }
+      }
+    },
+
+    "personality": {
+      "type": "object",
+      "required": ["temperament", "communication_style", "openness_to_change", "social_orientation"],
+      "properties": {
+        "temperament":          { "type": "string" },
+        "communication_style":  { "type": "string" },
+        "openness_to_change":   { "type": "string" },
+        "social_orientation":   { "type": "string" }
+      }
+    },
+
+    "streaming_behaviour": {
+      "type": "object",
+      "required": ["platform_stack", "ad_tolerance", "subscription_count", "payment_method", "astro_relationship"],
+      "properties": {
+        "platform_stack":      { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "ad_tolerance":        { "type": "string" },
+        "subscription_count":  { "type": ["integer", "string"], "description": "Integer for a clean count, string when it's a range or needs context (e.g. '3-4 simultaneously')." },
+        "payment_method":      { "type": "string" },
+        "astro_relationship":  { "type": "string" }
+      }
+    },
+
+    "motivations":         { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "success_definition":  { "type": "string" },
+    "pain_points":         { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+
+    "decision_making": {
+      "type": "object",
+      "required": ["info_gathering", "risk_tolerance", "trust_signals", "dealbreakers"],
+      "properties": {
+        "info_gathering":  { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "risk_tolerance":  { "type": "string" },
+        "trust_signals":   { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "dealbreakers":    { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    },
+
+    "behavioural_tendencies":  { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "signature_quotes":        { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "idiosyncrasies":          { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+
+    "limitations": {
+      "type": "object",
+      "description": "Freeform by design — each persona's own blind spots, named by topic. Do not add a fixed key list here.",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string" }
+    },
+
+    "technology_literacy": {
+      "type": "object",
+      "required": ["overall_score", "app_navigation", "settings_comfort", "self_service_ratio", "complex_flow_tolerance", "strengths", "weaknesses", "learning_style", "device_competency"],
+      "properties": {
+        "overall_score":           { "type": "number", "minimum": 0, "maximum": 100 },
+        "app_navigation":          { "type": "number", "minimum": 0, "maximum": 100 },
+        "settings_comfort":        { "type": "number", "minimum": 0, "maximum": 100 },
+        "self_service_ratio":      { "type": "number", "minimum": 0, "maximum": 100 },
+        "complex_flow_tolerance":  { "type": "number", "minimum": 0, "maximum": 100 },
+        "strengths":               { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "weaknesses":              { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "learning_style":          { "type": "string" },
+        "device_competency": {
+          "type": "object",
+          "description": "Freeform — relevant devices vary per persona.",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "additionalProperties": true,
+      "description": "additionalProperties: true here because several personas carry an extra bonus metric (e.g. multi_platform_fluency, ui_aesthetic_sensitivity) not shared by all — only the 9 fields above are guaranteed on every persona."
+    },
+
+    "ux_change_response": {
+      "type": "object",
+      "required": ["ui_redesign", "new_feature_discovery", "complex_flow_behaviour", "error_states", "design_signals"],
+      "properties": {
+        "ui_redesign":             { "type": "string" },
+        "new_feature_discovery":   { "type": "string" },
+        "complex_flow_behaviour":  { "type": "string" },
+        "error_states":            { "type": "string" },
+        "design_signals":          { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    },
+
+    "astro_pain_points": {
+      "type": "object",
+      "required": ["relationship_type", "applicable_issues", "churn_type", "churn_risk"],
+      "properties": {
+        "relationship_type":  { "type": "string" },
+        "applicable_issues": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["theme", "severity", "status", "description", "voice"],
+            "properties": {
+              "theme":        { "type": "string" },
+              "severity":     { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+              "status":       { "type": "string" },
+              "description":  { "type": "string" },
+              "voice":        { "type": "string" }
+            }
+          }
+        },
+        "churn_type":  { "type": "string" },
+        "churn_risk":  { "type": "string", "description": "Descriptive prose, not a fixed enum — e.g. 'Low personally — High as a brand reputation multiplier'." }
+      }
+    }
+  }
+}

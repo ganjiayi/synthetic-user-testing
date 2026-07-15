@@ -3,16 +3,24 @@ const fs   = require('fs');
 const { extractJsonObject, getPersonaId } = require('./utils');
 const browserSessionLib = require('./browser-session');
 const { getMethodologyConfig, navigationRequired } = require('./methodology-config');
+const { validatePersonaLibrary } = require('./validate-personas');
 
 function loadPersonaPrompts() {
   const p = path.join(process.cwd(), 'personas/v4_library.json');
   if (!fs.existsSync(p)) return null;
+  let data;
   try {
-    const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-    return Array.isArray(data.personas) ? data.personas : null;
+    data = JSON.parse(fs.readFileSync(p, 'utf8'));
   } catch {
     return null;
   }
+  if (!Array.isArray(data.personas)) return null;
+  // Deliberately outside the try/catch above — that one only exists to
+  // degrade gracefully on a corrupt/missing file. A schema violation is a
+  // real content problem and must propagate, not silently fall back to the
+  // generic one-line persona context with no indication anything is wrong.
+  validatePersonaLibrary(data);
+  return data.personas;
 }
 
 // Converts raw technology_literacy scores into explicit behavioral rules
