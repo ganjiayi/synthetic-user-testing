@@ -54,5 +54,6 @@ for vision calls. See `.env.example` for the full list of variables.
 ## Related
 
 The Claude Code skill governing how research plans/sessions/reports should be structured
-(NNG-standard methodology, quality checks) lives outside this repo as a global skill:
-`~/.claude/commands/ux-researcher-designer.md`.
+(NNG-standard methodology, quality checks) lives in `.claude/skills/ux-research/SKILL.md`.
+Unlike the two agent prompts above, this file is only read by Claude itself when asked to
+work on research plans/sessions/reports in this repo — the app never reads it.
