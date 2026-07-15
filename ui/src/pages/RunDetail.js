@@ -283,7 +283,25 @@ async function buildPresentation(run) {
           x: 0.5, y: 0.58, w: 12, h: 0.3, fontSize: 11, color: MUTE,
         });
 
+        // Task name/instruction only on the first slide of this task+persona's
+        // pagination — repeating it on every chunked slide would duplicate a
+        // full instruction paragraph across a run's transcript for no reason,
+        // since a reader who's already on slide 2 of 3 has seen slide 1.
         let y = 1.05;
+        if (i === 0) {
+          tSlide.addText(task.task_name, { x: 0.5, y: 0.85, w: 12.3, h: 0.28, fontSize: 13, color: INK, bold: true });
+          if (task.instruction) {
+            tSlide.addText(`"${task.instruction}"`, { x: 0.5, y: 1.13, w: 12.3, h: 0.4, fontSize: 10.5, color: MUTE, italic: true });
+            y = 1.6;
+          } else {
+            y = 1.25;
+          }
+        } else {
+          tSlide.addText(`— continued from ${task.task_id}'s task instruction, see the first slide of this task —`, {
+            x: 0.5, y: 0.85, w: 12.3, h: 0.25, fontSize: 9.5, color: MUTE, italic: true,
+          });
+          y = 1.2;
+        }
         const blockH = (6.9 - y) / TURNS_PER_SLIDE;
         for (const t of chunk) {
           if (t.parse_error || t.model_error) {
