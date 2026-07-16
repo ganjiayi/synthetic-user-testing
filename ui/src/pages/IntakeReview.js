@@ -277,8 +277,7 @@ export default function IntakeReview({ goTo, draft }) {
           </Section>
 
           <Section title="Output">
-            <Field label="AI models" value={(form.modelProviders || []).map(p => p === 'openai' ? 'OpenAI — gpt-4o' : 'Claude — claude-sonnet-4-6').join(', ') || 'Not selected'} />
-            <Field label="Output formats" value={form.outputFormats} />
+            <Field label="AI model" value="Claude — claude-sonnet-4-6" />
           </Section>
         </div>
       </div>

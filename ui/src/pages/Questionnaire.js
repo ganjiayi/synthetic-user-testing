@@ -478,111 +478,11 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
   );
 }
 
-function StepOutput({ form, setForm }) {
-  const formats   = ['JSON eval log','Markdown summary','HTML report card','DOCX research plan','Slide deck'];
-
-  const models = [
-    {
-      id:    'claude',
-      name:  'Claude (Anthropic)',
-      model: 'claude-sonnet-4-6',
-      note:  'Uses your Claude Code subscription — no API key needed.',
-      color: '#D97706',
-      bg:    '#FDF3E7',
-      border:'rgba(217,119,6,.25)',
-    },
-    {
-      id:    'openai',
-      name:  'OpenAI',
-      model: 'gpt-4o',
-      note:  'Requires an OpenAI API key configured in the pipeline .env file.',
-      color: '#10A37F',
-      bg:    '#E6F5F1',
-      border:'rgba(16,163,127,.25)',
-    },
-  ];
-
-  const toggle = (field, val) => {
-    const cur = form[field] || [];
-    const next = cur.includes(val) ? cur.filter(v => v !== val) : [...cur, val];
-    setForm(f => ({ ...f, [field]: next }));
-  };
-
+function StepOutput() {
   return (
-    <>
-      {/* Model selector */}
-      <FieldGroup
-        label="AI model"
-        hint="Select which model runs the synthetic user sessions. Both produce the same output format."
-      >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '0.5rem' }}>
-          {models.map(m => {
-            const selected = (form.modelProviders || []).includes(m.id);
-            return (
-              <div
-                key={m.id}
-                onClick={() => {
-                  const cur  = form.modelProviders || [];
-                  const next = cur.includes(m.id) ? cur.filter(v => v !== m.id) : [...cur, m.id];
-                  setForm(f => ({ ...f, modelProviders: next }));
-                }}
-                style={{
-                  padding: '1rem 1.1rem', cursor: 'pointer', userSelect: 'none',
-                  borderRadius: 'var(--radius-md)', transition: 'all .15s',
-                  background: selected ? m.bg : '#fff',
-                  border: selected ? `2px solid ${m.color}` : '1px solid var(--border)',
-                  position: 'relative',
-                }}
-              >
-                {selected && (
-                  <div style={{
-                    position: 'absolute', top: '0.6rem', right: '0.75rem',
-                    width: '16px', height: '16px', borderRadius: '50%',
-                    background: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-                      <path d="M1 3.5l2.5 2.5L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                )}
-                <div style={{ fontSize: '13px', fontWeight: 500, color: selected ? m.color : 'var(--ink)', marginBottom: '0.2rem' }}>
-                  {m.name}
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--mute)', fontFamily: 'monospace', marginBottom: '0.35rem' }}>{m.model}</div>
-                <div style={{ fontSize: '11px', color: 'var(--mute-soft)', lineHeight: 1.4 }}>{m.note}</div>
-              </div>
-            );
-          })}
-        </div>
-        {(form.modelProviders || []).length === 0 && (
-          <div style={{ fontSize: '11px', color: 'var(--amber)', marginTop: '0.25rem' }}>
-            ⚠ No model selected — please select at least one.
-          </div>
-        )}
-        {(form.modelProviders || []).length === 2 && (
-          <div style={{ fontSize: '11px', color: 'var(--blue)', marginTop: '0.25rem' }}>
-            Both models selected — each persona session will run twice for comparison.
-          </div>
-        )}
-      </FieldGroup>
-
-      <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
-
-      <FieldGroup label="Required output formats">
-        <div style={pillRow}>
-          {formats.map(f => (
-            <Pill key={f} label={f}
-              selected={(form.outputFormats || []).includes(f)}
-              onClick={() => toggle('outputFormats', f)} />
-          ))}
-        </div>
-      </FieldGroup>
-      <FieldGroup label="Anything else the agent should know">
-        <TextInput rows={3}
-          placeholder="e.g. Must complete before the board presentation on Friday. Flag any finding touching the onboarding flow."
-          value={form.additionalNotes || ''} onChange={e => setForm(f => ({ ...f, additionalNotes: e.target.value }))} />
-      </FieldGroup>
-    </>
+    <AutofillNotice>
+      This workflow runs entirely on Claude — model claude-sonnet-4-6.
+    </AutofillNotice>
   );
 }
 

@@ -18,7 +18,7 @@ export const STEPS = [
   { section: 'Research goals', title: 'What must this study answer?', sub: 'Define the feature under test, your research questions, and the decision this study needs to support.' },
   { section: 'Personas', title: 'Select persona segments', sub: 'Choose which synthetic agents run sessions. Select at least two — one primary, one secondary.' },
   { section: 'UX Research Method', title: 'Research methodology and tasks', sub: 'Select your research methodology and define what each synthetic user will attempt.' },
-  { section: 'Output', title: 'Output and handoff', sub: 'Define who receives the findings, in what format, and what threshold triggers escalation.' },
+  { section: 'Output', title: 'Output and handoff', sub: 'This workflow runs entirely on Claude — no configuration needed here.' },
 ];
 
 export const PLAN_SECTIONS = [

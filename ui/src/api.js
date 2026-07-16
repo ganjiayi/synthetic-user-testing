@@ -177,9 +177,9 @@ export function buildIntake(form, runId) {
       forbidden_assumptions:form.forbiddenAssumptions || '',
     },
     q8_output: {
-      model_providers: form.modelProviders?.length ? form.modelProviders : (form.modelProvider ? [form.modelProvider] : ['openai']),
-      output_formats: form.outputFormats || [],
-      additional_notes:form.additionalNotes || '',
+      model_providers: ['claude'],
+      output_formats: [],
+      additional_notes: '',
     },
   };
 }
