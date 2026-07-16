@@ -157,19 +157,8 @@ function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, pla
   }
 
   const scenario    = plan?.study_context?.scenario || '';
-  const hypotheses  = (plan?.hypotheses?.list || []).map(h => `${h.id}: ${h.statement}`).join('\n');
-  const forbidden   = plan?.hypotheses?.forbidden_assumptions || '';
-  const knownRisks  = plan?.hypotheses?.known_ux_risks || '';
 
   const methodologyBlock = buildTurnSchemaBlock(methodologyConfig);
-
-  const hypothesesBlock = hypotheses
-    ? `\n\n## Hypotheses Being Tested\n\n${hypotheses}`
-    : '';
-
-  const risksBlock = (forbidden || knownRisks)
-    ? `\n\n## Research Constraints\n\n${forbidden ? `Do NOT assume:\n${forbidden}\n\n` : ''}${knownRisks ? `Known UX risks to watch for:\n${knownRisks}` : ''}`
-    : '';
 
   // The scenario sets the situation the persona is in before attempting any
   // task — it primes realistic behaviour the same way a moderator's pre-task
@@ -179,7 +168,7 @@ function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, pla
     ? `\n\n## Scenario\n\n${scenario}`
     : '';
 
-  const systemPrompt = `${simulationPrompt}${methodologyBlock}${hypothesesBlock}${risksBlock}\n\n---\n\n## Your Persona\n\n${personaBlock}${scenarioBlock}\n\n## Study Context for This Session\n\n${persona.context || ''}`;
+  const systemPrompt = `${simulationPrompt}${methodologyBlock}\n\n---\n\n## Your Persona\n\n${personaBlock}${scenarioBlock}\n\n## Study Context for This Session\n\n${persona.context || ''}`;
   // technologyLiteracy is what checkPersonaDrift checks actual turn behavior
   // against — only available when the full library profile matched. Null on
   // the generic fallback, since there are no thresholds to verify there.

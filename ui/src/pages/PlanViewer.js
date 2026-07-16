@@ -87,7 +87,6 @@ const SECTION_MAP = {
   personas:'user_segments',
   tasks:   'test_scenarios',
   eval:    'eval_metrics',
-  hypo:    'hypotheses',
   method:  'method',
   output:  'output_handoff',
 };

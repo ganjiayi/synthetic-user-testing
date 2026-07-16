@@ -19,7 +19,6 @@ Respond with a single valid JSON object. No preamble, no markdown fences, no exp
   "user_segments":   { ... },
   "test_scenarios":  { ... },
   "eval_metrics":    { ... },
-  "hypotheses":      { ... },
   "method":          { ... },
   "output_handoff":  { ... }
 }
@@ -31,7 +30,7 @@ Respond with a single valid JSON object. No preamble, no markdown fences, no exp
 
 ### study_context
 
-- `study_context.product`                          ← `q5_product_context.product_name` or `q1_product`
+- `study_context.product`                          ← `q5_product_context.product_name`
 - `study_context.product_description`              ← `q5_product_context.product_desc`
 - `study_context.lifecycle`                        ← `q2_context.lifecycle`
 - `study_context.design_phase`                     ← `q2_context.design_phase`
@@ -101,15 +100,6 @@ The `test_scenarios` object must have exactly two keys: `scenarios` (the task ar
 - `eval_metrics.friction_signals` ← 3-5 short phrases describing what friction/confusion looks like for this specific study's tasks and methodology.
 - Always add: `"custom_keys": []`
 
-### hypotheses
-
-- `hypotheses.list`                  ← build from `q7_hypotheses.h1`, `q7_hypotheses.h2`, `q7_hypotheses.h3`:
-  - Format each as `{ "id": "H1", "statement": "<text>" }`
-  - Omit entries where the value is empty or null
-- `hypotheses.known_ux_risks`        ← `q7_hypotheses.known_risks`
-- `hypotheses.forbidden_assumptions` ← `q7_hypotheses.forbidden_assumptions`
-- `hypotheses.risk_severity_threshold` ← `"P1"` (default)
-
 ### method
 
 Derive this section by reasoning from the intake — do not copy fields. Write clear orchestration instructions:
@@ -133,7 +123,7 @@ Derive this section by reasoning from the intake — do not copy fields. Write c
 - `output_handoff.additional_notes`  ← `q8_output.additional_notes`
 - `output_handoff.report_parts`: Always include exactly:
   ```json
-  ["study_overview", "key_insights_summary", "hypothesis_verdict_table",
+  ["study_overview", "key_insights_summary",
    "per_persona_session_logs", "friction_map", "cross_persona_patterns",
    "artefact_feedback", "severity_ranked_findings", "recommendations_by_team",
    "go_no_go_signal", "follow_up_research", "open_questions", "raw_eval_json"]
@@ -151,6 +141,6 @@ When building `test_scenarios`, take the Methodology Configuration block's `succ
 
 - **Never invent data.** If a field in the intake is empty (`""`) or missing, set the plan field to `null`.
 - **The Methodology Configuration block governs `eval_metrics.default_keys`, `session_config`, and the base `success_condition`/`abandon_condition` wording** — these come from the injected block, not from your own judgment of what a methodology "usually" needs. Tailoring task-level wording to the specific task, and writing `primary_metric`/`friction_signals`/`method.*`, are the places you do apply judgment.
-- **Preserve array structures.** Do not flatten arrays of personas, tasks, or hypotheses into strings.
+- **Preserve array structures.** Do not flatten arrays of personas or tasks into strings.
 - **The `_meta` block** is injected by the orchestrator after you respond — do not include it.
 - If the intake contains empty required fields, include a `_warnings` array at the top level listing what is missing.

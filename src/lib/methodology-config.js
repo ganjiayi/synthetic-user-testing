@@ -44,7 +44,7 @@ const METHODOLOGY_CONFIGS = {
 
     persona_instruction_mode: 'Task-directed. Navigate step by step toward the success condition, reporting friction, confusion, and trust signals as they occur.',
 
-    planner_guidance: 'Focus the plan on task completion and friction identification. Define a clear success condition and abandon condition for every task. Identify the exact UI steps where drop-off is most likely. The primary metric is task completion rate. Hypotheses should predict where friction will occur and why.',
+    planner_guidance: 'Focus the plan on task completion and friction identification. Define a clear success condition and abandon condition for every task. Identify the exact UI steps where drop-off is most likely. The primary metric is task completion rate.',
 
     data_integrity_rules: [
       'No finding may be fabricated or inferred beyond what session data directly supports.',
@@ -90,7 +90,7 @@ const METHODOLOGY_CONFIGS = {
 
     persona_instruction_mode: 'Task-directed with comprehension probing. After each navigation turn, also report whether you understand what the product is offering and whether it feels relevant to you.',
 
-    planner_guidance: 'Focus the plan on whether the product communicates its value proposition clearly across the full experience — not just task completion but comprehension at each stage. Define what \'understood the product\' looks like for each persona. The primary metric is comprehension signal strength. Hypotheses should challenge whether the design communicates intent without external explanation.',
+    planner_guidance: 'Focus the plan on whether the product communicates its value proposition clearly across the full experience — not just task completion but comprehension at each stage. Define what \'understood the product\' looks like for each persona. The primary metric is comprehension signal strength.',
 
     data_integrity_rules: [
       'No finding may be fabricated or inferred beyond what session data directly supports.',
@@ -136,7 +136,7 @@ const METHODOLOGY_CONFIGS = {
 
     persona_instruction_mode: 'Reaction-based. You are shown the concept once and respond with your honest, immediate reaction in one or two turns. There is no UI to navigate — do not produce click_target or scroll_direction. Set task_completion to "completed" once you have given your full reaction.',
 
-    planner_guidance: 'There are no navigation tasks. Each scenario presents a concept and asks the persona to react. Focus the plan on defining what successful comprehension looks like and what the persona\'s honest adoption likelihood would be. The primary metric is comprehension rate and appeal rating. Hypotheses should test whether the concept is self-explanatory and appealing to the target segment.',
+    planner_guidance: 'There are no navigation tasks. Each scenario presents a concept and asks the persona to react. Focus the plan on defining what successful comprehension looks like and what the persona\'s honest adoption likelihood would be. The primary metric is comprehension rate and appeal rating.',
 
     data_integrity_rules: [
       'No finding may be fabricated or inferred beyond what session data directly supports.',
@@ -182,7 +182,7 @@ const METHODOLOGY_CONFIGS = {
 
     persona_instruction_mode: 'Impression-based. You are shown the stimulus once and report your immediate reaction in a single turn. There are no tasks and no navigation — do not produce click_target or scroll_direction. Set task_completion to "completed" once you have given your impression.',
 
-    planner_guidance: 'There are no tasks or navigation steps. Each scenario presents a stimulus — a visual, a piece of copy, or a brand expression — and asks the persona to report their immediate impression. Focus the plan on what emotional response and word associations are desirable for this product and segment. The primary metric is appeal rating and fit signal. Hypotheses should test whether the stimulus resonates with each persona\'s identity and values.',
+    planner_guidance: 'There are no tasks or navigation steps. Each scenario presents a stimulus — a visual, a piece of copy, or a brand expression — and asks the persona to report their immediate impression. Focus the plan on what emotional response and word associations are desirable for this product and segment. The primary metric is appeal rating and fit signal.',
 
     data_integrity_rules: [
       'No finding may be fabricated or inferred beyond what session data directly supports.',

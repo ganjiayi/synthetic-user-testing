@@ -468,12 +468,6 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
           }}
         >+ Add task</button>
       </FieldGroup>
-
-      <FieldGroup label="What must NOT be assumed" hint="Optional — agents will actively avoid making these assumptions during sessions.">
-        <TextInput rows={3}
-          placeholder={'Do NOT assume users know Astro One does not require a set-top box.\nDo NOT assume users understand pack names indicate content type.\nDo NOT assume users will scroll to the FAQ.'}
-          value={form.forbiddenAssumptions || ''} onChange={e => setForm(f => ({ ...f, forbiddenAssumptions: e.target.value }))} />
-      </FieldGroup>
     </>
   );
 }

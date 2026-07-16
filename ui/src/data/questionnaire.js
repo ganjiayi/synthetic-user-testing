@@ -27,7 +27,6 @@ export const PLAN_SECTIONS = [
   { id: 'personas',label: 'Personas',          dot: '#534AB7' },
   { id: 'tasks',   label: 'Tasks',             dot: '#C97B2F' },
   { id: 'eval',    label: 'Eval metrics',      dot: '#0F8A6E' },
-  { id: 'hypo',    label: 'Hypotheses',        dot: '#C42B2B' },
   { id: 'method',  label: 'Method',            dot: '#6B7280' },
   { id: 'output',  label: 'Output & handoff',  dot: '#6B7280' },
 ];

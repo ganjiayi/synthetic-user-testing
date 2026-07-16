@@ -169,13 +169,6 @@ export function buildIntake(form, runId) {
       scenario:      form.scenario || '',
       tasks:         form.tasks || [],
     },
-    q7_hypotheses: {
-      h1:                   form.h1 || '',
-      h2:                   form.h2 || '',
-      h3:                   form.h3 || '',
-      known_risks:          form.knownRisks || '',
-      forbidden_assumptions:form.forbiddenAssumptions || '',
-    },
     q8_output: {
       model_providers: ['claude'],
       output_formats: [],

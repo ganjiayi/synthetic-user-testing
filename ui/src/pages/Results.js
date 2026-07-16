@@ -8,7 +8,7 @@ const SESSIONS = [
     color: '#EEF3FF', textColor: '#1B4FD8',
     friction: { T1: 4, T2: 6, avg: 5.0 },
     outcomes: { T1: 'success_with_friction', T2: 'abandon' },
-    signal: 'no_go', h1: 'falsified',
+    signal: 'no_go',
     summary: 'Understood the product category but could not confirm boxless setup without external help. Would escalate to WhatsApp rather than self-convert.',
     frictionDetail: 'Could not confirm "no box required" from hero section alone. FAQ scroll required. "No box" read as a feature, not the core product change.',
   },
@@ -17,7 +17,7 @@ const SESSIONS = [
     color: '#EAF3DE', textColor: '#27500A',
     friction: { T1: 4, T2: 6, avg: 5.0 },
     outcomes: { T1: 'success_with_friction', T2: 'abandon' },
-    signal: 'no_go', h1: 'falsified',
+    signal: 'no_go',
     summary: 'No pack relevant to solo young female viewer. Would exit and seek peer validation on TikTok rather than convert.',
     frictionDetail: 'Pack number suffix (12, 24) unexplained. No content category signal for K-drama or creator-relevant content. Page tone reads as older demographic.',
   },
@@ -26,7 +26,7 @@ const SESSIONS = [
     color: '#FAEEDA', textColor: '#633806',
     friction: { T1: 4, T2: 7, avg: 5.5 },
     outcomes: { T1: 'success_with_friction', T2: 'abandon' },
-    signal: 'no_go', h1: 'falsified',
+    signal: 'no_go',
     summary: 'Found no justification to switch from existing Netflix + Disney+ stack. 24-month contract with brand trust deficit was a clear rejection.',
     frictionDetail: 'Epic 24 at RM159.99 does not beat current stack cost (RM84.80). Astro Fibre pause eroded brand confidence before arriving on page.',
   },
@@ -35,7 +35,7 @@ const SESSIONS = [
     color: '#EEEDFE', textColor: '#3C3489',
     friction: { T1: 6, T2: 8, avg: 7.0 },
     outcomes: { T1: 'success_with_friction', T2: 'abandon' },
-    signal: 'no_go', h1: 'falsified',
+    signal: 'no_go',
     summary: 'Highest friction of all personas. Contract contradiction (homepage vs pack page) was the critical trust failure. Would not convert without spousal input.',
     frictionDetail: 'Homepage says "cancel anytime" — pack page shows 12-month contract. This contradiction was noticed immediately and caused trust collapse.',
   },
@@ -44,7 +44,7 @@ const SESSIONS = [
     color: '#F1EFE8', textColor: '#444441',
     friction: { T1: 3, T2: 4, avg: 3.5 },
     outcomes: { T1: 'success_with_friction', T2: 'shortlisted' },
-    signal: 'conditional', h1: 'partially_confirmed',
+    signal: 'conditional',
     summary: 'Strongest near-conversion. Entertainment 12 at RM39.99 shortlisted as genuinely competitive vs his current RM90 Astro bill. Needs channel list to commit.',
     frictionDetail: 'Channel list gated behind View more. Netflix account portability on Epic 24 unclear. Would convert with 48h decision window and channel detail visible.',
   },
@@ -164,22 +164,6 @@ export default function Results({ goTo, runId }) {
               <div style={{ fontSize: '11px', color: 'var(--mute-soft)', marginTop: '0.25rem' }}>{stat.sub}</div>
             </div>
           ))}
-        </div>
-
-        {/* H1 verdict banner */}
-        <div style={{
-          padding: '1rem 1.25rem', marginBottom: '1.75rem',
-          background: 'var(--red-lt)', borderRadius: 'var(--radius-md)',
-          border: '1px solid rgba(196,43,43,.2)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
-          <div>
-            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.25rem' }}>H1 verdict</div>
-            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--red)' }}>
-              Falsified for 4/5 personas — homepage boxless messaging was not independently comprehensible
-            </div>
-          </div>
-          <Tag label="No Go" type="red" />
         </div>
 
         {/* Session cards */}
@@ -302,7 +286,7 @@ export default function Results({ goTo, runId }) {
               Ready to generate the research report
             </div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.75)' }}>
-              5 sessions · 10 tasks · friction map · H1 verdict · recommended actions
+              5 sessions · 10 tasks · friction map · recommended actions
             </div>
           </div>
           <button

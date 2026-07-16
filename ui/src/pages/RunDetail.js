@@ -625,10 +625,6 @@ function ReportTab({ run }) {
   const decisionToSupport = plan?.research_goals?.decision_to_support || intake?.q3_goals?.decision_to_support || '';
   const modelProviders = intake?.q8_output?.model_providers || [];
 
-  const hypothesesList   = plan?.hypotheses?.list || [];
-  const knownUxRisks     = plan?.hypotheses?.known_ux_risks || '';
-  const forbiddenAssumptions = plan?.hypotheses?.forbidden_assumptions || '';
-
   if (!plan && sessions.length === 0) {
     return (
       <div style={{ padding: '3rem 2rem', textAlign: 'center' }}>
@@ -825,34 +821,6 @@ function ReportTab({ run }) {
                 </span>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Hypotheses & research constraints */}
-        {(hypothesesList.length > 0 || knownUxRisks || forbiddenAssumptions) && (
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '0.4rem' }}>
-              Hypotheses & research constraints
-            </div>
-            {hypothesesList.length > 0 && (
-              <div style={{ marginBottom: '0.6rem' }}>
-                {hypothesesList.map((h, i) => (
-                  <div key={i} style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.6, marginBottom: '0.25rem' }}>
-                    <strong style={{ color: 'var(--blue)', fontFamily: 'monospace' }}>{h.id}:</strong> {h.statement}
-                  </div>
-                ))}
-              </div>
-            )}
-            {knownUxRisks && (
-              <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.6, marginBottom: '0.4rem', whiteSpace: 'pre-line' }}>
-                <strong style={{ color: 'var(--ink)' }}>Known UX risks:</strong> {knownUxRisks}
-              </div>
-            )}
-            {forbiddenAssumptions && (
-              <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
-                <strong style={{ color: 'var(--ink)' }}>Must not assume:</strong> {forbiddenAssumptions}
-              </div>
-            )}
           </div>
         )}
 
@@ -1087,8 +1055,6 @@ function QuestionnaireTab({ intake }) {
           ))}
         </div>
       )}
-
-      <Field label="What must not be assumed" value={q.q7_hypotheses?.forbidden_assumptions} />
 
       <SectionHead>Output preferences</SectionHead>
       <Field label="AI models" value={(q.q8_output?.model_providers || []).map(p => p === 'openai' ? 'OpenAI — gpt-4o' : 'Claude — claude-sonnet-4-6').join(', ')} />

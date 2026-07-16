@@ -64,20 +64,19 @@ following NNG's core components: purpose, participants, method, and relevant doc
 1. **Study Purpose** — what product/feature is being tested, what needs to be learned,
    and why
 2. **Research Questions** — 3–6 questions starting with What / Why / How / Which / When
-3. **Hypotheses** (optional) — stated as falsifiable predictions
-4. **Participants** — persona(s) selected from active library, sampling rationale,
+3. **Participants** — persona(s) selected from active library, sampling rationale,
    inclusion/exclusion criteria, sample size with justification
-5. **Methodology** — method name, modality (text simulation vs tool-use simulation),
+4. **Methodology** — method name, modality (text simulation vs tool-use simulation),
    session structure and length
-6. **Task List** — task title, instruction, success criteria, and priority (P0/P1/P2)
-7. **Schedule** — run date (DDMMYYYY), session count, persona assignments
-8. **Visual Assets** *(optional)* — if the researcher is uploading images (screenshots,
+5. **Task List** — task title, instruction, success criteria, and priority (P0/P1/P2)
+6. **Schedule** — run date (DDMMYYYY), session count, persona assignments
+7. **Visual Assets** *(optional)* — if the researcher is uploading images (screenshots,
    prototypes, UI designs), list them here with a description of what each shows and
    which tasks or research questions they support
-9. **Real User Supplement** *(optional)* — if the researcher is providing real user data,
+8. **Real User Supplement** *(optional)* — if the researcher is providing real user data,
    describe the source, format, and which research questions it will inform
-10. **Relevant Documents** — references to persona file, product DB entry, scenario file,
-    facilitator guide, and any prototype or product links
+9. **Relevant Documents** — references to persona file, product DB entry, scenario file,
+   facilitator guide, and any prototype or product links
 
 The method section must be detailed enough that the study could be replicated in the future.
 
