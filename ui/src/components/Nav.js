@@ -4,7 +4,6 @@ const labels = {
   pin:           'Login',
   dashboard:     'Dashboard',
   questionnaire: 'Questionnaire',
-  review:        'Review',
   plan:          'Study plan',
   running:       'Running sessions',
   results:       'Session results',
@@ -12,7 +11,7 @@ const labels = {
   runDetail:     'Study detail',
 };
 
-const AUTH_PAGES = new Set(['dashboard', 'questionnaire', 'review', 'plan', 'running', 'results', 'history', 'runDetail']);
+const AUTH_PAGES = new Set(['dashboard', 'questionnaire', 'plan', 'running', 'results', 'history', 'runDetail']);
 
 function NavLink({ label, active, onClick }) {
   return (

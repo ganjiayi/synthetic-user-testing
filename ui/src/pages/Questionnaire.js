@@ -376,33 +376,288 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
   );
 }
 
-function StepOutput() {
+/* ── Review summary helpers (moved in from the retired IntakeReview.js) ── */
+function Field({ label, value }) {
+  if (!value || (Array.isArray(value) && value.length === 0)) return null;
   return (
-    <AutofillNotice>
-      This workflow runs entirely on Claude — model claude-sonnet-4-6.
-    </AutofillNotice>
+    <div style={{ marginBottom: '1rem' }}>
+      <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.35rem' }}>
+        {label}
+      </div>
+      <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.65, padding: '0.625rem 0.875rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)', whiteSpace: 'pre-wrap' }}>
+        {Array.isArray(value) ? value.join(', ') : String(value)}
+      </div>
+    </div>
   );
 }
 
-const stepComponents = [StepProduct, StepContext, StepGoals, StepPersonas, StepTasks, StepOutput];
+function Section({ title, children }) {
+  return (
+    <div style={{ marginBottom: '2rem' }}>
+      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--hairline)' }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* ── Loading overlay shown during plan generation ── */
+function PlanLoadingScreen({ step }) {
+  const steps = [
+    { key: 'run',    label: 'Creating study run',          done: step > 0 },
+    { key: 'upload', label: 'Uploading test materials',    done: step > 1 },
+    { key: 'plan',   label: 'Generating research plan',    done: step > 2 },
+    { key: 'fetch',  label: 'Finalising plan',             done: step > 3 },
+  ];
+  const active = steps.findIndex(s => !s.done);
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'var(--paper)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '2rem',
+    }}>
+      <div style={{
+        width: '44px', height: '44px', borderRadius: '50%',
+        border: '3px solid var(--border)',
+        borderTopColor: 'var(--ink)',
+        animation: 'intake-spin 0.8s linear infinite',
+        marginBottom: '2rem',
+      }} />
+
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: '28px', color: 'var(--ink)', marginBottom: '0.5rem', textAlign: 'center' }}>
+        Generating your research plan
+      </h2>
+      <p style={{ fontSize: '13px', color: 'var(--mute)', marginBottom: '2.5rem', textAlign: 'center' }}>
+        Your inputs are being processed by the AI. This usually takes 30–60 seconds.
+      </p>
+
+      <div style={{ width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {steps.map((s, i) => {
+          const isActive  = i === active;
+          const isDone    = s.done;
+          return (
+            <div key={s.key} style={{
+              display: 'flex', alignItems: 'center', gap: '0.875rem',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-sm)',
+              background: isDone ? 'var(--teal-lt)' : isActive ? 'var(--blue-lt)' : 'var(--cream)',
+              border: `1px solid ${isDone ? 'rgba(15,138,110,.2)' : isActive ? 'rgba(27,79,216,.2)' : 'var(--border)'}`,
+            }}>
+              <div style={{
+                width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '11px', fontWeight: 700,
+                background: isDone ? 'var(--teal)' : isActive ? 'var(--blue)' : 'var(--border)',
+                color: isDone || isActive ? '#fff' : 'var(--mute)',
+              }}>
+                {isDone ? '✓' : i + 1}
+              </div>
+              <span style={{
+                fontSize: '13px',
+                fontWeight: isActive ? 500 : 400,
+                color: isDone ? 'var(--teal)' : isActive ? 'var(--blue)' : 'var(--mute)',
+              }}>
+                {s.label}{isActive ? '…' : ''}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <style>{`@keyframes intake-spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+/* ── Step 6 — editable summary + submit. Replaces the old StepOutput and
+   absorbs what the retired IntakeReview.js page used to do. ── */
+function StepReview({ form, setForm }) {
+  const [editMode, setEditMode] = React.useState(false);
+
+  const tasks     = (form.tasks || []).filter(t => t.name || t.instruction);
+  const personas  = (form.personas || []).map(code => PERSONAS.find(p => p.code === code)?.name || code);
+  const materials = form.testMaterials || { files: [], urls: [] };
+
+  if (editMode) {
+    return (
+      <>
+        <button
+          onClick={() => setEditMode(false)}
+          style={{
+            marginBottom: '1.25rem', padding: '0.5rem 1.1rem',
+            border: 'none', borderRadius: 'var(--radius-sm)',
+            background: 'var(--primary)', color: 'var(--on-primary)',
+            fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+          }}
+        >Save</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <StepProduct form={form} setForm={setForm} />
+          <StepContext form={form} setForm={setForm} />
+          <StepGoals form={form} setForm={setForm} onAdvance={() => {}} />
+          <StepPersonas form={form} setForm={setForm} onAdvance={() => {}} />
+          <StepTasks form={form} setForm={setForm} onAdvance={() => {}} />
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setEditMode(true)}
+        style={{
+          marginBottom: '1.25rem', padding: '0.5rem 1.1rem',
+          border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
+          background: 'transparent', color: 'var(--body)',
+          fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+        }}
+      >Edit</button>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+        <div>
+          <Section title="Product & context">
+            <Field label="Product" value={form.product} />
+            <Field label="Design phase" value={form.designPhase} />
+            <Field label="Fidelity" value={form.fidelity} />
+          </Section>
+
+          <Section title="Research goals">
+            <Field label="Primary research question" value={form.primaryRQ} />
+            <Field label="Secondary research questions" value={form.secondaryRQs} />
+          </Section>
+
+          <Section title="Test materials">
+            {materials.files.length === 0 && materials.urls.length === 0 ? (
+              <div style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>No files or links added.</div>
+            ) : (
+              <>
+                {materials.files.map((f, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '13px', color: 'var(--body)', marginBottom: '0.4rem' }}>
+                    <span style={{ opacity: .5 }}>📄</span> {f.name}
+                  </div>
+                ))}
+                {materials.urls.map((u, i) => (
+                  <div key={i} style={{ fontSize: '13px', color: 'var(--blue)', marginBottom: '0.3rem' }}>
+                    🔗 {u.length > 60 ? u.slice(0, 58) + '…' : u}
+                  </div>
+                ))}
+              </>
+            )}
+          </Section>
+
+          <Section title="Guardrails">
+            <Field label="What must not be assumed" value={form.forbiddenAssumptions} />
+          </Section>
+        </div>
+
+        <div>
+          <Section title="Research methodology">
+            <Field label="Methodology" value={form.methodology} />
+          </Section>
+
+          <Section title="Personas">
+            {personas.length === 0
+              ? <div style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>No personas selected.</div>
+              : personas.map((p, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '13px', color: 'var(--body)', marginBottom: '0.35rem' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)', flexShrink: 0, display: 'inline-block' }} />
+                  {p}
+                </div>
+              ))
+            }
+            <Field label="Priority segment" value={form.prioritySegment} />
+          </Section>
+
+          {form.scenario && (
+            <Section title="Scenario">
+              <div style={{ fontSize: '13px', color: 'var(--body)', lineHeight: 1.6 }}>{form.scenario}</div>
+            </Section>
+          )}
+
+          <Section title="Tasks">
+            {tasks.length === 0
+              ? <div style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>No tasks defined.</div>
+              : tasks.map((t, i) => (
+                <div key={i} style={{ marginBottom: '0.875rem', padding: '0.75rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace', marginBottom: '0.25rem' }}>T{i + 1}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.15rem' }}>{t.name || '—'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--body)', whiteSpace: 'pre-line', marginBottom: t.whatToTest ? '0.4rem' : 0 }}>{t.instruction || '—'}</div>
+                  {t.whatToTest && (
+                    <div style={{ fontSize: '11px', color: 'var(--mute)', whiteSpace: 'pre-line' }}>
+                      <span style={{ fontWeight: 500 }}>Testing: </span>{t.whatToTest}
+                    </div>
+                  )}
+                </div>
+              ))
+            }
+          </Section>
+
+          <Section title="Output">
+            <Field label="AI model" value="Claude — claude-sonnet-4-6" />
+          </Section>
+        </div>
+      </div>
+    </>
+  );
+}
+
+const stepComponents = [StepProduct, StepContext, StepGoals, StepPersonas, StepTasks, StepReview];
 
 /* ══════════════════════════════════════════════════════
    Questionnaire Page
 ═══════════════════════════════════════════════════════ */
 export default function Questionnaire({ goTo, draft }) {
-  const [step,       setStep]       = useState(0);
-  const [form,       setForm]       = useState(draft || {});
+  const [step,        setStep]        = useState(0);
+  const [form,        setForm]        = useState(draft || {});
+  const [loadingStep, setLoadingStep] = useState(-1); // -1 = not loading
   const total       = STEPS.length;
   const isLast      = step === total - 1;
+  const isLoading   = loadingStep >= 0;
   const StepContent = stepComponents[step];
 
   const handleSave     = () => alert('Draft saved. You can return to this later.');
   const handleSaveEdit = () => alert('Saved — you can come back and continue editing any time.');
-  const handleSubmit   = () => goTo('review', { draft: form });
   const advanceStep    = () => setStep(s => Math.min(s + 1, total - 1));
+
+  // Moved in from the retired IntakeReview.js's handleConfirm — Step 6's
+  // "Review and confirm" now submits directly instead of navigating to a
+  // separate review page.
+  const handleSubmit = async () => {
+    setLoadingStep(0);
+    try {
+      const runId  = generateRunId(form.feature || form.product || 'study');
+      const intake = buildIntake(form, runId);
+
+      await api.createRun(runId, intake);
+      setLoadingStep(1);
+
+      const filesToUpload = (form.testMaterials?.files || []).filter(f => f.file instanceof File);
+      if (filesToUpload.length > 0) {
+        await api.uploadFiles(runId, filesToUpload.map(f => f.file));
+      }
+      setLoadingStep(2);
+
+      await api.startPlan(runId);
+      setLoadingStep(3);
+
+      const plan = await api.getPlan(runId);
+      setLoadingStep(-1);
+      goTo('plan', { runId, plan, draft: form });
+
+    } catch (err) {
+      setLoadingStep(-1);
+      alert(`Could not generate plan: ${err.message}`);
+    }
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', maxWidth: '1120px', margin: '0 auto', width: '100%', padding: '1.75rem 1.5rem 0' }}>
+
+      {isLoading && <PlanLoadingScreen step={loadingStep} />}
 
       <StepNav steps={STEPS} current={step} onJump={setStep} />
 
@@ -452,16 +707,17 @@ export default function Questionnaire({ goTo, draft }) {
 
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             {step > 0 && (
-              <button onClick={() => setStep(s => s - 1)} style={{
+              <button onClick={() => setStep(s => s - 1)} disabled={isLoading} style={{
                 padding: '0.5rem 1.1rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
-                background: 'transparent', fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--body)', cursor: 'pointer',
+                background: 'transparent', fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--body)',
+                cursor: isLoading ? 'default' : 'pointer',
               }}>← Back</button>
             )}
             {isLast ? (
-              <button onClick={handleSubmit} style={{
-                padding: '0.5rem 1.5rem', background: 'var(--primary)', color: 'var(--on-primary)',
+              <button onClick={handleSubmit} disabled={isLoading} style={{
+                padding: '0.5rem 1.5rem', background: isLoading ? 'var(--mute-soft)' : 'var(--primary)', color: 'var(--on-primary)',
                 border: 'none', borderRadius: 'var(--radius-sm)',
-                fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+                fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: isLoading ? 'default' : 'pointer',
               }}>
                 Review and confirm →
               </button>

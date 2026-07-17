@@ -3,7 +3,6 @@ import Landing        from './pages/Landing';
 import PinPage        from './pages/PinPage';
 import Dashboard      from './pages/Dashboard';
 import Questionnaire  from './pages/Questionnaire';
-import IntakeReview   from './pages/IntakeReview';
 import PlanViewer     from './pages/PlanViewer';
 import RunResearch    from './pages/RunResearch';
 import Results        from './pages/Results';
@@ -41,7 +40,6 @@ export default function App() {
       {page === 'pin'            && <PinPage        goTo={goTo} onAuth={onAuth} />}
       {page === 'dashboard'      && <Dashboard      goTo={goTo} />}
       {page === 'questionnaire'  && <Questionnaire  goTo={goTo} draft={savedDraft} />}
-      {page === 'review'         && <IntakeReview   goTo={goTo} draft={savedDraft} />}
       {page === 'plan'           && <PlanViewer     goTo={goTo} runId={runId} plan={planData} />}
       {page === 'running'        && <RunResearch    goTo={goTo} runId={runId} />}
       {page === 'results'        && <Results        goTo={goTo} runId={runId} />}
