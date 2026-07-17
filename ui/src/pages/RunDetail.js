@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import PptxGenJS from 'pptxgenjs';
 import { api } from '../api';
 import { Tag } from '../components/UI';
+import { getMethodologyEvalFields, headlineNumericField, humanizeFieldKey, frictionColor, buildMetricCards, computeMetrics } from '../lib/metrics';
 
 /* ── Download utilities ──────────────────────────────────────────────────── */
 function triggerDownload(content, filename, mimeType) {
@@ -16,26 +17,6 @@ function escapeCsv(val) {
   if (val === null || val === undefined) return '';
   const s = String(val).replace(/"/g, '""');
   return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
-}
-
-// Legacy fallback for runs generated before plan.methodology_config existed —
-// matches exactly what every run produced before this field was introduced.
-const LEGACY_EVAL_FIELDS = [
-  { key: 'friction_score',   type: 'number 0-10' },
-  { key: 'confusion_signal', type: 'string or null' },
-  { key: 'trust_signal',     type: 'string or null' },
-  { key: 'abandon_trigger',  type: 'string or null' },
-];
-
-function getMethodologyEvalFields(plan) {
-  return plan?.methodology_config?.eval_schema?.fields || LEGACY_EVAL_FIELDS;
-}
-
-// The single number-typed field a methodology surfaces as its "headline" score
-// (friction_score for task-based methodologies, appeal_rating for reaction/
-// impression-based ones, etc) — falls back to friction_score for legacy plans.
-function headlineNumericField(fields) {
-  return fields.find(f => f.type.startsWith('number'))?.key || 'friction_score';
 }
 
 function buildCsv(run) {
@@ -365,8 +346,7 @@ function statusTag(s) {
   return <Tag label="In progress" type="blue" />;
 }
 
-function frictionColor(n) { return n >= 7 ? 'var(--red)' : n >= 4 ? 'var(--amber)' : 'var(--teal)'; }
-function frictionBg(n)    { return n >= 7 ? 'var(--red-lt)' : n >= 4 ? 'var(--amber-lt)' : 'var(--teal-lt)'; }
+function frictionBg(n) { return n >= 7 ? 'var(--red-lt)' : n >= 4 ? 'var(--amber-lt)' : 'var(--teal-lt)'; }
 
 function Field({ label, value }) {
   if (!value || value === '—') return null;
@@ -388,52 +368,6 @@ function SectionHead({ children }) {
       {children}
     </div>
   );
-}
-
-/* ── Methodology metric cards ─────────────────────────────────────────────
- * Derived from plan.methodology_config.eval_schema.fields rather than a
- * hand-maintained per-methodology map, so the cards shown always match
- * whatever fields that methodology's turns actually carry. Falls back to
- * LEGACY_EVAL_FIELDS for runs generated before methodology_config existed.
- */
-function humanizeFieldKey(key) {
-  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
-
-function buildMetricCards(evalFields) {
-  const cards = [
-    { label: 'Task completion rate', key: 'completion_rate', format: 'pct', desc: 'Personas completing all tasks' },
-  ];
-  for (const field of evalFields.slice(0, 3)) {
-    if (field.type.startsWith('number')) {
-      cards.push({ label: `Avg ${humanizeFieldKey(field.key)}`, key: `avg__${field.key}`, format: 'score', desc: field.description || '' });
-    } else {
-      cards.push({ label: `${humanizeFieldKey(field.key)} signals`, key: `count__${field.key}`, format: 'count', desc: field.description || 'Turns with this signal present' });
-    }
-  }
-  return cards.slice(0, 4);
-}
-
-function computeMetrics(sessions, evalFields) {
-  const allTurns = sessions.flatMap(s => s.turns || []);
-  const total    = sessions.length;
-
-  const metrics = {
-    completion_rate: total ? sessions.filter(s => s.session_outcome === 'all_tasks_completed').length / total : null,
-    abandon_count:   sessions.filter(s => s.session_outcome !== 'all_tasks_completed').length,
-  };
-
-  for (const field of evalFields) {
-    const values = allTurns.map(t => t.eval_scores?.[field.key]);
-    if (field.type.startsWith('number')) {
-      const numeric = values.filter(v => typeof v === 'number');
-      metrics[`avg__${field.key}`] = numeric.length ? numeric.reduce((a, b) => a + b, 0) / numeric.length : null;
-    } else {
-      metrics[`count__${field.key}`] = values.filter(v => v && v !== 'null' && v !== false).length;
-    }
-  }
-
-  return metrics;
 }
 
 function MetricCard({ label, value, format, desc }) {
