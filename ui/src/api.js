@@ -74,6 +74,18 @@ export const api = {
     return req('GET', `/api/runs/${runId}/report`);
   },
 
+  chatWithAgent(agentKey, { messages, context }) {
+    return req('POST', `/api/intake/chat/${agentKey}`, { messages, context });
+  },
+
+  getProduct(id) {
+    return req('GET', `/api/products/${id}`);
+  },
+
+  getPersonas() {
+    return req('GET', '/api/personas');
+  },
+
   async uploadFiles(runId, files) {
     if (!supabaseBrowser) throw new Error('Supabase browser client not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
     const results = [];

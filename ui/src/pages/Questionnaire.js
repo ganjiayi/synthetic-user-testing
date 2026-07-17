@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { STEPS, PRODUCTS, PERSONAS } from '../data/questionnaire';
 import { SelectCard, PersonaCard, Pill, AutofillNotice, FieldGroup, TextInput, UploadZone } from '../components/UI';
 import { api, generateRunId, buildIntake } from '../api';
+import StepNav from '../components/StepNav';
 
 /* ── Shared style helpers ── */
 const grid3   = { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '1.25rem' };
@@ -501,22 +502,14 @@ export default function Questionnaire({ goTo, draft }) {
   const handleSave     = () => alert('Draft saved. You can return to this later.');
   const handleSaveEdit = () => alert('Saved — you can come back and continue editing any time.');
   const handleSubmit   = () => goTo('review', { draft: form });
+  const advanceStep    = () => setStep(s => Math.min(s + 1, total - 1));
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '780px', margin: '0 auto', width: '100%', padding: '0 1.5rem' }}>
+    <div style={{ flex: 1, display: 'flex', maxWidth: '1120px', margin: '0 auto', width: '100%', padding: '1.75rem 1.5rem 0' }}>
 
-      {/* Progress */}
-      <div style={{ padding: '1.75rem 0 0' }}>
-        <div style={{ display: 'flex', gap: '5px', marginBottom: '1.5rem' }}>
-          {STEPS.map((_, i) => (
-            <div key={i} style={{
-              height: '3px', flex: 1, borderRadius: '2px',
-              background: i < step ? 'var(--primary)' : i === step ? 'var(--hairline)' : 'var(--cream)',
-              cursor: i < step ? 'pointer' : 'default',
-              transition: 'background .3s',
-            }} onClick={() => i < step && setStep(i)} />
-          ))}
-        </div>
+      <StepNav steps={STEPS} current={step} onJump={setStep} />
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
         {/* Step header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
@@ -535,54 +528,54 @@ export default function Questionnaire({ goTo, draft }) {
             {step + 1} / {total}
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '1rem' }}>
-        <StepContent form={form} setForm={setForm} />
-      </div>
-
-      {/* Footer */}
-      <div style={{
-        borderTop: '1px solid var(--border)',
-        padding: '1rem 0',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        background: 'var(--paper)',
-        position: 'sticky', bottom: 0,
-      }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={handleSave} style={{
-            padding: '0.45rem 0.9rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
-            background: 'transparent', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--mute)', cursor: 'pointer',
-          }}>Save draft</button>
-          <button onClick={handleSaveEdit} style={{
-            padding: '0.45rem 0.9rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
-            background: 'transparent', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--mute)', cursor: 'pointer',
-          }}>Save and edit later</button>
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '1rem' }}>
+          <StepContent form={form} setForm={setForm} onAdvance={advanceStep} />
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {step > 0 && (
-            <button onClick={() => setStep(s => s - 1)} style={{
-              padding: '0.5rem 1.1rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
-              background: 'transparent', fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--body)', cursor: 'pointer',
-            }}>← Back</button>
-          )}
-          {isLast ? (
-            <button onClick={handleSubmit} style={{
-              padding: '0.5rem 1.5rem', background: 'var(--primary)', color: 'var(--on-primary)',
-              border: 'none', borderRadius: 'var(--radius-sm)',
-              fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-            }}>
-              Review and confirm →
-            </button>
-          ) : (
-            <button onClick={() => setStep(s => s + 1)} style={{
-              padding: '0.5rem 1.25rem', background: 'var(--primary)', color: 'var(--on-primary)',
-              border: 'none', borderRadius: 'var(--radius-sm)',
-              fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-            }}>Continue →</button>
-          )}
+        {/* Footer */}
+        <div style={{
+          borderTop: '1px solid var(--border)',
+          padding: '1rem 0',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          background: 'var(--paper)',
+          position: 'sticky', bottom: 0,
+        }}>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={handleSave} style={{
+              padding: '0.45rem 0.9rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
+              background: 'transparent', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--mute)', cursor: 'pointer',
+            }}>Save draft</button>
+            <button onClick={handleSaveEdit} style={{
+              padding: '0.45rem 0.9rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
+              background: 'transparent', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--mute)', cursor: 'pointer',
+            }}>Save and edit later</button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            {step > 0 && (
+              <button onClick={() => setStep(s => s - 1)} style={{
+                padding: '0.5rem 1.1rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)',
+                background: 'transparent', fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--body)', cursor: 'pointer',
+              }}>← Back</button>
+            )}
+            {isLast ? (
+              <button onClick={handleSubmit} style={{
+                padding: '0.5rem 1.5rem', background: 'var(--primary)', color: 'var(--on-primary)',
+                border: 'none', borderRadius: 'var(--radius-sm)',
+                fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+              }}>
+                Review and confirm →
+              </button>
+            ) : (
+              <button onClick={() => setStep(s => s + 1)} style={{
+                padding: '0.5rem 1.25rem', background: 'var(--primary)', color: 'var(--on-primary)',
+                border: 'none', borderRadius: 'var(--radius-sm)',
+                fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+              }}>Continue →</button>
+            )}
+          </div>
         </div>
       </div>
     </div>
