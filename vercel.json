@@ -4,17 +4,15 @@
   "outputDirectory": "ui/build",
   "routes": [
     { "src": "/api/health",                                  "dest": "/api/health.js" },
-    { "src": "/api/intake/chat/([^/]+)",                     "dest": "/api/intake/chat/[agent].js?agent=$1" },
-    { "src": "/api/products/([^/]+)",                        "dest": "/api/products/[id].js?id=$1" },
-    { "src": "/api/personas",                                "dest": "/api/personas.js" },
+    { "src": "/api/intake/chat/([^/]+)",                     "dest": "/api/intake.js?action=chat&agent=$1" },
+    { "src": "/api/products/([^/]+)",                        "dest": "/api/intake.js?action=product&id=$1" },
+    { "src": "/api/personas",                                "dest": "/api/intake.js?action=personas" },
     { "src": "/api/runs/([^/]+)/plan",                       "dest": "/api/runs/[id]/plan.js?id=$1" },
     { "src": "/api/runs/([^/]+)/evaluate",                   "dest": "/api/runs/[id]/evaluate.js?id=$1" },
     { "src": "/api/runs/([^/]+)/sessions",                   "dest": "/api/runs/[id]/sessions.js?id=$1" },
     { "src": "/api/runs/([^/]+)/status",                     "dest": "/api/runs/[id]/status.js?id=$1" },
-    { "src": "/api/runs/([^/]+)/upload",                     "dest": "/api/runs/[id]/upload.js?id=$1" },
     { "src": "/api/runs/([^/]+)/report",                     "dest": "/api/runs/[id]/report.js?id=$1" },
     { "src": "/api/runs/([^/]+)/materials/([^/]+)",          "dest": "/api/runs/[id]/materials/[file].js?id=$1&file=$2" },
-    { "src": "/api/runs/([^/]+)/download/([^/]+)",           "dest": "/api/runs/[id]/download/[file].js?id=$1&file=$2" },
     { "src": "/api/runs/([^/]+)",                            "dest": "/api/runs/[id]/index.js?id=$1" },
     { "src": "/api/runs",                                    "dest": "/api/runs/index.js" },
     { "handle": "filesystem" },
@@ -23,6 +21,6 @@
   "functions": {
     "api/runs/[id]/plan.js":     { "maxDuration": 300 },
     "api/runs/[id]/evaluate.js": { "maxDuration": 300 },
-    "api/intake/chat/[agent].js": { "maxDuration": 60 }
+    "api/intake.js":             { "maxDuration": 60 }
   }
 }

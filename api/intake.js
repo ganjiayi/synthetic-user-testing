@@ -1,11 +1,19 @@
 require('dotenv').config();
 const path = require('path');
 const fs   = require('fs');
-const { AGENTS, loadAgentPrompt } = require('../../../src/lib/agent-chat');
-const { splitReplyAndProposal }   = require('../../../src/lib/utils');
-const { validateProduct }         = require('../../../src/lib/validate-product');
-const { getMethodologyConfig }    = require('../../../src/lib/methodology-config');
-const provider = require('../../../src/providers/claude');
+const { AGENTS, loadAgentPrompt } = require('../src/lib/agent-chat');
+const { splitReplyAndProposal }   = require('../src/lib/utils');
+const { validateProduct }         = require('../src/lib/validate-product');
+const { getMethodologyConfig }    = require('../src/lib/methodology-config');
+const provider = require('../src/providers/claude');
+
+/**
+ * Single endpoint for the three lightweight intake-time functions (chat,
+ * product lookup, persona library) — merged from three separate files to
+ * stay under Vercel's Hobby-plan 12-function limit. URL paths are unchanged
+ * for the frontend; only the destination file + an `action` query param
+ * differ (see vercel.json's routes array).
+ */
 
 // Frontend-only persona code convention (PERSONA_MAP in ui/src/api.js) —
 // duplicated here in miniature since api/ is CommonJS and can't require
@@ -59,7 +67,7 @@ function buildReferenceBlock(agentKey, context) {
   return blocks.join('\n');
 }
 
-module.exports = async (req, res) => {
+async function handleChat(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { agent } = req.query;
@@ -81,4 +89,44 @@ module.exports = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
+}
+
+function handleProduct(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { id } = req.query;
+  const productPath = path.join(process.cwd(), `products/${id}.json`);
+  if (!fs.existsSync(productPath)) {
+    return res.status(404).json({ error: `No product data for "${id}"` });
+  }
+
+  try {
+    const productDB = JSON.parse(fs.readFileSync(productPath, 'utf8'));
+    validateProduct(productDB, id);
+    return res.json(productDB);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+function handlePersonas(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  try {
+    const libPath = path.join(process.cwd(), 'personas/v4_library.json');
+    const library  = JSON.parse(fs.readFileSync(libPath, 'utf8'));
+    return res.json(library);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+module.exports = async (req, res) => {
+  const { action } = req.query;
+
+  if (action === 'chat')     return handleChat(req, res);
+  if (action === 'product')  return handleProduct(req, res);
+  if (action === 'personas') return handlePersonas(req, res);
+
+  return res.status(404).json({ error: `Unknown action: ${action}` });
 };
