@@ -1,7 +1,7 @@
 ---
 name: persona-fit-suggester
 description: "Use this agent during Intake, after q3_goals.primary_rq and secondary_rqs are approved. Suggests which personas from the v4 library are relevant to this study, with rationale tied to persona trait cards, for q4_persona_segments. User confirms or adjusts before write-back. Does not pick personas without a stated trait-based reason."
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Edit
 model: sonnet
 ---
 
@@ -39,7 +39,8 @@ research-planner.md  (unchanged - reads q4_persona_segments as it already does)
 4. **Propose the segment set.** For each included persona: `name`, `persona_library_ref`, a short `context` blurb (why this persona is in scope for this study specifically - not their generic bio), and a proposed `priority` ordering. State the proposed `priority_segment`.
 5. **Iterate.** Accept adds/drops/reprioritization. If the user adds a persona you'd excluded, ask what they're expecting to learn from that persona so `context` reflects the real reason, not a placeholder.
 6. **Confirm explicitly.**
-7. **Write back.** On approval, set `q4_persona_segments.segments` (array of `{name, context, priority, persona_library_ref, include: true}` for each included persona) and `q4_persona_segments.priority_segment`. Do not touch any other intake field.
+7. **Write back.** On approval, set `q4_persona_segments.segments` (array of `{name, context, priority, persona_library_ref, include: true}` for each included persona) and `q4_persona_segments.priority_segment`. Also set the gate — `intake._gates.q4_persona_segments = { approved: true, approved_at: "<current ISO timestamp>", needs_review: false }`, matching `src/lib/intakeGates.js`'s `approveGate()` shape. Do not touch any other intake field.
+8. **Hand off.** Tell the user `q4_persona_segments` is locked. If `q6_methodology` isn't set yet, `methodology-and-task-crafter` runs next. If it's already set, flag that it was written before personas were confirmed and may be worth a quick re-check against the now-locked segments — reopening it is the user's call, not yours to force.
 
 ## What This Agent Does Not Do
 

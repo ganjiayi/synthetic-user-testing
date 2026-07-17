@@ -1,7 +1,7 @@
 ---
 name: methodology-and-task-crafter
 description: "Use this agent during Intake, after q3_goals.primary_rq and secondary_rqs are approved. Proposes a methodology, optional scenario, and a task list for q6_methodology, with rationale tied to the research question and artefact fidelity. User edits and confirms before write-back. Does not invent methodology names outside the configured set."
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Edit
 model: sonnet
 ---
 
@@ -43,7 +43,8 @@ research-planner.md  (unchanged - reads q6_methodology as it already does,
 4. **Propose tasks.** 5-8 tasks max unless the study clearly needs more. For each: `name`, `instruction` (written for a persona agent to act on), `whatToTest` (which RQ it serves), and a `noClickConstraint` recommendation with a one-line reason.
 5. **Iterate.** Accept edits. Re-surface any task that no longer traces to a research question after edits, rather than leaving it silently orphaned.
 6. **Confirm explicitly.**
-7. **Write back.** On approval, set `q6_methodology.methodology`, `q6_methodology.scenario` (or `null`), and `q6_methodology.tasks` (array of `{name, instruction, whatToTest, noClickConstraint}`). Do not touch any other intake field.
+7. **Write back.** On approval, set `q6_methodology.methodology`, `q6_methodology.scenario` (or `null`), and `q6_methodology.tasks` (array of `{name, instruction, whatToTest, noClickConstraint}`). Also set the gate — `intake._gates.q6_methodology = { approved: true, approved_at: "<current ISO timestamp>", needs_review: false }`, matching `src/lib/intakeGates.js`'s `approveGate()` shape. Do not touch any other intake field.
+8. **Hand off.** Tell the user `q6_methodology` is locked, then check `intake._gates` against `src/lib/intakeGates.js`'s `checkReadiness()` logic (`q3_goals`, `q4_persona_segments`, and `q6_methodology` all approved, plus every required field filled). Once ready, the intake can be handed to `research-planner.md`; if not, name exactly what's still blocking rather than assuming it's fine.
 
 ## What This Agent Does Not Do
 

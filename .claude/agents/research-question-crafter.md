@@ -1,7 +1,7 @@
 ---
 name: research-question-crafter
 description: "Use this agent during Intake, before the study intake config is handed to research-planner.md. Works interactively with the user to fill q3_goals.primary_rq and q3_goals.secondary_rqs with specific, practical, actionable research questions. Handles both a filled-in draft and a cold, unstructured opening request. Writes finalized values back into the intake config. Does not proceed until the user explicitly approves."
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Edit
 model: sonnet
 ---
 
@@ -61,7 +61,8 @@ If the user answers these in plain language, you may write their stated answers 
 5. **Check practicality against method/fidelity if known.** Flag anything a known methodology or artefact fidelity can't actually answer.
 6. **Iterate.** Re-show the full current state after each round.
 7. **Confirm explicitly.**
-8. **Write back.** On approval, set `q3_goals.primary_rq` (string), `q3_goals.secondary_rqs` (array, `[]` if none), and, if captured verbatim during a cold-start conversation, `q3_goals.feature` / `q3_goals.why_now`. Touch nothing else.
+8. **Write back.** On approval, set `q3_goals.primary_rq` (string), `q3_goals.secondary_rqs` (array, `[]` if none), and, if captured verbatim during a cold-start conversation, `q3_goals.feature` / `q3_goals.why_now`. Also set the gate — `intake._gates.q3_goals = { approved: true, approved_at: "<current ISO timestamp>", needs_review: false }`, matching the shape `src/lib/intakeGates.js`'s `approveGate()` produces, so `checkReadiness()` reflects reality even though you don't have Bash access to call it directly. Touch nothing else.
+9. **Hand off.** Tell the user `q3_goals` is locked. Either `persona-fit-suggester` (proposes `q4_persona_segments`) or `methodology-and-task-crafter` (proposes `q6_methodology`) can run next — both only require `q3_goals` to be confirmed, not each other.
 
 ## Optional audit artifact - `runs/{run_id}/research-question-session.json`
 
