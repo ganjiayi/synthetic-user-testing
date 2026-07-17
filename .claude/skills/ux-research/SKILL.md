@@ -352,10 +352,15 @@ Conditional dimensions only apply when their input type is present in the sessio
 ## 8. Research Report Structure
 
 Reports follow a three-part NNG-aligned narrative. Part 1 uses the preferred layout order.
-`src/lib/report.js` synthesises this structure as JSON, which is then rendered to the
-deliverable formats (CSV, `.docx` transcript, `.pptx` presentation) — there is no
-standalone `research_report.md` file; the structure below is the canonical shape regardless
-of which format it's exported to.
+
+This is the structure Claude produces when asked to manually synthesise a full study report
+from session data — cross-persona, findings-by-research-question synthesis, the kind a human
+researcher asks for directly in conversation. It is **not** what `src/lib/report.js` generates
+automatically: that function produces a narrower, per-persona-session artefact (a think-aloud
+transcript, methodology-specific key moments, and methodology-specific findings — see
+`output_handoff.report_parts` in `research-planner.md`), with no cross-session synthesis step
+in code. Treat the structure below as the standard to apply whenever a human asks for a full
+report by hand, not as a description of `report.js`'s output.
 
 ### Part 1 — Study Overview
 - Research questions

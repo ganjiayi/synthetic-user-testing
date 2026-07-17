@@ -131,11 +131,16 @@ Derive this section by reasoning from the intake — do not copy fields. Write c
 - `output_handoff.additional_notes`  ← `q8_output.additional_notes`
 - `output_handoff.report_parts`: Always include exactly:
   ```json
-  ["study_overview", "key_insights_summary",
-   "per_persona_session_logs", "friction_map", "cross_persona_patterns",
-   "artefact_feedback", "severity_ranked_findings", "recommendations_by_team",
-   "go_no_go_signal", "follow_up_research", "open_questions", "raw_eval_json"]
+  ["think_aloud_transcript", "key_moments", "findings"]
   ```
+  This matches exactly what `src/lib/report.js`'s `generateSessionDeliverables()` produces per
+  persona session: a chronological think-aloud transcript, methodology-specific key moments, and
+  methodology-specific findings (the categories defined per methodology in `methodology-config.js`).
+  There is no study-level synthesis step in code — no cross-persona pattern detection, severity
+  ranking, or go/no-go verdict generation exists. Do not promise `report_parts` entries beyond what
+  this function actually returns; if the researcher needs a full cross-persona synthesis report,
+  that is produced by asking Claude directly per `.claude/skills/ux-research/SKILL.md` §8, not by
+  this automated pipeline stage.
 
 ---
 
