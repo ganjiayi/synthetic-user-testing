@@ -4,6 +4,9 @@
   "outputDirectory": "ui/build",
   "routes": [
     { "src": "/api/health",                                  "dest": "/api/health.js" },
+    { "src": "/api/intake/chat/([^/]+)",                     "dest": "/api/intake/chat/[agent].js?agent=$1" },
+    { "src": "/api/products/([^/]+)",                        "dest": "/api/products/[id].js?id=$1" },
+    { "src": "/api/personas",                                "dest": "/api/personas.js" },
     { "src": "/api/runs/([^/]+)/plan",                       "dest": "/api/runs/[id]/plan.js?id=$1" },
     { "src": "/api/runs/([^/]+)/evaluate",                   "dest": "/api/runs/[id]/evaluate.js?id=$1" },
     { "src": "/api/runs/([^/]+)/sessions",                   "dest": "/api/runs/[id]/sessions.js?id=$1" },
@@ -19,6 +22,7 @@
   ],
   "functions": {
     "api/runs/[id]/plan.js":     { "maxDuration": 300 },
-    "api/runs/[id]/evaluate.js": { "maxDuration": 300 }
+    "api/runs/[id]/evaluate.js": { "maxDuration": 300 },
+    "api/intake/chat/[agent].js": { "maxDuration": 60 }
   }
 }

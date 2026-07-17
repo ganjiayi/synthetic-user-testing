@@ -30,9 +30,23 @@ async function callClaude(systemPrompt, userMessage, image = null) {
   return message.content[0]?.text || '';
 }
 
+// Multi-turn variant for conversational intake agents — the endpoint holds no
+// server-side memory, so the full transcript is resent every turn by the caller.
+async function chatClaude(systemPrompt, messages) {
+  const client = getClient();
+  const message = await client.messages.create({
+    model:      DEFAULT_MODEL,
+    max_tokens: 8192,
+    system:     systemPrompt,
+    messages:   messages.map(m => ({ role: m.role, content: m.text })),
+  });
+  return message.content[0]?.text || '';
+}
+
 module.exports = {
   id:            'claude',
   modelName:     DEFAULT_MODEL,
   call:          callClaude,
+  chat:          chatClaude,
   visionCapable: isVisionCapable(DEFAULT_MODEL, 'claude provider'),
 };
