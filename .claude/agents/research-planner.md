@@ -19,6 +19,7 @@ Respond with a single valid JSON object. No preamble, no markdown fences, no exp
   "user_segments":   { ... },
   "test_scenarios":  { ... },
   "eval_metrics":    { ... },
+  "constraints":     { ... },
   "method":          { ... },
   "output_handoff":  { ... }
 }
@@ -99,6 +100,13 @@ The `test_scenarios` object must have exactly two keys: `scenarios` (the task ar
 - `eval_metrics.primary_metric` ← derive a one-sentence description of which key in `default_keys` is the primary signal for this study, and why, given the research goals.
 - `eval_metrics.friction_signals` ← 3-5 short phrases describing what friction/confusion looks like for this specific study's tasks and methodology.
 - Always add: `"custom_keys": []`
+
+### constraints
+
+- `constraints.forbidden_assumptions` ← `q7_constraints.forbidden_assumptions` (null if empty — do NOT invent one)
+
+This section is a standalone agent guardrail, independent of any research hypothesis — it exists purely to
+tell the simulation agent what not to assume during a session.
 
 ### method
 

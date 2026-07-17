@@ -156,9 +156,17 @@ function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, pla
     personaBlock = `## ${persona.name}\n${persona.context || 'Malaysian consumer, general profile.'}`;
   }
 
-  const scenario    = plan?.study_context?.scenario || '';
+  const scenario  = plan?.study_context?.scenario || '';
+  const forbidden = plan?.constraints?.forbidden_assumptions || '';
 
   const methodologyBlock = buildTurnSchemaBlock(methodologyConfig);
+
+  // Standalone agent guardrail — independent of any hypothesis. Exists purely
+  // to keep the persona from assuming things the researcher has explicitly
+  // ruled out, regardless of what the study is trying to prove.
+  const constraintsBlock = forbidden
+    ? `\n\n## Research Constraints\n\nDo NOT assume:\n${forbidden}`
+    : '';
 
   // The scenario sets the situation the persona is in before attempting any
   // task — it primes realistic behaviour the same way a moderator's pre-task
@@ -168,7 +176,7 @@ function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, pla
     ? `\n\n## Scenario\n\n${scenario}`
     : '';
 
-  const systemPrompt = `${simulationPrompt}${methodologyBlock}\n\n---\n\n## Your Persona\n\n${personaBlock}${scenarioBlock}\n\n## Study Context for This Session\n\n${persona.context || ''}`;
+  const systemPrompt = `${simulationPrompt}${methodologyBlock}${constraintsBlock}\n\n---\n\n## Your Persona\n\n${personaBlock}${scenarioBlock}\n\n## Study Context for This Session\n\n${persona.context || ''}`;
   // technologyLiteracy is what checkPersonaDrift checks actual turn behavior
   // against — only available when the full library profile matched. Null on
   // the generic fallback, since there are no thresholds to verify there.

@@ -43,7 +43,7 @@ research-planner.md  (unchanged - reads q4_persona_segments as it already does)
 
 ## What This Agent Does Not Do
 
-- Does not touch `q3_goals` or `q6_methodology`.
+- Does not touch `q3_goals`, `q6_methodology`, or `q7_constraints`.
 - Does not include a persona without a trait-card-based rationale.
 - Does not silently default to all five personas to avoid making a call.
 - Does not invent persona traits not present in `/personas` - flags missing data instead.

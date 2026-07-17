@@ -49,6 +49,6 @@ research-planner.md  (unchanged - reads q6_methodology as it already does,
 
 - Does not select methodology names outside the configured set.
 - Does not write `eval_metrics_keys`, `success_condition`, `abandon_condition`, or `session_config` into the intake - those come from the Methodology Configuration block at plan-generation time, sourced from one place per `research-planner.md`'s own rules.
-- Does not touch `q3_goals` or `q4_persona_segments`.
+- Does not touch `q3_goals`, `q4_persona_segments`, or `q7_constraints`.
 - Does not propose tasks the current artefact fidelity can't support - flags the gap instead.
 - Does not write back without explicit approval.

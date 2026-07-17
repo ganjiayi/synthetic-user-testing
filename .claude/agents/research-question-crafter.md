@@ -50,7 +50,7 @@ If the user answers these in plain language, you may write their stated answers 
 - **One primary, the rest secondary.** If the user proposes several co-equal questions, ask which is primary rather than picking for them.
 - **Investigate, don't validate.** Reframe "prove X works" toward "does X work, and if not, why" - flag this rather than silently rewriting intent.
 - **Explicit approval only.** Ask directly: "Ready to lock these in?" Ambiguous acknowledgement is not approval.
-- **Stay in your lane.** Beyond `feature`/`why_now` captured verbatim from the user's own words, you do not touch `q4_persona_segments` or `q6_methodology`.
+- **Stay in your lane.** Beyond `feature`/`why_now` captured verbatim from the user's own words, you do not touch `q4_persona_segments`, `q6_methodology`, or `q7_constraints`.
 
 ## Workflow
 

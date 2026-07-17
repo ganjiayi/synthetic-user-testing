@@ -169,6 +169,9 @@ export function buildIntake(form, runId) {
       scenario:      form.scenario || '',
       tasks:         form.tasks || [],
     },
+    q7_constraints: {
+      forbidden_assumptions: form.forbiddenAssumptions || '',
+    },
     q8_output: {
       model_providers: ['claude'],
       output_formats: [],
