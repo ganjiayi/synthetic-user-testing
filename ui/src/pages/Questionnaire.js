@@ -5,7 +5,7 @@ import { api, generateRunId, buildIntake } from '../api';
 import StepNav from '../components/StepNav';
 import ProductBackgroundPanel from '../components/ProductBackgroundPanel';
 import { InfoTooltip } from '../components/Tooltip';
-import AgentChat from '../components/AgentChat';
+import { AskAiPanel } from '../components/AgentChat';
 import PersonaProfilePanel from '../components/PersonaProfilePanel';
 
 /* ── Shared style helpers ── */
@@ -168,7 +168,6 @@ function StepMethodology({ form, setForm }) {
 }
 
 function StepContext({ form, setForm }) {
-  const phases    = ['Empathise','Define','Ideate','Prototype','Test','Post-launch'];
   const fidelity  = ['Wireframe','Mid-fidelity','High-fidelity','Production'];
   const methodologies = useMethodologies();
   const isAbTesting   = form.methodology === 'A/B Testing';
@@ -176,17 +175,6 @@ function StepContext({ form, setForm }) {
 
   return (
     <>
-      <FieldGroup label="Design thinking phase">
-        <div style={pillRow}>
-          {phases.map(p => (
-            <Pill key={p} label={p} selected={form.designPhase === p}
-              onClick={() => setForm(f => ({ ...f, designPhase: p }))} />
-          ))}
-        </div>
-      </FieldGroup>
-
-      <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
-
       {showMaterials && (
         <>
           <FieldGroup
@@ -198,15 +186,20 @@ function StepContext({ form, setForm }) {
             />
           </FieldGroup>
 
-          {((form.testMaterials?.urls || []).length > 0 || (form.testMaterials?.files || []).some(f => /\.html?$/i.test(f.name))) && (
-            <FieldGroup label="Prototype interactivity" hint="Turn this on if the linked URL or uploaded HTML file is a real, clickable prototype (e.g. a Claude Design HTML export, a Figma prototype, or a staging build) that synthetic users should navigate turn by turn. Leave off if it's just a reference link, uploaded document, or static screenshot.">
+          <FieldGroup label="What kind of material is this?" hint="Static image — a screenshot, JPEG export, or document the synthetic user only looks at. Live, clickable prototype — a real URL or HTML export the synthetic user actually navigates turn by turn (e.g. a Claude Design export, a Figma prototype, or a staging build).">
+            <div style={pillRow}>
               <Pill
-                label={form.isInteractivePrototype ? 'Live, clickable prototype' : 'Static reference link'}
-                selected={!!form.isInteractivePrototype}
-                onClick={() => setForm(f => ({ ...f, isInteractivePrototype: !f.isInteractivePrototype }))}
+                label="Static image"
+                selected={!form.isInteractivePrototype}
+                onClick={() => setForm(f => ({ ...f, isInteractivePrototype: false }))}
               />
-            </FieldGroup>
-          )}
+              <Pill
+                label="Live, clickable prototype"
+                selected={!!form.isInteractivePrototype}
+                onClick={() => setForm(f => ({ ...f, isInteractivePrototype: true }))}
+              />
+            </div>
+          </FieldGroup>
 
           <FieldGroup label="Fidelity level">
             <div style={pillRow}>
@@ -215,13 +208,6 @@ function StepContext({ form, setForm }) {
                   onClick={() => setForm(f => ({ ...f, fidelity: fi }))} />
               ))}
             </div>
-          </FieldGroup>
-
-          <FieldGroup label="Additional notes about the test material">
-            <TextInput rows={2}
-              placeholder="e.g. Mobile screens only. Bahasa Malaysia version not yet available. Covers homepage and pack page only."
-              value={form.artefactNotes || ''}
-              onChange={e => setForm(f => ({ ...f, artefactNotes: e.target.value }))} />
           </FieldGroup>
 
           {isAbTesting && (
@@ -341,7 +327,7 @@ function StepGoals({ form, setForm, onAdvance }) {
         </FieldGroup>
         <ApproveContinue onAdvance={onAdvance} />
       </div>
-      <AgentChat
+      <AskAiPanel
         agentKey="research-question"
         context={context}
         onApply={applyProposal}
@@ -381,31 +367,26 @@ function StepPersonas({ form, setForm, onAdvance }) {
   };
 
   return (
-    <div style={chatLayout}>
-      <div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '1.25rem' }}>
-          {PERSONAS.map(p => (
-            <PersonaCard key={p.code} {...p}
-              selected={(form.personas || []).includes(p.code)}
-              onClick={() => toggle(p.code)} />
-          ))}
-        </div>
-        <PersonaProfilePanel code={expanded} />
-        <FieldGroup label="Priority segment">
-          <TextInput placeholder="e.g. Family-Centric Devotee — primary upgrade target for the boxless transition campaign"
-            value={form.prioritySegment || ''}
-            onChange={e => setForm(f => ({ ...f, prioritySegment: e.target.value }))} />
-        </FieldGroup>
-        <ApproveContinue onAdvance={onAdvance} />
+    <div>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <AskAiPanel
+          agentKey="persona-fit"
+          context={context}
+          onApply={applyProposal}
+          title="Persona Fit Suggester"
+          intro="I can propose which of the five personas are relevant to your research question, with a trait-based reason for each. Ready when you are."
+          placeholder="e.g. Which personas fit this study best?"
+        />
       </div>
-      <AgentChat
-        agentKey="persona-fit"
-        context={context}
-        onApply={applyProposal}
-        title="Persona Fit Suggester"
-        intro="I can propose which of the five personas are relevant to your research question, with a trait-based reason for each. Ready when you are."
-        placeholder="e.g. Which personas fit this study best?"
-      />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '1.25rem' }}>
+        {PERSONAS.map(p => (
+          <PersonaCard key={p.code} {...p}
+            selected={(form.personas || []).includes(p.code)}
+            onClick={() => toggle(p.code)} />
+        ))}
+      </div>
+      <PersonaProfilePanel code={expanded} />
+      <ApproveContinue onAdvance={onAdvance} />
     </div>
   );
 }
@@ -617,7 +598,7 @@ function StepTasks({ form, setForm, onAdvance }) {
 
         <ApproveContinue onAdvance={onAdvance} />
       </div>
-      <AgentChat
+      <AskAiPanel
         agentKey="methodology-task"
         context={context}
         onApply={applyProposal}
