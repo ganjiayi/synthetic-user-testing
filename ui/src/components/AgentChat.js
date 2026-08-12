@@ -5,6 +5,46 @@ function hasProposal(p) {
   return !!p && typeof p === 'object' && Object.keys(p).length > 0;
 }
 
+/* ── AskAiPanel — AgentChat hidden behind an "Ask AI" button. The chat only
+   mounts once opened, so it doesn't fire off state/effects (or clutter the
+   step) until the researcher actually wants the conversational copilot,
+   as opposed to the quick single-shot "Suggested from AI" boxes elsewhere
+   on the same step, which stay visible directly. ── */
+export function AskAiPanel({ agentKey, context, onApply, title, intro, placeholder }) {
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem',
+          padding: '0.8rem 1rem', border: '1px dashed var(--blue-md)', borderRadius: 'var(--radius-md)',
+          background: 'var(--blue-lt)', color: 'var(--blue)', cursor: 'pointer',
+          fontFamily: 'var(--sans)', fontSize: '12.5px', fontWeight: 500, textAlign: 'left',
+        }}
+      >
+        <span style={{ fontSize: '14px' }}>✦</span>
+        <span>Ask AI — {title}</span>
+      </button>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(false)}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          marginBottom: '0.5rem', fontFamily: 'var(--sans)', fontSize: '11.5px',
+          color: 'var(--mute)', display: 'flex', alignItems: 'center', gap: '4px',
+        }}
+      >← Hide chat</button>
+      <AgentChat agentKey={agentKey} context={context} onApply={onApply} title={title} intro={intro} placeholder={placeholder} />
+    </div>
+  );
+}
+
 /* ── AgentChat — reusable co-pilot chat, backed by one of the three
    conversational intake agents. Proposals are advisory: applying one
    prefills real form fields, which stay directly editable regardless. ── */

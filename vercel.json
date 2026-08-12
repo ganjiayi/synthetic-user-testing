@@ -21,8 +21,8 @@
     { "src": "/(.*)",                                        "dest": "/index.html" }
   ],
   "functions": {
-    "api/runs/[id]/plan.js":     { "maxDuration": 300 },
-    "api/runs/[id]/evaluate.js": { "maxDuration": 300 },
-    "api/intake.js":             { "maxDuration": 60 }
+    "api/runs/[id]/plan.js":     { "maxDuration": 300, "includeFiles": "{.claude/agents/*.md,products/*.json,personas/*.json}" },
+    "api/runs/[id]/evaluate.js": { "maxDuration": 300, "includeFiles": "{.claude/agents/*.md,personas/*.json}" },
+    "api/intake.js":             { "maxDuration": 60,  "includeFiles": "{.claude/agents/*.md,products/*.json,personas/*.json}" }
   }
 }
