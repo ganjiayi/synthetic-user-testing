@@ -76,12 +76,14 @@ function useAiSuggestion(agentKey, context, seedText) {
     }
   }, [agentKey, context, seedText]);
 
+  // Intentionally mount-only: fetchSuggestion is recreated every render (it
+  // closes over context/seedText), but re-fetching on every render would
+  // spam the agent endpoint. The mounted ref guards a genuinely-once effect.
   const mounted = React.useRef(false);
   React.useEffect(() => {
     if (mounted.current) return;
     mounted.current = true;
     fetchSuggestion(false, null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { proposal, loading, error, regenerate: () => fetchSuggestion(true, proposal) };
