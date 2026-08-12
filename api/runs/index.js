@@ -29,8 +29,14 @@ module.exports = async (req, res) => {
     if (!runId || !intake) return res.status(400).json({ error: 'runId and intake required' });
 
     // Pre-populate materials from intake so run record tracks uploaded files
-    // without needing a separate upload notification endpoint
-    const materials = (intake.q2_context?.test_materials?.files || [])
+    // without needing a separate upload notification endpoint. Includes
+    // Variant B's files for A/B Testing studies — both variants' files land
+    // in the same run's storage folder (see ui/src/pages/Questionnaire.js's
+    // handleSubmit), so both belong in this listing.
+    const materials = [
+      ...(intake.q2_context?.test_materials?.files || []),
+      ...(intake.q6_methodology?.variantB?.files || []),
+    ]
       .map(f => String(f).replace(/[^a-zA-Z0-9._-]/g, '_'))
       .filter(Boolean);
 

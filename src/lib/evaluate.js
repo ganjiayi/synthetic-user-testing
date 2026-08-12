@@ -183,7 +183,7 @@ function buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, pla
   return { systemPrompt, personaMatch, technologyLiteracy: matchedProfile?.technology_literacy || null };
 }
 
-function buildTaskPrompt(task, artefactContext, turnNumber, violationNote) {
+function buildTaskPrompt(task, artefactContext, turnNumber, violationNote, variantId = null) {
   const constraints = task.interaction_constraints || { click_allowed: true, scroll_allowed: true };
   // Restated every turn (not just after a violation) so the model doesn't
   // lose track of the constraint as conversation history grows.
@@ -191,8 +191,9 @@ function buildTaskPrompt(task, artefactContext, turnNumber, violationNote) {
     ? '\nConstraint: this task is observation only — you may scroll to see more of the page, but you must NOT click, tap, or select anything.'
     : '';
   const violationBlock = violationNote ? `\n${violationNote}` : '';
+  const variantHeader  = variantId ? ` (Variant ${variantId})` : '';
 
-  return `Turn ${turnNumber}.
+  return `Turn ${turnNumber}${variantHeader}.
 
 Task: ${task.task_name}
 Instruction: ${task.instruction || task.task_name}
@@ -205,15 +206,39 @@ ${artefactContext}
 Respond with your JSON turn object.`;
 }
 
-function buildArtefactContext(plan) {
-  const cfg   = plan.study_context?.artefact_config || {};
+// Comparative (A/B) sessions only — issued once per task, after both variant
+// attempts complete. Not a navigation turn: no artefact context, no
+// click/scroll, just a reflection grounded in what the persona already did.
+function buildComparisonPrompt(task) {
+  return `Comparison turn.
+
+You have now attempted "${task.task_name}" on both Variant A and Variant B.
+
+Task: ${task.task_name}
+Instruction: ${task.instruction || task.task_name}
+
+Reflect on both attempts. State which variant you preferred and why, citing a specific difference you actually experienced between the two — do not state a preference without a concrete reason. Set action and screen_or_step to describe that you are comparing the two attempts (not clicking or scrolling), set task_completion to "completed", and set friction_score to 0 and confusion_signal/trust_signal to null, since this turn is reflection, not a task attempt.
+
+Respond with your JSON turn object.`;
+}
+
+function buildArtefactContext(plan, variantId = null) {
+  const cfg = plan.study_context?.artefact_config || {};
+  let source = cfg;
+  let label  = '';
+
+  if (variantId && Array.isArray(cfg.variants)) {
+    const variant = cfg.variants.find(v => v.id === variantId);
+    if (variant) { source = variant; label = `Variant ${variantId}\n`; }
+  }
+
   const parts = [];
-  if (cfg.artefact_link) parts.push(`URL / Link: ${cfg.artefact_link}`);
-  if (Array.isArray(cfg.files) && cfg.files.length > 0) parts.push(`Uploaded files: ${cfg.files.join(', ')}`);
+  if (source.artefact_link) parts.push(`URL / Link: ${source.artefact_link}`);
+  if (Array.isArray(source.files) && source.files.length > 0) parts.push(`Uploaded files: ${source.files.join(', ')}`);
   if (cfg.fidelity_level) parts.push(`Fidelity: ${cfg.fidelity_level}`);
-  if (cfg.artefact_notes) parts.push(`Notes: ${cfg.artefact_notes}`);
+  if (source.artefact_notes) parts.push(`Notes: ${source.artefact_notes}`);
   parts.push(`Friction sensitivity: ${cfg.friction_sensitivity || 'moderate'} — calibrate your friction scores accordingly`);
-  return parts.join('\n') || 'No artefact provided — reason from task descriptions only';
+  return label + (parts.join('\n') || 'No artefact provided — reason from task descriptions only');
 }
 
 const CORE_KEYS = new Set([
@@ -373,19 +398,34 @@ async function callModel(provider, systemPrompt, conversationHistory, image = nu
 }
 
 async function runPersonaSession(provider, persona, tasks, plan, personaLibrary, simulationPrompt, options = {}) {
-  const { image = null, browserSession = null, onTaskComplete = null, groundingContext = {} } = options;
+  const { image = null, browserSession = null, onTaskComplete = null, groundingContext = {}, variantImages = null } = options;
+  const visionCapableModel = provider.visionCapable !== false;
+
+  const methodologyConfig = plan?.methodology_config || getMethodologyConfig(plan?.study_context?.methodology);
+  const isComparative      = methodologyConfig.session_config?.session_mode === 'comparative';
+
+  if (isComparative && browserSession) {
+    // Two concurrent (or sequentially re-navigated) live browser sessions
+    // per persona is real added complexity — deliberately out of scope for
+    // v1. Fail fast here rather than silently attempting variant A/B
+    // exposures against whatever single page the browser happens to be on.
+    throw new Error(
+      'Comparative (A/B) sessions do not support live browser-driven variants yet — resolve both variants to ' +
+      'static context (image, uploaded files, or description) instead of an interactive prototype link.'
+    );
+  }
+
   // artefactTypeResolved: 'live_screenshot' | 'static_image' | 'html_unrendered' | 'none'
   // — set by the caller (api/runs/[id]/evaluate.js), which is where the
   // artefact branching actually happens. Defaults cover direct callers
   // (e.g. scripts/run-local-test.js) that don't pass it explicitly.
+  // For comparative sessions this is resolved per variant instead — see
+  // attemptTaskOnVariant below.
   const artefactTypeResolved = groundingContext.artefactTypeResolved
     || (browserSession ? 'live_screenshot' : image ? 'static_image' : 'none');
-  const visionCapableModel = provider.visionCapable !== false;
-
-  const methodologyConfig = plan?.methodology_config || getMethodologyConfig(plan?.study_context?.methodology);
 
   const personaId       = getPersonaId(persona);
-  const artefactContext = buildArtefactContext(plan);
+  const artefactContext = isComparative ? null : buildArtefactContext(plan);
   const { systemPrompt, personaMatch, technologyLiteracy } = buildPersonaSystemPrompt(persona, personaLibrary, simulationPrompt, plan, methodologyConfig);
   const maxTurns        = plan.test_scenarios?.session_config?.max_turns || methodologyConfig.session_config.max_turns;
   const stuckThreshold  = plan.test_scenarios?.session_config?.stuck_loop_threshold || methodologyConfig.session_config.stuck_loop_threshold;
@@ -398,26 +438,38 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
   let lastScreen              = '';
   let conversationHistory     = [];
 
-  for (const task of tasks) {
-    let turnNumber    = 1;
-    let taskDone      = false;
-    let violationNote = null;
-    const clickAllowed = task.interaction_constraints?.click_allowed !== false;
+  // Runs one attempt of `task` — against the study's single artefact for
+  // non-comparative methodologies (variantId null), or against one named
+  // variant's artefact for comparative (A/B) methodologies. Returns whether
+  // this attempt reached "completed" (not "abandoned").
+  async function attemptTaskOnVariant(task, variantId) {
+    let turnNumber      = 1;
+    let taskDone        = false;
+    let violationNote   = null;
+    let attemptCompleted = false;
+    const clickAllowed  = task.interaction_constraints?.click_allowed !== false;
+
+    const attemptArtefactContext = isComparative ? buildArtefactContext(plan, variantId) : artefactContext;
+    const attemptImage = isComparative ? (variantImages ? variantImages[variantId] : null) : image;
+    const attemptArtefactTypeResolved = isComparative
+      ? (groundingContext.artefactTypeResolvedByVariant?.[variantId] || (attemptImage ? 'static_image' : 'none'))
+      : artefactTypeResolved;
 
     while (!taskDone && turnNumber <= maxTurns) {
-      const userMessage = buildTaskPrompt(task, artefactContext, turnNumber, violationNote);
+      const userMessage = buildTaskPrompt(task, attemptArtefactContext, turnNumber, violationNote, variantId);
       conversationHistory.push({ role: 'user', content: userMessage });
       violationNote = null;
 
       try {
         const turnImage = browserSession
           ? await browserSessionLib.screenshot(browserSession.page)
-          : image;
+          : attemptImage;
         const { text: rawText, imageAttached } = await callModel(provider, systemPrompt, conversationHistory, turnImage, !!browserSession);
         const turn    = parseTurnResponse(rawText, turnNumber, task.task_id, personaId, methodologyConfig);
+        if (variantId) turn.variant_id = variantId;
         turn.grounding_status = {
           persona_match:            personaMatch,
-          artefact_type_resolved:   artefactTypeResolved,
+          artefact_type_resolved:   attemptArtefactTypeResolved,
           image_attached_this_turn: imageAttached,
           vision_capable_model:     visionCapableModel,
         };
@@ -445,7 +497,7 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
           consecutiveSameScreen++;
           if (consecutiveSameScreen >= stuckThreshold) {
             stuckLoopFlags.push({
-              task_id: task.task_id, turn: turnNumber,
+              task_id: task.task_id, ...(variantId ? { variant_id: variantId } : {}), turn: turnNumber,
               screen: turn.screen_or_step,
               note: `Stuck loop detected — ${consecutiveSameScreen} consecutive turns on same screen`,
             });
@@ -456,7 +508,7 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
         lastScreen = turn.screen_or_step;
 
         const completion = turn.eval_scores.task_completion;
-        if (completion === 'completed') { tasksCompleted.push(task.task_id); taskDone = true; }
+        if (completion === 'completed') { attemptCompleted = true; taskDone = true; }
         else if (completion === 'abandoned') { taskDone = true; }
       } catch (err) {
         // Fail fast: a model call error is very likely to repeat on every
@@ -466,10 +518,11 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
         // abandon this task immediately instead.
         sessionTurns.push({
           turn_number: turnNumber, task_id: task.task_id, persona_id: personaId,
+          ...(variantId ? { variant_id: variantId } : {}),
           model_error: err.message,
           grounding_status: {
             persona_match:            personaMatch,
-            artefact_type_resolved:   artefactTypeResolved,
+            artefact_type_resolved:   attemptArtefactTypeResolved,
             image_attached_this_turn: false,
             vision_capable_model:     visionCapableModel,
           },
@@ -478,6 +531,55 @@ async function runPersonaSession(provider, persona, tasks, plan, personaLibrary,
         taskDone = true;
       }
       turnNumber++;
+    }
+
+    return attemptCompleted;
+  }
+
+  // Comparative (A/B) sessions only. Issued once per task, after both
+  // variant attempts finish — asks the persona to reflect and state a
+  // preference. Not a navigation turn: no artefact context, no browser.
+  async function runComparisonTurn(task) {
+    const userMessage = buildComparisonPrompt(task);
+    conversationHistory.push({ role: 'user', content: userMessage });
+
+    try {
+      const { text: rawText } = await callModel(provider, systemPrompt, conversationHistory, null, false);
+      const turn = parseTurnResponse(rawText, 1, task.task_id, personaId, methodologyConfig);
+      turn.variant_id = 'comparison';
+      turn.grounding_status = {
+        persona_match: personaMatch, artefact_type_resolved: 'none',
+        image_attached_this_turn: false, vision_capable_model: visionCapableModel,
+      };
+      sessionTurns.push(turn);
+      conversationHistory.push({ role: 'assistant', content: rawText });
+    } catch (err) {
+      sessionTurns.push({
+        turn_number: 1, task_id: task.task_id, persona_id: personaId, variant_id: 'comparison',
+        model_error: err.message,
+        grounding_status: {
+          persona_match: personaMatch, artefact_type_resolved: 'none',
+          image_attached_this_turn: false, vision_capable_model: visionCapableModel,
+        },
+        eval_scores: { task_completion: 'abandoned', abandon_trigger: `Model call failed: ${err.message}` },
+      });
+    }
+  }
+
+  for (const task of tasks) {
+    if (isComparative) {
+      const completedA = await attemptTaskOnVariant(task, 'A');
+      const completedB = await attemptTaskOnVariant(task, 'B');
+      await runComparisonTurn(task);
+      // Task counts as "completed" for session-outcome purposes only if the
+      // persona reached the success condition on both variants, consistent
+      // with this methodology's task_derivation.success_condition ("...on
+      // both variants..."). An abandon on either variant is still valuable
+      // comparative signal — it just isn't a completed task.
+      if (completedA && completedB) tasksCompleted.push(task.task_id);
+    } else {
+      const completed = await attemptTaskOnVariant(task, null);
+      if (completed) tasksCompleted.push(task.task_id);
     }
 
     const taskTurns = sessionTurns.filter(t => t.task_id === task.task_id);
@@ -512,17 +614,20 @@ function buildEvalMatrix(sessions) {
     for (const turn of session.turns) {
       rows.push({
         persona_id: session.persona_id, persona_name: session.persona_name,
-        task_id: turn.task_id, turn_number: turn.turn_number,
+        task_id: turn.task_id, variant_id: turn.variant_id || null, turn_number: turn.turn_number,
         screen_or_step: turn.screen_or_step || '', ...turn.eval_scores,
       });
     }
   }
   const summary = {};
   for (const row of rows) {
-    const key = `${row.persona_id}__${row.task_id}`;
+    // variant_id is part of the grouping key so a comparative (A/B) task's
+    // Variant A, Variant B, and comparison turns get separate summary rows
+    // instead of their friction/confusion signals being blended together.
+    const key = `${row.persona_id}__${row.task_id}__${row.variant_id || 'main'}`;
     if (!summary[key]) {
       summary[key] = {
-        persona_id: row.persona_id, task_id: row.task_id,
+        persona_id: row.persona_id, task_id: row.task_id, variant_id: row.variant_id || null,
         turn_count: 0, avg_friction: 0, friction_sum: 0, friction_count: 0,
         confusion_count: 0, trust_issues: 0, final_status: 'in_progress',
       };

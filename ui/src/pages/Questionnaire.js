@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { STEPS, PRODUCTS, PERSONAS } from '../data/questionnaire';
-import { SelectCard, PersonaCard, Pill, AutofillNotice, FieldGroup, TextInput, UploadZone } from '../components/UI';
+import { STEPS, PRODUCTS, PERSONAS, COMPARISON_TYPES } from '../data/questionnaire';
+import { SelectCard, PersonaCard, Pill, AutofillNotice, FieldGroup, TextInput, UploadZone, AiSuggestBox, AiSuggestField } from '../components/UI';
 import { api, generateRunId, buildIntake } from '../api';
 import StepNav from '../components/StepNav';
 import ProductBackgroundPanel from '../components/ProductBackgroundPanel';
@@ -12,6 +12,82 @@ import PersonaProfilePanel from '../components/PersonaProfilePanel';
 const grid3     = { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '1.25rem' };
 const pillRow   = { display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '1.1rem' };
 const chatLayout = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '1.5rem', alignItems: 'start' };
+
+// Hardcoded fallback so the picker/gating still work if /api/methodologies is
+// unreachable — kept in sync manually with src/lib/methodology-config.js's
+// ui_description/runner_type fields, which are the source of truth when the
+// fetch succeeds.
+const FALLBACK_METHODOLOGIES = [
+  { id: 'Usability Testing', desc: 'Task-based — where do users get stuck or abandon?', runner_type: 'task_based' },
+  { id: 'A/B Testing',       desc: 'Comparative — same task on two variants, then a stated preference.', runner_type: 'comparative_task_based' },
+];
+
+// Shared by every step that needs the methodology list (picker, materials
+// gating, review edit-mode) so it's fetched from one place rather than
+// threaded as a prop through components that get mounted independently.
+function useMethodologies() {
+  const [methodologies, setMethodologies] = useState(FALLBACK_METHODOLOGIES);
+  React.useEffect(() => {
+    let cancelled = false;
+    api.getMethodologies()
+      .then(({ methodologies: list }) => {
+        if (!cancelled && Array.isArray(list) && list.length > 0) setMethodologies(list);
+      })
+      .catch(() => {}); // keep the fallback list on failure
+    return () => { cancelled = true; };
+  }, []);
+  return methodologies;
+}
+
+// task_based and comparative_task_based methodologies need an artefact to
+// navigate; other runner_types (reaction/impression-style, if reinstated
+// later) would not — see src/lib/methodology-config.js's navigationRequired().
+function methodologyNeedsMaterials(methodologyId, methodologies) {
+  const cfg = methodologies.find(m => m.id === methodologyId);
+  if (!cfg) return true; // unknown methodology — default to showing materials rather than hiding them
+  return cfg.runner_type === 'task_based' || cfg.runner_type === 'comparative_task_based';
+}
+
+// Backs every "Suggested from AI" box (Goals, Tasks). Fetches an initial
+// suggestion on mount by seeding the same agent chat endpoint the AgentChat
+// panel uses with one synthetic message, so no new backend endpoint is
+// needed. Regenerate re-asks the same agent for an alternative, passing the
+// last suggestion back in context so it doesn't just repeat itself — the
+// suggestion shown is always exactly what Populate would copy.
+function useAiSuggestion(agentKey, context, seedText) {
+  const [proposal, setProposal] = useState(null);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState('');
+
+  const fetchSuggestion = React.useCallback(async (isRegenerate, prevProposal) => {
+    setLoading(true);
+    setError('');
+    try {
+      const text = isRegenerate
+        ? 'Give me a different alternative to your last suggestion — do not repeat it.'
+        : seedText;
+      const ctx = isRegenerate && prevProposal ? { ...context, previous_suggestion: prevProposal } : context;
+      const { proposal: next } = await api.chatWithAgent(agentKey, { messages: [{ role: 'user', text }], context: ctx });
+      setProposal(next);
+    } catch (err) {
+      setError(err.message || 'Could not reach the agent — try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [agentKey, context, seedText]);
+
+  // Intentionally mount-only: fetchSuggestion is recreated every render (it
+  // closes over context/seedText), but re-fetching on every render would
+  // spam the agent endpoint. The mounted ref guards a genuinely-once effect.
+  const mounted = React.useRef(false);
+  React.useEffect(() => {
+    if (mounted.current) return;
+    mounted.current = true;
+    fetchSuggestion(false, null);
+  }, []);
+
+  return { proposal, loading, error, regenerate: () => fetchSuggestion(true, proposal) };
+}
 
 /* ── Shared "Approve and Continue" CTA — used on every step with an AgentChat co-pilot ── */
 function ApproveContinue({ onAdvance, label = 'Approve and Continue →' }) {
@@ -46,14 +122,57 @@ function StepProduct({ form, setForm }) {
           Astro.com.my loaded — product description, 7 known pain points, and agent instructions auto-populated. Section 6B pre-filled from the product database.
         </AutofillNotice>
       )}
-      {form.product && <ProductBackgroundPanel productId={form.product} />}
+      {form.product === 'OTHER' && (
+        <FieldGroup label="Describe this product" hint="No product database entry for this yet, so give the agent enough context to calibrate — what it is, who uses it, and what this study is testing.">
+          <TextInput rows={3}
+            placeholder="e.g. Astro GO — our OTT streaming app for live sports and on-demand content, available on mobile and connected TVs."
+            value={form.productOther || ''}
+            onChange={e => setForm(f => ({ ...f, productOther: e.target.value }))} />
+        </FieldGroup>
+      )}
+      {form.product && form.product !== 'OTHER' && <ProductBackgroundPanel productId={form.product} />}
     </>
+  );
+}
+
+function StepMethodology({ form, setForm }) {
+  const methodologies = useMethodologies();
+
+  // Default to Usability Testing until the researcher picks otherwise.
+  React.useEffect(() => {
+    if (!form.methodology) {
+      setForm(f => ({ ...f, methodology: 'Usability Testing' }));
+    }
+  }, [form.methodology, setForm]);
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+      {methodologies.map(m => (
+        <div
+          key={m.id}
+          onClick={() => setForm(f => ({ ...f, methodology: m.id }))}
+          style={{
+            padding: '1.1rem 1.25rem',
+            border: form.methodology === m.id ? '2px solid var(--blue)' : '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            background: form.methodology === m.id ? 'var(--blue-lt)' : '#fff',
+            cursor: 'pointer', transition: 'all .15s', userSelect: 'none',
+          }}
+        >
+          <div style={{ fontSize: '14px', fontWeight: 500, color: form.methodology === m.id ? 'var(--blue)' : 'var(--ink)', marginBottom: '0.3rem' }}>{m.id}</div>
+          <div style={{ fontSize: '12px', color: 'var(--mute)', lineHeight: 1.5 }}>{m.desc}</div>
+        </div>
+      ))}
+    </div>
   );
 }
 
 function StepContext({ form, setForm }) {
   const phases    = ['Empathise','Define','Ideate','Prototype','Test','Post-launch'];
   const fidelity  = ['Wireframe','Mid-fidelity','High-fidelity','Production'];
+  const methodologies = useMethodologies();
+  const isAbTesting   = form.methodology === 'A/B Testing';
+  const showMaterials = methodologyNeedsMaterials(form.methodology, methodologies);
 
   return (
     <>
@@ -68,40 +187,99 @@ function StepContext({ form, setForm }) {
 
       <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
 
-      <FieldGroup
-        label={<>Test materials<InfoTooltip text="Upload Figma JPEG exports, screenshots, documents, or standalone HTML exports — or paste a Figma prototype link, staging URL, or any live URL. Add as many files and links as needed. Tip: use only letters, numbers, dots and hyphens in filenames (e.g. Homepage.jpg not Homepage test.jpg) — spaces and special characters will be stripped." /></>}
-      >
-        <UploadZone
-          value={form.testMaterials}
-          onChange={v => setForm(f => ({ ...f, testMaterials: v }))}
-        />
-      </FieldGroup>
+      {showMaterials && (
+        <>
+          <FieldGroup
+            label={<>Test materials<InfoTooltip text="Upload Figma JPEG exports, screenshots, documents, or standalone HTML exports — or paste a Figma prototype link, staging URL, or any live URL. Add as many files and links as needed. Tip: use only letters, numbers, dots and hyphens in filenames (e.g. Homepage.jpg not Homepage test.jpg) — spaces and special characters will be stripped." /></>}
+          >
+            <UploadZone
+              value={form.testMaterials}
+              onChange={v => setForm(f => ({ ...f, testMaterials: v }))}
+            />
+          </FieldGroup>
 
-      {((form.testMaterials?.urls || []).length > 0 || (form.testMaterials?.files || []).some(f => /\.html?$/i.test(f.name))) && (
-        <FieldGroup label="Prototype interactivity" hint="Turn this on if the linked URL or uploaded HTML file is a real, clickable prototype (e.g. a Claude Design HTML export, a Figma prototype, or a staging build) that synthetic users should navigate turn by turn. Leave off if it's just a reference link, uploaded document, or static screenshot.">
-          <Pill
-            label={form.isInteractivePrototype ? 'Live, clickable prototype' : 'Static reference link'}
-            selected={!!form.isInteractivePrototype}
-            onClick={() => setForm(f => ({ ...f, isInteractivePrototype: !f.isInteractivePrototype }))}
-          />
-        </FieldGroup>
+          {((form.testMaterials?.urls || []).length > 0 || (form.testMaterials?.files || []).some(f => /\.html?$/i.test(f.name))) && (
+            <FieldGroup label="Prototype interactivity" hint="Turn this on if the linked URL or uploaded HTML file is a real, clickable prototype (e.g. a Claude Design HTML export, a Figma prototype, or a staging build) that synthetic users should navigate turn by turn. Leave off if it's just a reference link, uploaded document, or static screenshot.">
+              <Pill
+                label={form.isInteractivePrototype ? 'Live, clickable prototype' : 'Static reference link'}
+                selected={!!form.isInteractivePrototype}
+                onClick={() => setForm(f => ({ ...f, isInteractivePrototype: !f.isInteractivePrototype }))}
+              />
+            </FieldGroup>
+          )}
+
+          <FieldGroup label="Fidelity level">
+            <div style={pillRow}>
+              {fidelity.map(fi => (
+                <Pill key={fi} label={fi} selected={form.fidelity === fi}
+                  onClick={() => setForm(f => ({ ...f, fidelity: fi }))} />
+              ))}
+            </div>
+          </FieldGroup>
+
+          <FieldGroup label="Additional notes about the test material">
+            <TextInput rows={2}
+              placeholder="e.g. Mobile screens only. Bahasa Malaysia version not yet available. Covers homepage and pack page only."
+              value={form.artefactNotes || ''}
+              onChange={e => setForm(f => ({ ...f, artefactNotes: e.target.value }))} />
+          </FieldGroup>
+
+          {isAbTesting && (
+            <>
+              <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
+
+              <FieldGroup label="What's being compared">
+                <select
+                  value={form.comparisonType || COMPARISON_TYPES[0]}
+                  onChange={e => setForm(f => ({ ...f, comparisonType: e.target.value }))}
+                  style={{
+                    width: '100%', padding: '0.625rem 0.875rem',
+                    border: '1px solid var(--hairline)', borderRadius: 'var(--radius-sm)',
+                    fontFamily: 'var(--sans)', fontSize: '14px', color: 'var(--ink)', background: 'var(--canvas)',
+                  }}
+                >
+                  {COMPARISON_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </FieldGroup>
+
+              {form.comparisonType === 'Other' && (
+                <FieldGroup label="Describe what's being compared">
+                  <TextInput rows={2}
+                    placeholder="e.g. Two different checkout step orders — payment-first vs. address-first."
+                    value={form.comparisonOther || ''}
+                    onChange={e => setForm(f => ({ ...f, comparisonOther: e.target.value }))} />
+                </FieldGroup>
+              )}
+
+              <FieldGroup
+                label={<>Variant B test materials<InfoTooltip text="Upload or link the second variant being compared against Variant A (the materials above). Each task defined later is attempted on both variants before the persona states a preference." /></>}
+              >
+                <UploadZone
+                  value={form.variantB?.testMaterials}
+                  onChange={v => setForm(f => ({ ...f, variantB: { ...f.variantB, testMaterials: v } }))}
+                />
+              </FieldGroup>
+
+              {((form.variantB?.testMaterials?.urls || []).length > 0 || (form.variantB?.testMaterials?.files || []).some(f => /\.html?$/i.test(f.name))) && (
+                <FieldGroup label="Variant B interactivity" hint="Comparative (A/B) sessions do not yet support live, clickable prototypes for either variant — leave this off and use a static reference link, image, or description for Variant B, same as Variant A.">
+                  <Pill
+                    label={form.variantB?.isInteractivePrototype ? 'Live, clickable prototype (not yet supported for A/B)' : 'Static reference link'}
+                    selected={!!form.variantB?.isInteractivePrototype}
+                    onClick={() => setForm(f => ({ ...f, variantB: { ...f.variantB, isInteractivePrototype: !f.variantB?.isInteractivePrototype } }))}
+                  />
+                </FieldGroup>
+              )}
+
+              <FieldGroup label="Additional notes about Variant B">
+                <TextInput rows={2}
+                  placeholder="e.g. Same page but with a shorter headline and a single CTA instead of three."
+                  value={form.variantB?.notes || ''}
+                  onChange={e => setForm(f => ({ ...f, variantB: { ...f.variantB, notes: e.target.value } }))} />
+              </FieldGroup>
+            </>
+          )}
+        </>
       )}
-
-      <FieldGroup label="Fidelity level">
-        <div style={pillRow}>
-          {fidelity.map(fi => (
-            <Pill key={fi} label={fi} selected={form.fidelity === fi}
-              onClick={() => setForm(f => ({ ...f, fidelity: fi }))} />
-          ))}
-        </div>
-      </FieldGroup>
-
-      <FieldGroup label="Additional notes about the test material">
-        <TextInput rows={2}
-          placeholder="e.g. Mobile screens only. Bahasa Malaysia version not yet available. Covers homepage and pack page only."
-          value={form.artefactNotes || ''}
-          onChange={e => setForm(f => ({ ...f, artefactNotes: e.target.value }))} />
-      </FieldGroup>
     </>
   );
 }
@@ -109,6 +287,7 @@ function StepContext({ form, setForm }) {
 function StepGoals({ form, setForm, onAdvance }) {
   const context = {
     product:       form.product,
+    methodology:   form.methodology,
     designPhase:   form.designPhase,
     fidelity:      form.fidelity,
     artefactNotes: form.artefactNotes,
@@ -124,18 +303,39 @@ function StepGoals({ form, setForm, onAdvance }) {
     }));
   };
 
+  const suggestion = useAiSuggestion(
+    'research-question',
+    context,
+    'Suggest a draft primary research question and secondary research questions for this study, for me to review.'
+  );
+
   return (
     <div style={chatLayout}>
       <div>
+        <AiSuggestBox
+          label="Suggested from AI"
+          loading={suggestion.loading}
+          error={suggestion.error}
+          onRegenerate={suggestion.regenerate}
+          onPopulate={() => applyProposal(suggestion.proposal)}
+          populateDisabled={!suggestion.proposal}
+        >
+          <AiSuggestField label="Primary" value={suggestion.proposal?.primary_rq} />
+          <AiSuggestField
+            label="Secondary"
+            value={Array.isArray(suggestion.proposal?.secondary_rqs) ? suggestion.proposal.secondary_rqs.join('\n') : suggestion.proposal?.secondary_rqs}
+          />
+        </AiSuggestBox>
+
         <FieldGroup label="Primary research question">
           <TextInput rows={2}
-            placeholder="RQ1: What elements of the revamped homepage do users fail to interpret as describing a boxless product?"
+            placeholder="Write your own, or click Populate from AI above to use the suggestion."
             value={form.primaryRQ || ''}
             onChange={e => setForm(f => ({ ...f, primaryRQ: e.target.value }))} />
         </FieldGroup>
         <FieldGroup label="Secondary research questions">
           <TextInput rows={3}
-            placeholder={"RQ2: How do different persona segments respond to the messaging?\nRQ3: What is the primary drop-off point in the flow?"}
+            placeholder="Write your own, or click Populate from AI above to use the suggestion."
             value={form.secondaryRQs || ''}
             onChange={e => setForm(f => ({ ...f, secondaryRQs: e.target.value }))} />
         </FieldGroup>
@@ -168,6 +368,7 @@ function StepPersonas({ form, setForm, onAdvance }) {
     primaryRQ:            form.primaryRQ,
     secondaryRQs:         form.secondaryRQs,
     selectedPersonaCodes: form.personas || [],
+    methodology:          form.methodology,
   };
 
   const applyProposal = (proposal) => {
@@ -209,35 +410,22 @@ function StepPersonas({ form, setForm, onAdvance }) {
   );
 }
 
+const TOP_TASK_CATEGORIES = ['Navigation', 'Discovery', 'Account', 'Payment', 'Support'];
+const TASK_PRIORITIES     = ['P0', 'P1', 'P2'];
+
 function StepTasks({ form, setForm, onAdvance }) {
-  const methodologies = [
-    { id: 'Usability Testing',    desc: 'Task-based — where do users get stuck or abandon?' },
-  ];
+  // Methodology is fixed on the earlier StepMethodology step by this point —
+  // this step only reads form.methodology, never sets it.
+  const isAbTesting = form.methodology === 'A/B Testing';
 
-  // Only one methodology is offered right now — select it by default.
-  React.useEffect(() => {
-    if (!form.methodology) {
-      setForm(f => ({ ...f, methodology: 'Usability Testing' }));
-    }
-  }, [form.methodology, setForm]);
-
-  const EXAMPLE_TASK = {
-    name:        'Home/Impression',
-    instruction: `Without clicking on anything, explore the information here and tell me:
-a) What do you expect you can do with this website?
-b) How would you make your decision on choosing between the TV packages and broadband speeds?
-c) Which other internet service provider would you compare with?
-d) What do you understand about the descriptions given?
-e) Is there anything you find confusing within this page?
-f) Is there any missing information you'd like to see but is not available here?
-g) Are you aware of the available promotions when you subscribe to a broadband plan?`,
-    whatToTest:  `1. Users' impression of what they can do with the website
-2. Are users confused about the information presented?
-3. What information would users like to know before purchasing?`,
-  };
-
+  // No hardcoded example task here on purpose — it used to be pre-filled
+  // with fixed TV-package copy regardless of methodology, which looked like
+  // real guidance but wasn't sourced from methodology-config.js at all. The
+  // "Suggested from methodology" box below (wired to the real
+  // methodology-task agent) is the actual source of methodology-appropriate
+  // suggestions now.
   const tasks = form.tasks || [
-    EXAMPLE_TASK,
+    { name: '', instruction: '', whatToTest: '' },
     { name: '', instruction: '', whatToTest: '' },
     { name: '', instruction: '', whatToTest: '' },
   ];
@@ -255,8 +443,13 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
     secondaryRQs:         form.secondaryRQs,
     selectedPersonaCodes: form.personas || [],
     fidelity:             form.fidelity,
+    methodology:          form.methodology,
     scenario:             form.scenario,
     tasks:                form.tasks || [],
+    variantBProvided:     isAbTesting && (
+      (form.variantB?.testMaterials?.urls || []).length > 0 ||
+      (form.variantB?.testMaterials?.files || []).length > 0
+    ),
   };
 
   const applyProposal = (proposal) => {
@@ -267,37 +460,56 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
     }));
   };
 
+  // One suggestion call covers the scenario AND the full task list together —
+  // the crafter agent proposes them as one coherent package, so Regenerate
+  // re-asks for the whole package rather than one task in isolation (a task
+  // regenerated alone could drift out of sync with the scenario and the
+  // other tasks). Populate stays granular: each box below copies only its
+  // own piece of whatever the shared suggestion is currently showing.
+  const taskSuggestion = useAiSuggestion(
+    'methodology-task',
+    context,
+    isAbTesting
+      ? "Suggest a scenario, a hypothesis, and a task list for comparing this study's two variants, for me to review."
+      : 'Suggest a scenario and a task list for this study, for me to review.'
+  );
+  const suggestedTasks = Array.isArray(taskSuggestion.proposal?.tasks) ? taskSuggestion.proposal.tasks : [];
+
+  const populateTask = (i) => {
+    const s = suggestedTasks[i];
+    if (!s) return;
+    const next = tasks.map((t, idx) => idx === i ? {
+      ...t,
+      name:             s.name ?? t.name,
+      instruction:      s.instruction ?? t.instruction,
+      whatToTest:       s.whatToTest ?? t.whatToTest,
+      topTaskCategory:  s.topTaskCategory ?? t.topTaskCategory,
+      priority:         s.priority ?? t.priority,
+      noClickConstraint: s.noClickConstraint ?? t.noClickConstraint,
+    } : t);
+    setForm(f => ({ ...f, tasks: next }));
+  };
+
   return (
     <div style={chatLayout}>
       <div>
-        {/* Research Methodology — single select */}
-        <FieldGroup label="Research methodology">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '1.1rem' }}>
-            {methodologies.map(m => (
-              <div
-                key={m.id}
-                onClick={() => setForm(f => ({ ...f, methodology: m.id }))}
-                style={{
-                  padding: '0.875rem 1rem',
-                  border: form.methodology === m.id ? '2px solid var(--blue)' : '1px solid var(--border)',
-                  borderRadius: 'var(--radius-md)',
-                  background: form.methodology === m.id ? 'var(--blue-lt)' : '#fff',
-                  cursor: 'pointer', transition: 'all .15s', userSelect: 'none',
-                }}
-              >
-                <div style={{ fontSize: '13px', fontWeight: 500, color: form.methodology === m.id ? 'var(--blue)' : 'var(--ink)', marginBottom: '0.2rem' }}>{m.id}</div>
-                <div style={{ fontSize: '11px', color: 'var(--mute)', lineHeight: 1.4 }}>{m.desc}</div>
-              </div>
-            ))}
-          </div>
-        </FieldGroup>
-
-        <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
-
         {/* Scenario */}
+        <AiSuggestBox
+          label="Suggested from your research question"
+          loading={taskSuggestion.loading}
+          error={taskSuggestion.error}
+          onRegenerate={taskSuggestion.regenerate}
+          onPopulate={() => setForm(f => ({ ...f, scenario: taskSuggestion.proposal.scenario }))}
+          populateDisabled={!taskSuggestion.proposal?.scenario}
+        >
+          <div style={{ fontSize: '12px', color: 'var(--body-mid)', lineHeight: 1.6 }}>
+            {taskSuggestion.proposal?.scenario || 'No scenario needed for this research question — see the task suggestions below instead.'}
+          </div>
+        </AiSuggestBox>
+
         <FieldGroup label="Scenario" hint="Set the situation the persona is in before they attempt the tasks below — what brought them here, what they already know, what they're trying to decide.">
           <TextInput rows={3}
-            placeholder="e.g. You are a homeowner whose current broadband contract is ending soon. You've landed on this provider's website for the first time to see what they offer."
+            placeholder="Write your own, or click Populate from AI above to use the suggestion."
             value={form.scenario || ''}
             onChange={e => setForm(f => ({ ...f, scenario: e.target.value }))} />
         </FieldGroup>
@@ -311,16 +523,56 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
           </div>
 
           {tasks.map((task, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1.6fr 1.2fr', gap: '8px', marginBottom: '8px', alignItems: 'start' }}>
+            <div key={i} style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '0.85rem 0.9rem 0.5rem', marginBottom: '0.9rem', background: '#fff' }}>
+              <AiSuggestBox
+                label={`Suggested from methodology — ${form.methodology}`}
+                loading={taskSuggestion.loading}
+                error={taskSuggestion.error}
+                onRegenerate={taskSuggestion.regenerate}
+                onPopulate={() => populateTask(i)}
+                populateDisabled={!suggestedTasks[i]}
+              >
+                {suggestedTasks[i] ? (
+                  <>
+                    <AiSuggestField label="Name" value={suggestedTasks[i].name} />
+                    <AiSuggestField label="Instruction" value={suggestedTasks[i].instruction} />
+                    <AiSuggestField label="Testing" value={suggestedTasks[i].whatToTest} />
+                  </>
+                ) : (
+                  <div style={{ fontSize: '12px', color: 'var(--mute)', fontStyle: 'italic' }}>No suggestion for this task yet — try Regenerate for a longer list.</div>
+                )}
+              </AiSuggestBox>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1.6fr 1.2fr', gap: '8px', alignItems: 'start' }}>
               <div style={{
                 fontSize: '12px', fontWeight: 600, color: 'var(--blue)',
                 fontFamily: 'monospace', paddingTop: '0.65rem', textAlign: 'center',
-              }}>T{i + 1}</div>
-              <TextInput
-                placeholder="e.g. Home/Impression"
-                value={task.name}
-                onChange={e => updateTask(i, 'name', e.target.value)}
-              />
+              }}>
+                T{i + 1}
+                <select
+                  value={task.priority || 'P1'}
+                  onChange={e => updateTask(i, 'priority', e.target.value)}
+                  title="Priority"
+                  style={{ display: 'block', width: '100%', marginTop: '6px', fontSize: '9px', fontFamily: 'var(--sans)', fontWeight: 500, color: 'var(--mute)', border: '1px solid var(--border)', borderRadius: '3px', padding: '2px 0' }}
+                >
+                  {TASK_PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <TextInput
+                  placeholder="e.g. Home/Impression"
+                  value={task.name}
+                  onChange={e => updateTask(i, 'name', e.target.value)}
+                />
+                <select
+                  value={task.topTaskCategory || ''}
+                  onChange={e => updateTask(i, 'topTaskCategory', e.target.value)}
+                  style={{ width: '100%', marginTop: '4px', fontSize: '10px', fontFamily: 'var(--sans)', color: 'var(--mute)', border: '1px solid var(--border)', borderRadius: '3px', padding: '3px' }}
+                >
+                  <option value="">Category…</option>
+                  {TOP_TASK_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
               <div>
                 <TextInput rows={6}
                   placeholder="What should the synthetic user be asked to do on this screen?"
@@ -342,6 +594,7 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
                 value={task.whatToTest || ''}
                 onChange={e => updateTask(i, 'whatToTest', e.target.value)}
               />
+              </div>
             </div>
           ))}
 
@@ -369,8 +622,10 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
         context={context}
         onApply={applyProposal}
         title="Methodology and Task Crafter"
-        intro="Methodology is locked to Usability Testing for now — I can help craft the scenario and task list, and task instructions, for it."
-        placeholder="e.g. We want two tasks: homepage, then TV pack page…"
+        intro={isAbTesting
+          ? "You've selected A/B Testing — I can help craft the scenario, a hypothesis, and the task list for comparing your two variants."
+          : "I can help craft the scenario and task list, and task instructions, for your selected methodology."}
+        placeholder={isAbTesting ? "e.g. We're comparing the old and new pricing page headline…" : "e.g. We want two tasks: homepage, then TV pack page…"}
       />
     </div>
   );
@@ -481,6 +736,8 @@ function StepReview({ form, setForm }) {
   const tasks     = (form.tasks || []).filter(t => t.name || t.instruction);
   const personas  = (form.personas || []).map(code => PERSONAS.find(p => p.code === code)?.name || code);
   const materials = form.testMaterials || { files: [], urls: [] };
+  const isAbTesting     = form.methodology === 'A/B Testing';
+  const variantBMaterials = form.variantB?.testMaterials || { files: [], urls: [] };
 
   if (editMode) {
     return (
@@ -494,6 +751,9 @@ function StepReview({ form, setForm }) {
             fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
           }}
         >Save</button>
+        <div style={{ fontSize: '11px', color: 'var(--mute)', marginBottom: '1.25rem' }}>
+          Editing here covers Product, Study Context, Goals, Personas, and Tasks. Methodology isn't editable inline — use <b>Change methodology</b> in the bar above if that needs to change.
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <StepProduct form={form} setForm={setForm} />
           <StepContext form={form} setForm={setForm} />
@@ -520,9 +780,13 @@ function StepReview({ form, setForm }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div>
           <Section title="Product & context">
-            <Field label="Product" value={form.product} />
+            <Field label="Product" value={form.product === 'OTHER' ? 'Something else' : form.product} />
+            {form.product === 'OTHER' && <Field label="Product description" value={form.productOther} />}
             <Field label="Design phase" value={form.designPhase} />
-            <Field label="Fidelity" value={form.fidelity} />
+            {!isAbTesting && <Field label="Fidelity" value={form.fidelity} />}
+            {isAbTesting && (
+              <Field label="What's being compared" value={form.comparisonType === 'Other' ? form.comparisonOther : form.comparisonType} />
+            )}
           </Section>
 
           <Section title="Research goals">
@@ -548,6 +812,28 @@ function StepReview({ form, setForm }) {
               </>
             )}
           </Section>
+
+          {isAbTesting && (
+            <Section title="Variant B test materials">
+              {variantBMaterials.files.length === 0 && variantBMaterials.urls.length === 0 ? (
+                <div style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>No files or links added.</div>
+              ) : (
+                <>
+                  {variantBMaterials.files.map((f, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '13px', color: 'var(--body)', marginBottom: '0.4rem' }}>
+                      <span style={{ opacity: .5 }}>📄</span> {f.name}
+                    </div>
+                  ))}
+                  {variantBMaterials.urls.map((u, i) => (
+                    <div key={i} style={{ fontSize: '13px', color: 'var(--blue)', marginBottom: '0.3rem' }}>
+                      🔗 {u.length > 60 ? u.slice(0, 58) + '…' : u}
+                    </div>
+                  ))}
+                </>
+              )}
+              <Field label="Notes" value={form.variantB?.notes} />
+            </Section>
+          )}
 
           <Section title="Guardrails">
             <Field label="What must not be assumed" value={form.forbiddenAssumptions} />
@@ -583,7 +869,11 @@ function StepReview({ form, setForm }) {
               ? <div style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>No tasks defined.</div>
               : tasks.map((t, i) => (
                 <div key={i} style={{ marginBottom: '0.875rem', padding: '0.75rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace', marginBottom: '0.25rem' }}>T{i + 1}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace' }}>T{i + 1}</span>
+                    {t.priority && <span style={{ fontSize: '10px', color: 'var(--mute)' }}>{t.priority}</span>}
+                    {t.topTaskCategory && <span style={{ fontSize: '10px', color: 'var(--mute-soft)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{t.topTaskCategory}</span>}
+                  </div>
                   <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.15rem' }}>{t.name || '—'}</div>
                   <div style={{ fontSize: '12px', color: 'var(--body)', whiteSpace: 'pre-line', marginBottom: t.whatToTest ? '0.4rem' : 0 }}>{t.instruction || '—'}</div>
                   {t.whatToTest && (
@@ -605,7 +895,33 @@ function StepReview({ form, setForm }) {
   );
 }
 
-const stepComponents = [StepProduct, StepContext, StepGoals, StepPersonas, StepTasks, StepReview];
+const stepComponents = [StepMethodology, StepProduct, StepContext, StepGoals, StepPersonas, StepTasks, StepReview];
+
+/* ── Breadcrumb — sits above the wizard on every step except Methodology
+   itself (step 0), where it would be redundant. "Change methodology" is the
+   only way back to that step once past it — StepReview's editMode
+   deliberately excludes methodology, per the same reasoning. ── */
+function Breadcrumb({ methodology, step, onChangeMethodology }) {
+  if (step === 0) return null;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.55rem 1.5rem',
+      background: 'var(--cream)', borderBottom: '1px solid var(--border)',
+      fontSize: '12px', color: 'var(--body-mid)', flexShrink: 0,
+    }}>
+      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--blue)', flexShrink: 0, display: 'inline-block' }} />
+      <span><b style={{ fontWeight: 600, color: 'var(--ink)' }}>{methodology || 'Usability Testing'}</b> study · Step {step + 1} of {STEPS.length}</span>
+      <button
+        onClick={onChangeMethodology}
+        style={{
+          marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--blue)',
+          fontSize: '12px', fontWeight: 500, padding: 0, textDecoration: 'underline',
+          textUnderlineOffset: '2px', cursor: 'pointer', fontFamily: 'var(--sans)',
+        }}
+      >Change methodology</button>
+    </div>
+  );
+}
 
 /* ══════════════════════════════════════════════════════
    Questionnaire Page
@@ -623,10 +939,36 @@ export default function Questionnaire({ goTo, draft }) {
   const handleSaveEdit = () => alert('Saved — you can come back and continue editing any time.');
   const advanceStep    = () => setStep(s => Math.min(s + 1, total - 1));
 
+  // Lightweight completeness guard — src/lib/intakeGates.js implements a
+  // more thorough readiness check, but it's built for the full nested
+  // intake-schema + agent-approval workflow and was never wired to this
+  // flat wizard `form` object or this API path (createRun/startPlan accept
+  // whatever they're given with no validation of their own). This catches
+  // the practical case — an incomplete intake silently reaching plan
+  // generation — without resurrecting that unrelated state machine.
+  const getIntakeIssues = (f) => {
+    const issues = [];
+    if (!f.methodology) issues.push({ step: 0, message: 'Choose a methodology.' });
+    if (!f.product) issues.push({ step: 1, message: 'Select a product.' });
+    if (f.product === 'OTHER' && !f.productOther?.trim()) issues.push({ step: 1, message: 'Describe the "Something else" product.' });
+    if (!f.primaryRQ?.trim()) issues.push({ step: 3, message: 'Add a primary research question.' });
+    if ((f.personas || []).length === 0) issues.push({ step: 4, message: 'Select at least one persona.' });
+    const realTasks = (f.tasks || []).filter(t => t.name?.trim() && t.instruction?.trim());
+    if (realTasks.length === 0) issues.push({ step: 5, message: 'Define at least one task with a name and an instruction.' });
+    return issues;
+  };
+
   // Moved in from the retired IntakeReview.js's handleConfirm — Step 6's
   // "Review and confirm" now submits directly instead of navigating to a
   // separate review page.
   const handleSubmit = async () => {
+    const issues = getIntakeIssues(form);
+    if (issues.length > 0) {
+      setStep(issues[0].step);
+      alert(`Before generating a plan, please fix:\n\n${issues.map(i => '• ' + i.message).join('\n')}`);
+      return;
+    }
+
     setLoadingStep(0);
     try {
       const runId  = generateRunId(form.feature || form.product || 'study');
@@ -635,7 +977,10 @@ export default function Questionnaire({ goTo, draft }) {
       await api.createRun(runId, intake);
       setLoadingStep(1);
 
-      const filesToUpload = (form.testMaterials?.files || []).filter(f => f.file instanceof File);
+      const filesToUpload = [
+        ...(form.testMaterials?.files || []),
+        ...(form.variantB?.testMaterials?.files || []),
+      ].filter(f => f.file instanceof File);
       if (filesToUpload.length > 0) {
         await api.uploadFiles(runId, filesToUpload.map(f => f.file));
       }
@@ -655,9 +1000,12 @@ export default function Questionnaire({ goTo, draft }) {
   };
 
   return (
-    <div style={{ flex: 1, display: 'flex', maxWidth: '1120px', margin: '0 auto', width: '100%', padding: '1.75rem 1.5rem 0' }}>
-
+    <>
       {isLoading && <PlanLoadingScreen step={loadingStep} />}
+
+      <Breadcrumb methodology={form.methodology} step={step} onChangeMethodology={() => setStep(0)} />
+
+      <div style={{ flex: 1, display: 'flex', maxWidth: '1120px', margin: '0 auto', width: '100%', padding: '1.75rem 1.5rem 0' }}>
 
       <StepNav steps={STEPS} current={step} onJump={setStep} />
 
@@ -731,6 +1079,7 @@ export default function Questionnaire({ goTo, draft }) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

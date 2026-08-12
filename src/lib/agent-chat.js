@@ -20,7 +20,7 @@ const AGENTS = {
   },
   'methodology-task': {
     file: 'methodology-and-task-crafter.md',
-    shape: '{"scenario": "string or null", "tasks": [{"name": "string", "instruction": "string", "whatToTest": "string", "noClickConstraint": true|false}]}',
+    shape: '{"scenario": "string or null", "tasks": [{"name": "string", "instruction": "string", "whatToTest": "string", "noClickConstraint": true|false, "topTaskCategory": "Navigation|Discovery|Account|Payment|Support", "priority": "P0|P1|P2"}]}',
   },
 };
 

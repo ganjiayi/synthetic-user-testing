@@ -59,6 +59,8 @@ async function handler(req, res) {
           success_condition: methodologyConfig.task_derivation.success_condition,
           abandon_condition: methodologyConfig.task_derivation.abandon_condition,
           session_config:    methodologyConfig.session_config,
+          planner_guidance:      methodologyConfig.planner_guidance,
+          data_integrity_rules:  methodologyConfig.data_integrity_rules,
         }, null, 2),
         '```',
       ].join('\n');

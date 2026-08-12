@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
 
   const [runRes, sessionsRes] = await Promise.all([
     supabase.from('runs')
-      .select('id, created_at, updated_at, status, stage, error, intake, plan, materials')
+      .select('id, created_at, updated_at, status, stage, error, intake, plan, materials, qa_review')
       .eq('id', id).single(),
     supabase.from('sessions')
       .select('persona_id, persona_name, data')

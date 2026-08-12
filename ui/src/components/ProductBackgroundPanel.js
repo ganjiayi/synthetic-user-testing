@@ -13,7 +13,7 @@ export default function ProductBackgroundPanel({ productId }) {
   const [loading,  setLoading]  = useState(false);
 
   useEffect(() => {
-    if (!productId || productId === 'NEW') { setData(null); setNotFound(true); return; }
+    if (!productId || productId === 'OTHER') { setData(null); setNotFound(true); return; }
     let cancelled = false;
     setLoading(true); setNotFound(false); setData(null);
     api.getProduct(productId)

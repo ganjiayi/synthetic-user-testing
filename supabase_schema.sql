@@ -10,8 +10,15 @@ create table if not exists runs (
   error        text,
   intake       jsonb,
   plan         jsonb,
-  materials    text[]
+  materials    text[],
+  qa_review    jsonb, -- Step 6.5 QA gate: { decisions: [{persona_id, decision, reason}], confirmed_at }
+  analysis     jsonb  -- Step 8 analysis.json: { pass_a: {...}, pass_b: {...}, generated_at, based_on_session_count }
 );
+
+-- Migrations for existing databases created before these columns existed —
+-- safe to re-run, no-ops if the columns are already there.
+alter table runs add column if not exists qa_review jsonb;
+alter table runs add column if not exists analysis  jsonb;
 
 create table if not exists sessions (
   id           uuid primary key default gen_random_uuid(),

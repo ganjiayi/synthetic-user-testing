@@ -149,6 +149,71 @@ export function Tag({ label, type = 'blue' }) {
   );
 }
 
+/* ── AiSuggestBox — inline "Suggested from AI" preview that drives a
+   Populate action. Regenerate re-queries the agent for an alternate
+   suggestion; Populate always copies whatever the box is CURRENTLY showing
+   — the two read from the same source by construction, never independent
+   canned values. ── */
+export function AiSuggestBox({ label = 'Suggested from AI', loading, error, onRegenerate, onPopulate, populateDisabled, children }) {
+  return (
+    <div style={{
+      marginBottom: '1.1rem', padding: '0.85rem 1rem',
+      background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+        <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ fontSize: '9px' }}>✦</span>{label}
+        </div>
+        <button
+          onClick={onRegenerate}
+          disabled={loading}
+          style={{
+            padding: '0.25rem 0.65rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-full)',
+            background: 'transparent', color: loading ? 'var(--mute-soft)' : 'var(--mute)',
+            fontFamily: 'var(--sans)', fontSize: '10.5px', fontWeight: 500,
+            cursor: loading ? 'default' : 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
+          }}
+        >↻ Regenerate</button>
+      </div>
+
+      {loading && <div style={{ fontSize: '12px', color: 'var(--mute)', fontStyle: 'italic' }}>Thinking…</div>}
+      {!loading && error && (
+        <div style={{ fontSize: '11.5px', color: 'var(--red)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {error}
+          <button onClick={onRegenerate} style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '11.5px', fontWeight: 500 }}>Retry</button>
+        </div>
+      )}
+      {!loading && !error && children}
+
+      {!loading && !error && onPopulate && (
+        <button
+          onClick={onPopulate}
+          disabled={populateDisabled}
+          style={{
+            marginTop: '0.75rem',
+            display: 'inline-flex', alignItems: 'center', gap: '5px',
+            padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-full)',
+            border: '1px solid var(--blue-md)', background: 'var(--blue-lt)', color: 'var(--blue)',
+            fontFamily: 'var(--sans)', fontSize: '11.5px', fontWeight: 600,
+            cursor: populateDisabled ? 'default' : 'pointer', opacity: populateDisabled ? 0.5 : 1,
+          }}
+        >✦ Populate from AI</button>
+      )}
+    </div>
+  );
+}
+
+/* ── AiSuggestField — one labeled line inside an AiSuggestBox ── */
+export function AiSuggestField({ label, value }) {
+  if (!value) return null;
+  return (
+    <div style={{ marginBottom: '0.5rem' }}>
+      <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--body-mid)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: '0.2rem' }}>{label}</div>
+      <div style={{ fontSize: '12px', color: 'var(--body-mid)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>{value}</div>
+    </div>
+  );
+}
+
 /* ── UploadZone ── */
 export function UploadZone({ value, onChange }) {
   const { files = [], urls = [] } = value || {};

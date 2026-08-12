@@ -4,7 +4,7 @@ const fs   = require('fs');
 const { AGENTS, loadAgentPrompt } = require('../src/lib/agent-chat');
 const { splitReplyAndProposal }   = require('../src/lib/utils');
 const { validateProduct }         = require('../src/lib/validate-product');
-const { getMethodologyConfig }    = require('../src/lib/methodology-config');
+const { getMethodologyConfig, listMethodologies } = require('../src/lib/methodology-config');
 const provider = require('../src/providers/claude');
 
 /**
@@ -46,22 +46,45 @@ function buildReferenceBlock(agentKey, context) {
     const codeMap  = PERSONA_CODES.map(p => `${p.code} → ${p.slug} (${p.name})`).join('\n');
     blocks.push(['', "Persona code convention used by the UI (use these exact codes in your proposal, not slugs or names):", codeMap].join('\n'));
     blocks.push(['', 'Full persona library:', '', '```json', JSON.stringify(library.personas, null, 2), '```'].join('\n'));
+
+    if (context?.methodology) {
+      blocks.push([
+        '',
+        `This study's methodology is "${context.methodology}" — weight trait relevance per your methodology-aware principle (friction/confusion sensitivity for Usability Testing; comparative-preference-articulation for A/B Testing) when writing each persona's context blurb.`,
+      ].join('\n'));
+    }
   }
 
   if (agentKey === 'methodology-task') {
-    const methodologyConfig = getMethodologyConfig('Usability Testing');
+    // The researcher picks methodology via the UI card selector before this
+    // agent runs — it never chooses methodology itself in this flow. But
+    // which methodology was picked varies (Usability Testing vs A/B Testing),
+    // so it must come from context, not be hardcoded to one value — a study
+    // set to A/B Testing was getting Usability Testing's config block here,
+    // silently steering the copilot toward the wrong methodology entirely.
+    const methodology = context?.methodology || 'Usability Testing';
+    const methodologyConfig = getMethodologyConfig(methodology);
     blocks.push([
       '',
-      'This study\'s methodology is already fixed to "Usability Testing" — do not propose a different methodology. Focus on scenario and tasks only. Methodology Configuration block:',
+      `This study's methodology is already fixed to "${methodology}" (chosen by the researcher before this conversation) — do not propose a different methodology. Focus on scenario and tasks only. Methodology Configuration block:`,
       '',
       '```json',
       JSON.stringify({
-        eval_metrics_keys: methodologyConfig.eval_schema.fields.map(f => f.key),
-        success_condition: methodologyConfig.task_derivation.success_condition,
-        abandon_condition: methodologyConfig.task_derivation.abandon_condition,
+        eval_metrics_keys:    methodologyConfig.eval_schema.fields.map(f => f.key),
+        success_condition:    methodologyConfig.task_derivation.success_condition,
+        abandon_condition:    methodologyConfig.task_derivation.abandon_condition,
+        planner_guidance:     methodologyConfig.planner_guidance,
+        data_integrity_rules: methodologyConfig.data_integrity_rules,
       }, null, 2),
       '```',
     ].join('\n'));
+
+    if (methodology === 'A/B Testing' && !context?.variantBProvided) {
+      blocks.push([
+        '',
+        'Note: Variant B test materials have not been uploaded yet in this session. You can still help draft the scenario, a hypothesis, and the task list — each task applies to both variants once Variant B materials are added — but mention that Variant B materials still need to be uploaded before the study can run.',
+      ].join('\n'));
+    }
   }
 
   return blocks.join('\n');
@@ -109,6 +132,11 @@ function handleProduct(req, res) {
   }
 }
 
+function handleMethodologies(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  return res.json({ methodologies: listMethodologies() });
+}
+
 function handlePersonas(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -124,9 +152,10 @@ function handlePersonas(req, res) {
 module.exports = async (req, res) => {
   const { action } = req.query;
 
-  if (action === 'chat')     return handleChat(req, res);
-  if (action === 'product')  return handleProduct(req, res);
-  if (action === 'personas') return handlePersonas(req, res);
+  if (action === 'chat')          return handleChat(req, res);
+  if (action === 'product')       return handleProduct(req, res);
+  if (action === 'personas')      return handlePersonas(req, res);
+  if (action === 'methodologies') return handleMethodologies(req, res);
 
   return res.status(404).json({ error: `Unknown action: ${action}` });
 };
