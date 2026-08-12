@@ -10,12 +10,12 @@ function providerForName(name) {
 }
 
 // Raw exports (target pipeline spec's Deliverable 1: xlsx/docx) and the
-// interpretive Word report (Deliverable 2: analyzed_report_docx) — separate
-// from the existing browser-side CSV/PPTX in ui/src/pages/RunDetail.js,
-// which stay unfiltered for now (see that file's QaGateBanner). xlsx/docx
-// read the Step 6.5 QA gate's decisions and exclude flagged-and-dropped
-// sessions from the main output; analyzed_report_docx additionally requires
-// analysis.json (Step 8) to already exist.
+// interpretive Word report (Deliverable 2: analyzed_report_docx) — the
+// browser-side CSV/PPTX in ui/src/pages/RunDetail.js now filter by the same
+// QA decisions too (see that file's buildCsv/buildPresentation), so all
+// deliverables agree. xlsx/docx read the Step 6.5 QA gate's decisions and
+// exclude flagged-and-dropped sessions from the main output; analyzed_report_docx
+// additionally requires analysis.json (Step 8) to already exist.
 module.exports = async (req, res) => {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 

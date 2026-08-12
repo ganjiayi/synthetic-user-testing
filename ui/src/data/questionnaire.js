@@ -7,14 +7,16 @@ export const PERSONAS = [
 ];
 
 export const PRODUCTS = [
-  { id: 'ACM', name: 'Astro.com.my', desc: 'Marketing and acquisition website', icon: '🌐', badge: '2 data gaps', badgeType: 'gap' },
-  { id: 'MAA', name: 'My Astro App', desc: 'Account management and self-service', icon: '📱', badge: 'Template pending', badgeType: 'pending' },
-  { id: 'NEW', name: 'Add new product', desc: 'Fill in the product template first', icon: '+', badge: null, badgeType: 'add' },
+  { id: 'ACM',   name: 'Astro.com.my',  desc: 'Marketing and acquisition website', icon: '🌐', badge: '2 data gaps', badgeType: 'gap' },
+  { id: 'MAA',   name: 'My Astro App',  desc: 'Account management and self-service', icon: '📱', badge: 'Template pending', badgeType: 'pending' },
+  { id: 'OTHER', name: 'Something else', desc: 'Any other product or prototype — describe it below', icon: '➕', badge: null, badgeType: 'add' },
 ];
 
+export const COMPARISON_TYPES = ['Copy / messaging', 'Layout', 'Call-to-action', 'Other'];
+
 export const STEPS = [
-  { section: 'Product', title: 'Select a product', sub: 'Product context, pain points, and agent instructions will auto-populate from the database.' },
   { section: 'Methodology', title: 'Choose your research methodology', sub: 'This determines what test materials are needed next and how synthetic sessions will run.' },
+  { section: 'Product', title: 'Select a product', sub: 'Product context, pain points, and agent instructions will auto-populate from the database.' },
   { section: 'Study context', title: 'Product and design phase', sub: 'The agent uses these to calibrate friction sensitivity and research focus for your sessions.' },
   { section: 'Research goals', title: 'What must this study answer?', sub: 'Define the feature under test, your research questions, and the decision this study needs to support.' },
   { section: 'Personas', title: 'Select persona segments', sub: 'Choose which synthetic agents run sessions. Select at least two — one primary, one secondary.' },

@@ -17,6 +17,23 @@ export function getMethodologyEvalFields(plan) {
   return plan?.methodology_config?.eval_schema?.fields || LEGACY_EVAL_FIELDS;
 }
 
+// Browser twin of src/lib/exports.js's partitionSessionsByQaDecision (same
+// split as this file's other duplicated helpers — api/ and src/lib/ are
+// CommonJS, ui/ is a separately-built ES module app). Sessions with no
+// recorded decision default to included, same as the server-side version —
+// keep both in sync by hand if the QA decision shape changes.
+export function partitionSessionsByQaDecision(sessions, qaReview) {
+  const decisionByPersona = Object.fromEntries((qaReview?.decisions || []).map(d => [d.persona_id, d]));
+  const included = [];
+  const excluded = [];
+  for (const session of sessions) {
+    const d = decisionByPersona[session.persona_id];
+    if (d?.decision === 'exclude') excluded.push(session);
+    else included.push(session);
+  }
+  return { included, excluded };
+}
+
 // The single number-typed field a methodology surfaces as its "headline" score
 // (friction_score for task-based methodologies, appeal_rating for reaction/
 // impression-based ones, etc) — falls back to friction_score for legacy plans.

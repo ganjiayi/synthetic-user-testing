@@ -163,7 +163,15 @@ export function generateRunId(studyName) {
 export function buildIntake(form, runId) {
   const now         = new Date();
   const productMeta = PRODUCTS.find(p => p.id === form.product) || {};
-  const productName = productMeta.name || form.product || '';
+  const isOtherProduct = form.product === 'OTHER';
+  const productName  = isOtherProduct
+    ? (form.productOther || '').split('\n')[0].slice(0, 80) || 'Other product'
+    : productMeta.name || form.product || '';
+  const productDesc  = isOtherProduct ? (form.productOther || '') : productMeta.desc || '';
+  const isAbTesting  = form.methodology === 'A/B Testing';
+  const comparisonType = isAbTesting
+    ? (form.comparisonType === 'Other' ? (form.comparisonOther || '') : (form.comparisonType || ''))
+    : '';
 
   return {
     meta: {
@@ -208,14 +216,15 @@ export function buildIntake(form, runId) {
     q5_product_context: {
       product_name:      productName,
       product_id:        form.product || '',
-      product_desc:      productMeta.desc || '',
+      product_desc:      productDesc,
       feature_under_test:form.feature || '',
       why_this_why_now:  form.whyNow || '',
     },
     q6_methodology: {
-      methodology:   form.methodology || '',
-      scenario:      form.scenario || '',
-      tasks:         form.tasks || [],
+      methodology:     form.methodology || '',
+      scenario:        form.scenario || '',
+      comparison_type: comparisonType,
+      tasks:           form.tasks || [],
       variantB: {
         urls:  form.variantB?.testMaterials?.urls || [],
         files: (form.variantB?.testMaterials?.files || []).map(f => f.name).filter(Boolean),

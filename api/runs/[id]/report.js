@@ -3,6 +3,7 @@ const { getClient } = require('../../../src/lib/supabase');
 const { generateSessionDeliverables } = require('../../../src/lib/report');
 const { computePassA, generatePassB } = require('../../../src/lib/analysis');
 const { partitionSessionsByQaDecision } = require('../../../src/lib/exports');
+const { isQaConfirmed } = require('../../../src/lib/qa-gate');
 
 // Consolidated onto this endpoint (rather than a new api/runs/[id]/analysis.js
 // file) to stay under Vercel Hobby's 12-function cap — same "action" query
@@ -23,7 +24,7 @@ async function fetchRunAndSessions(id, supabase, runSelect) {
 async function handleDeliverables(req, res, id, supabase) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { runRes, sessionsRes } = await fetchRunAndSessions(id, supabase, 'plan, intake');
+  const { runRes, sessionsRes } = await fetchRunAndSessions(id, supabase, 'plan, intake, qa_review');
   if (runRes.error || !runRes.data) return res.status(404).json({ error: 'Run not found' });
   if (!sessionsRes.data?.length) {
     return res.status(404).json({ error: 'No sessions found. Run evaluation first.' });
@@ -32,8 +33,13 @@ async function handleDeliverables(req, res, id, supabase) {
   const plan          = runRes.data.plan || {};
   const providerNames = runRes.data.intake?.q8_output?.model_providers || ['claude'];
 
+  // Same QA-decision filtering as the raw exports and analysis — a session
+  // the researcher excluded shouldn't get synthesized into deliverables
+  // either, even though this endpoint only feeds Pass B today.
+  const { included } = partitionSessionsByQaDecision(sessionsRes.data, runRes.data.qa_review);
+
   const deliverables = [];
-  for (const row of sessionsRes.data) {
+  for (const row of included) {
     const session = row.data;
 
     // Sessions run since key_moments/findings persistence landed already
@@ -80,6 +86,18 @@ async function handleAnalysisPost(req, res, id, supabase) {
   if (runRes.error || !runRes.data) return res.status(404).json({ error: 'Run not found' });
   if (!sessionsRes.data?.length) {
     return res.status(404).json({ error: 'No sessions found. Run evaluation first.' });
+  }
+
+  // Analysis is the one downstream consumer that actually enforces the QA
+  // gate rather than treating it as advisory — a researcher must explicitly
+  // confirm the QA review (api/runs/[id]/status.js's qa_review POST) before
+  // Pass A/B can run at all. Raw exports (export.js) and the legacy
+  // CSV/PPTX toolbar deliberately stay advisory-only (they filter excluded
+  // sessions but don't require confirmation first), since blocking those
+  // would break existing behaviour researchers already rely on; analysis is
+  // new functionality with no such backward-compatibility constraint.
+  if (!isQaConfirmed(runRes.data)) {
+    return res.status(409).json({ error: 'QA review must be confirmed before analysis can be generated — go to the QA review tab and confirm your include/exclude decisions first.' });
   }
 
   const plan          = runRes.data.plan || {};

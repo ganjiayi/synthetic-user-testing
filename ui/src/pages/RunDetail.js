@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import PptxGenJS from 'pptxgenjs';
 import { api } from '../api';
 import { Tag } from '../components/UI';
-import { getMethodologyEvalFields, headlineNumericField, humanizeFieldKey, frictionColor, buildMetricCards, computeMetrics } from '../lib/metrics';
+import { getMethodologyEvalFields, headlineNumericField, humanizeFieldKey, frictionColor, buildMetricCards, computeMetrics, partitionSessionsByQaDecision } from '../lib/metrics';
 
 /* ── Download utilities ──────────────────────────────────────────────────── */
 function triggerDownload(content, filename, mimeType) {
@@ -21,7 +21,12 @@ function escapeCsv(val) {
 
 function buildCsv(run) {
   const plan       = run.plan || {};
-  const sessions    = run.sessions || [];
+  // QA-excluded sessions are left out of this export the same way the
+  // xlsx/docx raw exports already are (src/lib/exports.js) — this legacy
+  // CSV used to bypass QA decisions entirely, which meant a session the
+  // researcher explicitly excluded could still end up in a "reviewed" run's
+  // export with no indication anything was filtered.
+  const sessions    = partitionSessionsByQaDecision(run.sessions || [], run.qa_review).included;
   const tasks       = plan.test_scenarios?.scenarios || [];
   const taskMap       = Object.fromEntries(tasks.map(t => [t.task_id, t.task_name]));
   const taskCategoryMap = Object.fromEntries(tasks.map(t => [t.task_id, t.top_task_category || '']));
@@ -66,7 +71,8 @@ function buildCsv(run) {
 async function buildPresentation(run) {
   const pptx    = new PptxGenJS();
   const plan    = run.plan || {};
-  const sessions = run.sessions || [];
+  // Same QA-decision filtering as buildCsv above — see its comment.
+  const sessions = partitionSessionsByQaDecision(run.sessions || [], run.qa_review).included;
   const tasks   = plan.test_scenarios?.scenarios || [];
   const product = run.intake?.q5_product_context?.product_name || run.intake?.q1_product || run.id;
   const feature = run.intake?.q5_product_context?.feature_under_test || '';
@@ -425,9 +431,12 @@ function statusTag(s) {
 
 function frictionBg(n) { return n >= 7 ? 'var(--red-lt)' : n >= 4 ? 'var(--amber-lt)' : 'var(--teal-lt)'; }
 
-// Advisory only, for now — see the QA Review tab for the actual gate logic.
-// Exports/report below still read every session unfiltered until the
-// qa_review-aware exports and analysis land, so this is a nudge, not a block.
+// Raw exports and the legacy CSV/PPTX toolbar already filter out sessions
+// with an explicit exclude decision even before confirmation (see
+// partitionSessionsByQaDecision) — but a session with NO recorded decision
+// yet still defaults to included, and Pass A/B analysis outright refuses to
+// run until confirmed_at is set (api/runs/[id]/report.js's isQaConfirmed
+// check). This banner is the researcher-facing nudge for that gap.
 function QaGateBanner({ run, onGoToQaReview }) {
   if (run.qa_review?.confirmed_at) return null;
   return (
@@ -1388,17 +1397,23 @@ function AnalysisTab({ run }) {
   if (loading) return <div style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--mute)', fontSize: '13px' }}>Loading…</div>;
 
   if (notFound || !analysis) {
+    const qaConfirmed = !!run.qa_review?.confirmed_at;
     return (
       <div>
         <SectionHead>Cross-session analysis</SectionHead>
         <div style={{ fontSize: '12px', color: 'var(--mute)', marginBottom: '1rem', lineHeight: 1.6 }}>
           Runs the deterministic quant rollup (Pass A) and one LLM theme-clustering call over already-synthesized session findings (Pass B), using whatever the QA Review tab has confirmed as included. Descriptive only — no recommendations here (see the Research report tab for those).
         </div>
+        {!qaConfirmed && (
+          <div style={{ fontSize: '12px', color: 'var(--amber)', padding: '0.75rem', background: 'var(--amber-lt)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>
+            QA review must be confirmed before analysis can run — go to the QA review tab and confirm your include/exclude decisions first.
+          </div>
+        )}
         {error && <div style={{ fontSize: '12px', color: 'var(--red)', padding: '0.75rem', background: 'var(--red-lt)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>{error}</div>}
         <button
           onClick={generate}
-          disabled={generating}
-          style={{ padding: '0.5rem 1.1rem', border: '1px solid var(--blue-md)', borderRadius: 'var(--radius-sm)', background: generating ? 'var(--blue-lt)' : 'var(--blue)', color: generating ? 'var(--blue)' : '#fff', fontFamily: 'var(--sans)', fontSize: '12px', fontWeight: 500, cursor: generating ? 'default' : 'pointer' }}
+          disabled={generating || !qaConfirmed}
+          style={{ padding: '0.5rem 1.1rem', border: '1px solid var(--blue-md)', borderRadius: 'var(--radius-sm)', background: generating || !qaConfirmed ? 'var(--blue-lt)' : 'var(--blue)', color: generating || !qaConfirmed ? 'var(--blue)' : '#fff', fontFamily: 'var(--sans)', fontSize: '12px', fontWeight: 500, cursor: generating || !qaConfirmed ? 'default' : 'pointer', opacity: !qaConfirmed ? 0.6 : 1 }}
         >{generating ? 'Generating…' : 'Generate analysis'}</button>
       </div>
     );
@@ -1652,7 +1667,7 @@ export default function RunDetail({ goTo, runId }) {
           {run && run.sessions?.length > 0 && (
             <>
               {!run.qa_review?.confirmed_at && (
-                <span title="QA review not yet confirmed — these exports include every session, flagged or not." style={{ fontSize: '13px', color: 'var(--amber)', cursor: 'help' }}>⚠</span>
+                <span title="QA review not yet confirmed — sessions with no recorded include/exclude decision are still included by default." style={{ fontSize: '13px', color: 'var(--amber)', cursor: 'help' }}>⚠</span>
               )}
               <button
                 onClick={() => triggerDownload(buildCsv(run), `${run.id}_raw_data.csv`, 'text/csv')}
