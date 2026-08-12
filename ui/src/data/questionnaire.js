@@ -14,10 +14,11 @@ export const PRODUCTS = [
 
 export const STEPS = [
   { section: 'Product', title: 'Select a product', sub: 'Product context, pain points, and agent instructions will auto-populate from the database.' },
+  { section: 'Methodology', title: 'Choose your research methodology', sub: 'This determines what test materials are needed next and how synthetic sessions will run.' },
   { section: 'Study context', title: 'Product and design phase', sub: 'The agent uses these to calibrate friction sensitivity and research focus for your sessions.' },
   { section: 'Research goals', title: 'What must this study answer?', sub: 'Define the feature under test, your research questions, and the decision this study needs to support.' },
   { section: 'Personas', title: 'Select persona segments', sub: 'Choose which synthetic agents run sessions. Select at least two — one primary, one secondary.' },
-  { section: 'UX Research Method', title: 'Research methodology and tasks', sub: 'Select your research methodology and define what each synthetic user will attempt.' },
+  { section: 'Tasks', title: 'Define tasks for synthetic users', sub: 'Write what each synthetic user will attempt, given the methodology you selected.' },
   { section: 'Output', title: 'Output and handoff', sub: 'This workflow runs entirely on Claude — no configuration needed here.' },
 ];
 

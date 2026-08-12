@@ -36,9 +36,22 @@ export function buildMetricCards(evalFields) {
   const cards = [
     { label: 'Task completion rate', key: 'completion_rate', format: 'pct', desc: 'Personas completing all tasks' },
   ];
-  for (const field of evalFields.slice(0, 3)) {
+
+  // Guarantee a numeric headline field and a categorical field (e.g.
+  // preferred_variant on A/B Testing) each get a card slot, since those are
+  // typically a methodology's actual primary signal — rather than always
+  // taking eval_schema's first 3 fields regardless of position. Falls back
+  // to declaration order for any remaining slots.
+  const numberField      = evalFields.find(f => f.type.startsWith('number'));
+  const categoricalField = evalFields.find(f => f.type.startsWith('categorical'));
+  const prioritized       = [numberField, categoricalField].filter(Boolean);
+  const remaining         = evalFields.filter(f => !prioritized.includes(f));
+
+  for (const field of [...prioritized, ...remaining].slice(0, 3)) {
     if (field.type.startsWith('number')) {
       cards.push({ label: `Avg ${humanizeFieldKey(field.key)}`, key: `avg__${field.key}`, format: 'score', desc: field.description || '' });
+    } else if (field.type.startsWith('categorical')) {
+      cards.push({ label: humanizeFieldKey(field.key), key: `breakdown__${field.key}`, format: 'text', desc: field.description || '' });
     } else {
       cards.push({ label: `${humanizeFieldKey(field.key)} signals`, key: `count__${field.key}`, format: 'count', desc: field.description || 'Turns with this signal present' });
     }
@@ -62,6 +75,21 @@ export function computeMetrics(sessions, evalFields) {
       metrics[`avg__${field.key}`] = numeric.length ? numeric.reduce((a, b) => a + b, 0) / numeric.length : null;
     } else {
       metrics[`count__${field.key}`] = values.filter(v => v && v !== 'null' && v !== false).length;
+      if (field.type.startsWith('categorical')) {
+        // e.g. preferred_variant → "A: 3 · B: 1 · No Preference: 1" — a real
+        // distribution across whatever values actually occurred, not just a
+        // truthy count, since a categorical field's whole point is which
+        // value was picked.
+        const counts = {};
+        for (const v of values) {
+          if (!v || v === 'null') continue;
+          counts[v] = (counts[v] || 0) + 1;
+        }
+        const entries = Object.entries(counts);
+        metrics[`breakdown__${field.key}`] = entries.length
+          ? entries.map(([k, n]) => `${humanizeFieldKey(k)}: ${n}`).join(' · ')
+          : null;
+      }
     }
   }
 

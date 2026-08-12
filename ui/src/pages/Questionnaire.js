@@ -13,6 +13,41 @@ const grid3     = { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 
 const pillRow   = { display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '1.1rem' };
 const chatLayout = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '1.5rem', alignItems: 'start' };
 
+// Hardcoded fallback so the picker/gating still work if /api/methodologies is
+// unreachable — kept in sync manually with src/lib/methodology-config.js's
+// ui_description/runner_type fields, which are the source of truth when the
+// fetch succeeds.
+const FALLBACK_METHODOLOGIES = [
+  { id: 'Usability Testing', desc: 'Task-based — where do users get stuck or abandon?', runner_type: 'task_based' },
+  { id: 'A/B Testing',       desc: 'Comparative — same task on two variants, then a stated preference.', runner_type: 'comparative_task_based' },
+];
+
+// Shared by every step that needs the methodology list (picker, materials
+// gating, review edit-mode) so it's fetched from one place rather than
+// threaded as a prop through components that get mounted independently.
+function useMethodologies() {
+  const [methodologies, setMethodologies] = useState(FALLBACK_METHODOLOGIES);
+  React.useEffect(() => {
+    let cancelled = false;
+    api.getMethodologies()
+      .then(({ methodologies: list }) => {
+        if (!cancelled && Array.isArray(list) && list.length > 0) setMethodologies(list);
+      })
+      .catch(() => {}); // keep the fallback list on failure
+    return () => { cancelled = true; };
+  }, []);
+  return methodologies;
+}
+
+// task_based and comparative_task_based methodologies need an artefact to
+// navigate; other runner_types (reaction/impression-style, if reinstated
+// later) would not — see src/lib/methodology-config.js's navigationRequired().
+function methodologyNeedsMaterials(methodologyId, methodologies) {
+  const cfg = methodologies.find(m => m.id === methodologyId);
+  if (!cfg) return true; // unknown methodology — default to showing materials rather than hiding them
+  return cfg.runner_type === 'task_based' || cfg.runner_type === 'comparative_task_based';
+}
+
 /* ── Shared "Approve and Continue" CTA — used on every step with an AgentChat co-pilot ── */
 function ApproveContinue({ onAdvance, label = 'Approve and Continue →' }) {
   return (
@@ -51,9 +86,44 @@ function StepProduct({ form, setForm }) {
   );
 }
 
+function StepMethodology({ form, setForm }) {
+  const methodologies = useMethodologies();
+
+  // Default to Usability Testing until the researcher picks otherwise.
+  React.useEffect(() => {
+    if (!form.methodology) {
+      setForm(f => ({ ...f, methodology: 'Usability Testing' }));
+    }
+  }, [form.methodology, setForm]);
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+      {methodologies.map(m => (
+        <div
+          key={m.id}
+          onClick={() => setForm(f => ({ ...f, methodology: m.id }))}
+          style={{
+            padding: '1.1rem 1.25rem',
+            border: form.methodology === m.id ? '2px solid var(--blue)' : '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            background: form.methodology === m.id ? 'var(--blue-lt)' : '#fff',
+            cursor: 'pointer', transition: 'all .15s', userSelect: 'none',
+          }}
+        >
+          <div style={{ fontSize: '14px', fontWeight: 500, color: form.methodology === m.id ? 'var(--blue)' : 'var(--ink)', marginBottom: '0.3rem' }}>{m.id}</div>
+          <div style={{ fontSize: '12px', color: 'var(--mute)', lineHeight: 1.5 }}>{m.desc}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function StepContext({ form, setForm }) {
   const phases    = ['Empathise','Define','Ideate','Prototype','Test','Post-launch'];
   const fidelity  = ['Wireframe','Mid-fidelity','High-fidelity','Production'];
+  const methodologies = useMethodologies();
+  const isAbTesting   = form.methodology === 'A/B Testing';
+  const showMaterials = methodologyNeedsMaterials(form.methodology, methodologies);
 
   return (
     <>
@@ -68,40 +138,76 @@ function StepContext({ form, setForm }) {
 
       <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
 
-      <FieldGroup
-        label={<>Test materials<InfoTooltip text="Upload Figma JPEG exports, screenshots, documents, or standalone HTML exports — or paste a Figma prototype link, staging URL, or any live URL. Add as many files and links as needed. Tip: use only letters, numbers, dots and hyphens in filenames (e.g. Homepage.jpg not Homepage test.jpg) — spaces and special characters will be stripped." /></>}
-      >
-        <UploadZone
-          value={form.testMaterials}
-          onChange={v => setForm(f => ({ ...f, testMaterials: v }))}
-        />
-      </FieldGroup>
+      {showMaterials && (
+        <>
+          <FieldGroup
+            label={<>Test materials<InfoTooltip text="Upload Figma JPEG exports, screenshots, documents, or standalone HTML exports — or paste a Figma prototype link, staging URL, or any live URL. Add as many files and links as needed. Tip: use only letters, numbers, dots and hyphens in filenames (e.g. Homepage.jpg not Homepage test.jpg) — spaces and special characters will be stripped." /></>}
+          >
+            <UploadZone
+              value={form.testMaterials}
+              onChange={v => setForm(f => ({ ...f, testMaterials: v }))}
+            />
+          </FieldGroup>
 
-      {((form.testMaterials?.urls || []).length > 0 || (form.testMaterials?.files || []).some(f => /\.html?$/i.test(f.name))) && (
-        <FieldGroup label="Prototype interactivity" hint="Turn this on if the linked URL or uploaded HTML file is a real, clickable prototype (e.g. a Claude Design HTML export, a Figma prototype, or a staging build) that synthetic users should navigate turn by turn. Leave off if it's just a reference link, uploaded document, or static screenshot.">
-          <Pill
-            label={form.isInteractivePrototype ? 'Live, clickable prototype' : 'Static reference link'}
-            selected={!!form.isInteractivePrototype}
-            onClick={() => setForm(f => ({ ...f, isInteractivePrototype: !f.isInteractivePrototype }))}
-          />
-        </FieldGroup>
+          {((form.testMaterials?.urls || []).length > 0 || (form.testMaterials?.files || []).some(f => /\.html?$/i.test(f.name))) && (
+            <FieldGroup label="Prototype interactivity" hint="Turn this on if the linked URL or uploaded HTML file is a real, clickable prototype (e.g. a Claude Design HTML export, a Figma prototype, or a staging build) that synthetic users should navigate turn by turn. Leave off if it's just a reference link, uploaded document, or static screenshot.">
+              <Pill
+                label={form.isInteractivePrototype ? 'Live, clickable prototype' : 'Static reference link'}
+                selected={!!form.isInteractivePrototype}
+                onClick={() => setForm(f => ({ ...f, isInteractivePrototype: !f.isInteractivePrototype }))}
+              />
+            </FieldGroup>
+          )}
+
+          <FieldGroup label="Fidelity level">
+            <div style={pillRow}>
+              {fidelity.map(fi => (
+                <Pill key={fi} label={fi} selected={form.fidelity === fi}
+                  onClick={() => setForm(f => ({ ...f, fidelity: fi }))} />
+              ))}
+            </div>
+          </FieldGroup>
+
+          <FieldGroup label="Additional notes about the test material">
+            <TextInput rows={2}
+              placeholder="e.g. Mobile screens only. Bahasa Malaysia version not yet available. Covers homepage and pack page only."
+              value={form.artefactNotes || ''}
+              onChange={e => setForm(f => ({ ...f, artefactNotes: e.target.value }))} />
+          </FieldGroup>
+
+          {isAbTesting && (
+            <>
+              <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
+
+              <FieldGroup
+                label={<>Variant B test materials<InfoTooltip text="Upload or link the second variant being compared against Variant A (the materials above). Each task defined later is attempted on both variants before the persona states a preference." /></>}
+              >
+                <UploadZone
+                  value={form.variantB?.testMaterials}
+                  onChange={v => setForm(f => ({ ...f, variantB: { ...f.variantB, testMaterials: v } }))}
+                />
+              </FieldGroup>
+
+              {((form.variantB?.testMaterials?.urls || []).length > 0 || (form.variantB?.testMaterials?.files || []).some(f => /\.html?$/i.test(f.name))) && (
+                <FieldGroup label="Variant B interactivity" hint="Comparative (A/B) sessions do not yet support live, clickable prototypes for either variant — leave this off and use a static reference link, image, or description for Variant B, same as Variant A.">
+                  <Pill
+                    label={form.variantB?.isInteractivePrototype ? 'Live, clickable prototype (not yet supported for A/B)' : 'Static reference link'}
+                    selected={!!form.variantB?.isInteractivePrototype}
+                    onClick={() => setForm(f => ({ ...f, variantB: { ...f.variantB, isInteractivePrototype: !f.variantB?.isInteractivePrototype } }))}
+                  />
+                </FieldGroup>
+              )}
+
+              <FieldGroup label="Additional notes about Variant B">
+                <TextInput rows={2}
+                  placeholder="e.g. Same page but with a shorter headline and a single CTA instead of three."
+                  value={form.variantB?.notes || ''}
+                  onChange={e => setForm(f => ({ ...f, variantB: { ...f.variantB, notes: e.target.value } }))} />
+              </FieldGroup>
+            </>
+          )}
+        </>
       )}
-
-      <FieldGroup label="Fidelity level">
-        <div style={pillRow}>
-          {fidelity.map(fi => (
-            <Pill key={fi} label={fi} selected={form.fidelity === fi}
-              onClick={() => setForm(f => ({ ...f, fidelity: fi }))} />
-          ))}
-        </div>
-      </FieldGroup>
-
-      <FieldGroup label="Additional notes about the test material">
-        <TextInput rows={2}
-          placeholder="e.g. Mobile screens only. Bahasa Malaysia version not yet available. Covers homepage and pack page only."
-          value={form.artefactNotes || ''}
-          onChange={e => setForm(f => ({ ...f, artefactNotes: e.target.value }))} />
-      </FieldGroup>
     </>
   );
 }
@@ -168,6 +274,7 @@ function StepPersonas({ form, setForm, onAdvance }) {
     primaryRQ:            form.primaryRQ,
     secondaryRQs:         form.secondaryRQs,
     selectedPersonaCodes: form.personas || [],
+    methodology:          form.methodology,
   };
 
   const applyProposal = (proposal) => {
@@ -209,17 +316,13 @@ function StepPersonas({ form, setForm, onAdvance }) {
   );
 }
 
-function StepTasks({ form, setForm, onAdvance }) {
-  const methodologies = [
-    { id: 'Usability Testing',    desc: 'Task-based — where do users get stuck or abandon?' },
-  ];
+const TOP_TASK_CATEGORIES = ['Navigation', 'Discovery', 'Account', 'Payment', 'Support'];
+const TASK_PRIORITIES     = ['P0', 'P1', 'P2'];
 
-  // Only one methodology is offered right now — select it by default.
-  React.useEffect(() => {
-    if (!form.methodology) {
-      setForm(f => ({ ...f, methodology: 'Usability Testing' }));
-    }
-  }, [form.methodology, setForm]);
+function StepTasks({ form, setForm, onAdvance }) {
+  // Methodology is fixed on the earlier StepMethodology step by this point —
+  // this step only reads form.methodology, never sets it.
+  const isAbTesting = form.methodology === 'A/B Testing';
 
   const EXAMPLE_TASK = {
     name:        'Home/Impression',
@@ -255,8 +358,13 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
     secondaryRQs:         form.secondaryRQs,
     selectedPersonaCodes: form.personas || [],
     fidelity:             form.fidelity,
+    methodology:          form.methodology,
     scenario:             form.scenario,
     tasks:                form.tasks || [],
+    variantBProvided:     isAbTesting && (
+      (form.variantB?.testMaterials?.urls || []).length > 0 ||
+      (form.variantB?.testMaterials?.files || []).length > 0
+    ),
   };
 
   const applyProposal = (proposal) => {
@@ -270,30 +378,6 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
   return (
     <div style={chatLayout}>
       <div>
-        {/* Research Methodology — single select */}
-        <FieldGroup label="Research methodology">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '1.1rem' }}>
-            {methodologies.map(m => (
-              <div
-                key={m.id}
-                onClick={() => setForm(f => ({ ...f, methodology: m.id }))}
-                style={{
-                  padding: '0.875rem 1rem',
-                  border: form.methodology === m.id ? '2px solid var(--blue)' : '1px solid var(--border)',
-                  borderRadius: 'var(--radius-md)',
-                  background: form.methodology === m.id ? 'var(--blue-lt)' : '#fff',
-                  cursor: 'pointer', transition: 'all .15s', userSelect: 'none',
-                }}
-              >
-                <div style={{ fontSize: '13px', fontWeight: 500, color: form.methodology === m.id ? 'var(--blue)' : 'var(--ink)', marginBottom: '0.2rem' }}>{m.id}</div>
-                <div style={{ fontSize: '11px', color: 'var(--mute)', lineHeight: 1.4 }}>{m.desc}</div>
-              </div>
-            ))}
-          </div>
-        </FieldGroup>
-
-        <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0 1.25rem' }} />
-
         {/* Scenario */}
         <FieldGroup label="Scenario" hint="Set the situation the persona is in before they attempt the tasks below — what brought them here, what they already know, what they're trying to decide.">
           <TextInput rows={3}
@@ -315,12 +399,32 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
               <div style={{
                 fontSize: '12px', fontWeight: 600, color: 'var(--blue)',
                 fontFamily: 'monospace', paddingTop: '0.65rem', textAlign: 'center',
-              }}>T{i + 1}</div>
-              <TextInput
-                placeholder="e.g. Home/Impression"
-                value={task.name}
-                onChange={e => updateTask(i, 'name', e.target.value)}
-              />
+              }}>
+                T{i + 1}
+                <select
+                  value={task.priority || 'P1'}
+                  onChange={e => updateTask(i, 'priority', e.target.value)}
+                  title="Priority"
+                  style={{ display: 'block', width: '100%', marginTop: '6px', fontSize: '9px', fontFamily: 'var(--sans)', fontWeight: 500, color: 'var(--mute)', border: '1px solid var(--border)', borderRadius: '3px', padding: '2px 0' }}
+                >
+                  {TASK_PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <TextInput
+                  placeholder="e.g. Home/Impression"
+                  value={task.name}
+                  onChange={e => updateTask(i, 'name', e.target.value)}
+                />
+                <select
+                  value={task.topTaskCategory || ''}
+                  onChange={e => updateTask(i, 'topTaskCategory', e.target.value)}
+                  style={{ width: '100%', marginTop: '4px', fontSize: '10px', fontFamily: 'var(--sans)', color: 'var(--mute)', border: '1px solid var(--border)', borderRadius: '3px', padding: '3px' }}
+                >
+                  <option value="">Category…</option>
+                  {TOP_TASK_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
               <div>
                 <TextInput rows={6}
                   placeholder="What should the synthetic user be asked to do on this screen?"
@@ -369,8 +473,10 @@ g) Are you aware of the available promotions when you subscribe to a broadband p
         context={context}
         onApply={applyProposal}
         title="Methodology and Task Crafter"
-        intro="Methodology is locked to Usability Testing for now — I can help craft the scenario and task list, and task instructions, for it."
-        placeholder="e.g. We want two tasks: homepage, then TV pack page…"
+        intro={isAbTesting
+          ? "You've selected A/B Testing — I can help craft the scenario, a hypothesis, and the task list for comparing your two variants."
+          : "I can help craft the scenario and task list, and task instructions, for your selected methodology."}
+        placeholder={isAbTesting ? "e.g. We're comparing the old and new pricing page headline…" : "e.g. We want two tasks: homepage, then TV pack page…"}
       />
     </div>
   );
@@ -481,6 +587,8 @@ function StepReview({ form, setForm }) {
   const tasks     = (form.tasks || []).filter(t => t.name || t.instruction);
   const personas  = (form.personas || []).map(code => PERSONAS.find(p => p.code === code)?.name || code);
   const materials = form.testMaterials || { files: [], urls: [] };
+  const isAbTesting     = form.methodology === 'A/B Testing';
+  const variantBMaterials = form.variantB?.testMaterials || { files: [], urls: [] };
 
   if (editMode) {
     return (
@@ -496,6 +604,7 @@ function StepReview({ form, setForm }) {
         >Save</button>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <StepProduct form={form} setForm={setForm} />
+          <StepMethodology form={form} setForm={setForm} />
           <StepContext form={form} setForm={setForm} />
           <StepGoals form={form} setForm={setForm} onAdvance={() => {}} />
           <StepPersonas form={form} setForm={setForm} onAdvance={() => {}} />
@@ -549,6 +658,28 @@ function StepReview({ form, setForm }) {
             )}
           </Section>
 
+          {isAbTesting && (
+            <Section title="Variant B test materials">
+              {variantBMaterials.files.length === 0 && variantBMaterials.urls.length === 0 ? (
+                <div style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>No files or links added.</div>
+              ) : (
+                <>
+                  {variantBMaterials.files.map((f, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '13px', color: 'var(--body)', marginBottom: '0.4rem' }}>
+                      <span style={{ opacity: .5 }}>📄</span> {f.name}
+                    </div>
+                  ))}
+                  {variantBMaterials.urls.map((u, i) => (
+                    <div key={i} style={{ fontSize: '13px', color: 'var(--blue)', marginBottom: '0.3rem' }}>
+                      🔗 {u.length > 60 ? u.slice(0, 58) + '…' : u}
+                    </div>
+                  ))}
+                </>
+              )}
+              <Field label="Notes" value={form.variantB?.notes} />
+            </Section>
+          )}
+
           <Section title="Guardrails">
             <Field label="What must not be assumed" value={form.forbiddenAssumptions} />
           </Section>
@@ -583,7 +714,11 @@ function StepReview({ form, setForm }) {
               ? <div style={{ fontSize: '13px', color: 'var(--mute)', fontStyle: 'italic' }}>No tasks defined.</div>
               : tasks.map((t, i) => (
                 <div key={i} style={{ marginBottom: '0.875rem', padding: '0.75rem', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace', marginBottom: '0.25rem' }}>T{i + 1}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace' }}>T{i + 1}</span>
+                    {t.priority && <span style={{ fontSize: '10px', color: 'var(--mute)' }}>{t.priority}</span>}
+                    {t.topTaskCategory && <span style={{ fontSize: '10px', color: 'var(--mute-soft)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{t.topTaskCategory}</span>}
+                  </div>
                   <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.15rem' }}>{t.name || '—'}</div>
                   <div style={{ fontSize: '12px', color: 'var(--body)', whiteSpace: 'pre-line', marginBottom: t.whatToTest ? '0.4rem' : 0 }}>{t.instruction || '—'}</div>
                   {t.whatToTest && (
@@ -605,7 +740,7 @@ function StepReview({ form, setForm }) {
   );
 }
 
-const stepComponents = [StepProduct, StepContext, StepGoals, StepPersonas, StepTasks, StepReview];
+const stepComponents = [StepProduct, StepMethodology, StepContext, StepGoals, StepPersonas, StepTasks, StepReview];
 
 /* ══════════════════════════════════════════════════════
    Questionnaire Page
@@ -635,7 +770,10 @@ export default function Questionnaire({ goTo, draft }) {
       await api.createRun(runId, intake);
       setLoadingStep(1);
 
-      const filesToUpload = (form.testMaterials?.files || []).filter(f => f.file instanceof File);
+      const filesToUpload = [
+        ...(form.testMaterials?.files || []),
+        ...(form.variantB?.testMaterials?.files || []),
+      ].filter(f => f.file instanceof File);
       if (filesToUpload.length > 0) {
         await api.uploadFiles(runId, filesToUpload.map(f => f.file));
       }

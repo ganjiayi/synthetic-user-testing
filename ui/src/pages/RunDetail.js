@@ -23,7 +23,9 @@ function buildCsv(run) {
   const plan       = run.plan || {};
   const sessions    = run.sessions || [];
   const tasks       = plan.test_scenarios?.scenarios || [];
-  const taskMap      = Object.fromEntries(tasks.map(t => [t.task_id, t.task_name]));
+  const taskMap       = Object.fromEntries(tasks.map(t => [t.task_id, t.task_name]));
+  const taskCategoryMap = Object.fromEntries(tasks.map(t => [t.task_id, t.top_task_category || '']));
+  const taskPriorityMap = Object.fromEntries(tasks.map(t => [t.task_id, t.priority || '']));
   const product      = run.intake?.q5_product_context?.product_name || run.intake?.q1_product || run.id;
   const feature      = run.intake?.q5_product_context?.feature_under_test || '';
   const method       = plan.study_context?.methodology || run.intake?.q6_methodology?.methodology || '';
@@ -32,7 +34,8 @@ function buildCsv(run) {
   const cols = [
     'run_id','date','product','feature','methodology',
     'persona','priority','model',
-    'task_id','task_name','turn_number',
+    'task_id','task_name','top_task_category','task_priority',
+    'variant_id','turn_number',
     'action','task_completion',
     ...evalFields.map(f => f.key),
     'persona_alignment','inner_monologue',
@@ -47,7 +50,9 @@ function buildCsv(run) {
         run.created_at ? new Date(run.created_at).toISOString().slice(0, 10) : '',
         product, feature, method,
         session.persona_name, session.persona_priority || '', session.provider || '',
-        turn.task_id, taskMap[turn.task_id] || turn.task_id, turn.turn_number,
+        turn.task_id, taskMap[turn.task_id] || turn.task_id,
+        taskCategoryMap[turn.task_id] || '', taskPriorityMap[turn.task_id] || '',
+        turn.variant_id || '', turn.turn_number,
         turn.action || '', es.task_completion || '',
         ...evalFields.map(f => es[f.key] ?? ''),
         es.persona_alignment || '',
@@ -334,6 +339,78 @@ async function buildPresentation(run) {
   await pptx.writeFile({ fileName: `${run.id}_presentation.pptx` });
 }
 
+// Deliverable 3 — analysis.json-driven deck: top themes + strongest quote +
+// quant callout, fixed slide template. Separate from buildPresentation above
+// (which stays as-is per the same "add alongside, don't replace" precedent
+// as the XLSX/DOCX raw exports) rather than a rework of it — descriptive
+// only, same as analysis.json itself; recommendations live in the Word
+// report (analyzed_report_docx), not this deck.
+async function buildAnalysisPresentation(run, analysis) {
+  const pptx    = new PptxGenJS();
+  const plan    = run.plan || {};
+  const product = run.intake?.q5_product_context?.product_name || run.intake?.q1_product || run.id;
+  const feature = run.intake?.q5_product_context?.feature_under_test || '';
+  const method  = plan.study_context?.methodology || run.intake?.q6_methodology?.methodology || '';
+  const date    = new Date(analysis.generated_at || Date.now()).toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  pptx.layout  = 'LAYOUT_WIDE';
+  pptx.author  = 'SynthUX';
+  pptx.subject = `${product}${feature ? ' — ' + feature : ''} — Analysis`;
+
+  const INK = '080808', WHITE = 'FFFFFF', MUTE = '6B7280', GREEN = '16A34A', AMBER = 'D97706';
+
+  const cover = pptx.addSlide();
+  cover.background = { color: INK };
+  cover.addText('SYNTHUX ANALYSIS', { x: 0.5, y: 0.4, w: 12, h: 0.3, fontSize: 9, color: '555555', bold: true, charSpacing: 3 });
+  cover.addText(product, { x: 0.5, y: 1.2, w: 12, h: 1.2, fontSize: 44, color: WHITE, bold: true, charSpacing: -1 });
+  if (feature) cover.addText(feature, { x: 0.5, y: 2.3, w: 12, h: 0.6, fontSize: 22, color: '888888' });
+  cover.addText(`${method || 'Synthetic UX Study'} · ${analysis.based_on_session_count ?? '—'} sessions · ${date}`, { x: 0.5, y: 3.2, w: 12, h: 0.4, fontSize: 14, color: 'AAAAAA' });
+
+  const quantSlide = pptx.addSlide();
+  quantSlide.background = { color: WHITE };
+  quantSlide.addText('QUANTITATIVE HIGHLIGHTS', { x: 0.5, y: 0.35, w: 12, h: 0.25, fontSize: 9, color: MUTE, bold: true, charSpacing: 2 });
+  const overall = analysis.pass_a?.overall;
+  let y = 0.9;
+  const completionPct = overall?.task_completion_rate !== null && overall?.task_completion_rate !== undefined
+    ? `${Math.round(overall.task_completion_rate * 100)}%` : '—';
+  quantSlide.addText(`${completionPct} task completion`, { x: 0.5, y, w: 12, h: 0.5, fontSize: 26, color: INK, bold: true });
+  y += 0.7;
+  for (const [key, stat] of Object.entries(overall?.fields || {}).slice(0, 5)) {
+    let valueText = '—';
+    if (stat.type === 'numeric')      valueText = stat.mean !== null ? `mean ${stat.mean} (n=${stat.n})` : '—';
+    else if (stat.type === 'categorical') valueText = Object.entries(stat.distribution).map(([k, n]) => `${k}: ${n}`).join(' · ') || 'no signal';
+    else                                valueText = stat.non_null_rate !== null ? `${Math.round(stat.non_null_rate * 100)}% of turns (n=${stat.n})` : '—';
+    quantSlide.addText(`${key.replace(/_/g, ' ')}: ${valueText}  [${stat.signal_strength}]`, {
+      x: 0.5, y, w: 12, h: 0.35, fontSize: 13, color: stat.signal_strength === 'strong' ? INK : MUTE,
+    });
+    y += 0.4;
+  }
+
+  const topThemes = (analysis.pass_b?.themes || [])
+    .slice()
+    .sort((a, b) => (b.signal_strength === 'strong') - (a.signal_strength === 'strong') || b.citations.length - a.citations.length)
+    .slice(0, 5);
+
+  for (const theme of topThemes) {
+    const slide = pptx.addSlide();
+    slide.background = { color: WHITE };
+    slide.addText(`${theme.signal_strength.toUpperCase()} SIGNAL`, {
+      x: 0.5, y: 0.35, w: 12, h: 0.25, fontSize: 9, bold: true, charSpacing: 2,
+      color: theme.signal_strength === 'strong' ? GREEN : AMBER,
+    });
+    slide.addText(theme.theme, { x: 0.5, y: 0.65, w: 12, h: 0.6, fontSize: 26, color: INK, bold: true });
+    if (theme.description) slide.addText(theme.description, { x: 0.5, y: 1.3, w: 12, h: 0.6, fontSize: 13, color: MUTE });
+    const strongest = theme.citations[0];
+    if (strongest) {
+      slide.addText(`"${strongest.quote}"`, { x: 0.5, y: 2.1, w: 11, h: 1.2, fontSize: 18, color: '374151', italic: true });
+      slide.addText(`— ${strongest.persona_name}`, { x: 0.5, y: 3.2, w: 11, h: 0.3, fontSize: 12, color: MUTE });
+    }
+    slide.addText(`${theme.citations.length} citation(s) across sessions`, { x: 0.5, y: 6.7, w: 12, h: 0.25, fontSize: 9, color: 'CCCCCC' });
+  }
+
+  await pptx.writeFile({ fileName: `${run.id}_analysis.pptx` });
+}
+
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 function formatDate(iso) {
   if (!iso) return '—';
@@ -347,6 +424,27 @@ function statusTag(s) {
 }
 
 function frictionBg(n) { return n >= 7 ? 'var(--red-lt)' : n >= 4 ? 'var(--amber-lt)' : 'var(--teal-lt)'; }
+
+// Advisory only, for now — see the QA Review tab for the actual gate logic.
+// Exports/report below still read every session unfiltered until the
+// qa_review-aware exports and analysis land, so this is a nudge, not a block.
+function QaGateBanner({ run, onGoToQaReview }) {
+  if (run.qa_review?.confirmed_at) return null;
+  return (
+    <div style={{
+      padding: '0.7rem 1rem', marginBottom: '1.25rem',
+      background: 'var(--amber-lt)', border: '1px solid var(--amber)',
+      borderRadius: 'var(--radius-sm)', fontSize: '12px', color: 'var(--body)', lineHeight: 1.6,
+    }}>
+      <span style={{ fontWeight: 500, color: 'var(--amber)' }}>QA review not yet confirmed</span> — flagged sessions are still included below.{' '}
+      {onGoToQaReview && (
+        <button onClick={onGoToQaReview} style={{ all: 'unset', cursor: 'pointer', color: 'var(--blue)', textDecoration: 'underline' }}>
+          Review on the QA Review tab
+        </button>
+      )}
+    </div>
+  );
+}
 
 function Field({ label, value }) {
   if (!value || value === '—') return null;
@@ -472,6 +570,16 @@ function PersonaTaskBlock({ session, taskId, headlineKey }) {
                   <span style={{ fontSize: '10px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)', flexShrink: 0 }}>
                     Turn {turn.turn_number}
                   </span>
+                  {turn.variant_id && (
+                    <span style={{
+                      fontSize: '10px', fontWeight: 600, padding: '0.1rem 0.4rem', borderRadius: '4px', flexShrink: 0,
+                      background: turn.variant_id === 'comparison' ? 'var(--blue-lt)' : 'var(--cream)',
+                      border: `1px solid ${turn.variant_id === 'comparison' ? 'rgba(27,79,216,.15)' : 'var(--hairline)'}`,
+                      color: turn.variant_id === 'comparison' ? 'var(--blue)' : 'var(--body)',
+                    }}>
+                      {turn.variant_id === 'comparison' ? 'Comparison' : `Variant ${turn.variant_id}`}
+                    </span>
+                  )}
                   {turn.action && (
                     <span style={{ fontSize: '10px', padding: '0.1rem 0.4rem', background: 'var(--cream)', border: '1px solid var(--hairline)', borderRadius: '4px', color: 'var(--body)' }}>
                       {turn.action}
@@ -535,7 +643,7 @@ function PersonaTaskBlock({ session, taskId, headlineKey }) {
 }
 
 /* ── Tab: Report ─────────────────────────────────────────────────────────── */
-function ReportTab({ run }) {
+function ReportTab({ run, onGoToQaReview }) {
   const plan     = run.plan;
   const sessions = run.sessions || [];
   const intake   = run.intake;
@@ -588,14 +696,15 @@ function ReportTab({ run }) {
   const conductedNarrative = orchestration || (methodology && tasks.length
     ? `The ${methodology} was conducted through ${
         methodology === 'Usability Testing' ? 'task-based scenarios' :
-        methodology === 'UX Testing'        ? 'a combination of task-based scenarios and open-ended exploration' :
-        methodology === 'Concept Testing'   ? 'concept exposure and structured reaction prompts' :
-        'impression-based exploration and emotional response prompts'
+        methodology === 'A/B Testing'       ? 'paired exposure to two variants per task, followed by a stated preference' :
+        'structured research prompts'
       } of ${feature || 'the product flow'}. Participants interacted with ${artefactDesc} and were observed across ${tasks.length} task${tasks.length !== 1 ? 's' : ''}.`
     : '');
 
   return (
     <div>
+
+      {sessions.length > 0 && <QaGateBanner run={run} onGoToQaReview={onGoToQaReview} />}
 
       {/* ── 4 Metric cards ─────────────────────────────────────────────── */}
       {metrics && (
@@ -735,8 +844,20 @@ function ReportTab({ run }) {
                 marginBottom: '8px', padding: '0.625rem', alignItems: 'start',
                 background: 'var(--cream)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)',
               }}>
-                <div style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)', fontSize: '12px' }}>{t.task_id}</div>
-                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)' }}>{t.task_name || '—'}</div>
+                <div style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)', fontSize: '12px' }}>
+                  {t.task_id}
+                  {t.priority && (
+                    <div style={{ fontFamily: 'var(--sans)', fontWeight: 500, color: 'var(--mute)', fontSize: '9px', marginTop: '2px' }}>{t.priority}</div>
+                  )}
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ink)' }}>
+                  {t.task_name || '—'}
+                  {t.top_task_category && (
+                    <span style={{ display: 'block', fontSize: '9px', fontWeight: 500, color: 'var(--mute-soft)', textTransform: 'uppercase', letterSpacing: '.05em', marginTop: '2px' }}>
+                      {t.top_task_category}
+                    </span>
+                  )}
+                </div>
                 <div style={{ fontSize: '12px', color: 'var(--body)', lineHeight: 1.5, whiteSpace: 'pre-line' }}>{t.instruction || '—'}</div>
                 <div style={{ fontSize: '12px', color: 'var(--mute)', lineHeight: 1.5, whiteSpace: 'pre-line' }}>{t.test_intent || '—'}</div>
               </div>
@@ -950,6 +1071,406 @@ function DeliverablesSection({ run }) {
   );
 }
 
+/* ── Tab: QA Review (Step 6.5 gate) ──────────────────────────────────────── */
+// A session's decision is an "override" when it disagrees with the computed
+// flag state — keeping a flagged session in, or dropping a clean one. Mirrors
+// the same check api/runs/[id]/status.js's qa_review POST enforces server-side.
+function isOverrideDecision(flags, decision) {
+  return (flags.length > 0 && decision === 'include') || (flags.length === 0 && decision === 'exclude');
+}
+
+function QaSessionCard({ session, decision, reason, onDecide, onReason }) {
+  const { persona_name, total_turns, session_outcome, flags } = session;
+  const override = decision && isOverrideDecision(flags, decision);
+
+  return (
+    <div style={{
+      padding: '1rem 1.1rem', marginBottom: '0.75rem',
+      background: flags.length > 0 ? 'var(--amber-lt)' : '#fff',
+      border: `1px solid ${flags.length > 0 ? 'var(--amber)' : 'var(--border)'}`,
+      borderRadius: 'var(--radius-md)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+        <div>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)' }}>{persona_name}</div>
+          <div style={{ fontSize: '11px', color: 'var(--mute)' }}>
+            {total_turns} turn{total_turns === 1 ? '' : 's'} · {humanizeKey(session_outcome || 'unknown')}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <button
+            onClick={() => onDecide('include')}
+            style={{
+              padding: '0.35rem 0.8rem', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--sans)', fontSize: '11px', fontWeight: 500, cursor: 'pointer',
+              border: decision === 'include' ? '1px solid var(--teal)' : '1px solid var(--border-md)',
+              background: decision === 'include' ? 'var(--teal)' : '#fff',
+              color: decision === 'include' ? '#fff' : 'var(--body)',
+            }}
+          >Include</button>
+          <button
+            onClick={() => onDecide('exclude')}
+            style={{
+              padding: '0.35rem 0.8rem', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--sans)', fontSize: '11px', fontWeight: 500, cursor: 'pointer',
+              border: decision === 'exclude' ? '1px solid var(--red)' : '1px solid var(--border-md)',
+              background: decision === 'exclude' ? 'var(--red)' : '#fff',
+              color: decision === 'exclude' ? '#fff' : 'var(--body)',
+            }}
+          >Exclude</button>
+        </div>
+      </div>
+
+      {flags.length === 0 ? (
+        <div style={{ fontSize: '11px', color: 'var(--teal)' }}>No QA flags.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          {flags.map((f, i) => (
+            <div key={i} style={{ fontSize: '11px', color: 'var(--amber)' }}>
+              <span style={{ fontWeight: 600 }}>{f.label}:</span> {f.detail}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {override && (
+        <div style={{ marginTop: '0.6rem' }}>
+          <input
+            type="text"
+            placeholder={decision === 'include' ? 'Why include despite the flag above? (required)' : 'Why exclude a session with no flags? (required)'}
+            value={reason || ''}
+            onChange={e => onReason(e.target.value)}
+            style={{
+              width: '100%', padding: '0.5rem 0.7rem', fontSize: '12px', fontFamily: 'var(--sans)',
+              border: `1px solid ${reason ? 'var(--border-md)' : 'var(--red)'}`, borderRadius: 'var(--radius-sm)', boxSizing: 'border-box',
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QaReviewTab({ run }) {
+  const [data,     setData]     = useState(null);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState('');
+  const [decisions, setDecisions] = useState({}); // persona_id -> { decision, reason }
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  const load = React.useCallback(() => {
+    setLoading(true);
+    setError('');
+    api.getQaReview(run.id)
+      .then(result => {
+        setData(result);
+        const initial = {};
+        for (const s of result.sessions) {
+          initial[s.persona_id] = { decision: s.decision || null, reason: s.reason || '' };
+        }
+        setDecisions(initial);
+      })
+      .catch(err => setError(err.message || 'Failed to load QA review'))
+      .finally(() => setLoading(false));
+  }, [run.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return <div style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--mute)', fontSize: '13px' }}>Loading sessions…</div>;
+  if (error)   return <div style={{ padding: '1rem', background: 'var(--red-lt)', border: '1px solid rgba(238,29,54,.2)', borderRadius: 'var(--radius-md)', fontSize: '13px', color: 'var(--red)' }}>{error}</div>;
+  if (!data)   return null;
+
+  const allDecided = data.sessions.every(s => decisions[s.persona_id]?.decision);
+  const allReasonsFilled = data.sessions.every(s => {
+    const d = decisions[s.persona_id];
+    if (!d?.decision) return true;
+    return !isOverrideDecision(s.flags, d.decision) || !!d.reason;
+  });
+  const canSubmit = allDecided && allReasonsFilled && !submitting;
+
+  const flaggedCount = data.sessions.filter(s => s.flags.length > 0).length;
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const payload = data.sessions.map(s => ({
+        persona_id: s.persona_id,
+        decision:   decisions[s.persona_id].decision,
+        ...(decisions[s.persona_id].reason ? { reason: decisions[s.persona_id].reason } : {}),
+      }));
+      await api.submitQaReview(run.id, payload);
+      load();
+    } catch (err) {
+      setSubmitError(err.message || 'Failed to submit QA review');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div>
+      <SectionHead>QA review — {flaggedCount} of {data.sessions.length} session(s) flagged</SectionHead>
+      <div style={{ fontSize: '12px', color: 'var(--mute)', marginBottom: '1.25rem', lineHeight: 1.6 }}>
+        Flags are advisory — no session is dropped automatically. Decide include/exclude for every session below; a decision that goes against the computed flag state needs a stated reason. Raw exports and analysis use whatever's confirmed here.
+      </div>
+
+      {data.confirmed_at && (
+        <div style={{ padding: '0.75rem 1rem', marginBottom: '1.25rem', background: 'var(--teal-lt)', border: '1px solid rgba(15,138,110,.25)', borderRadius: 'var(--radius-sm)', fontSize: '12px', color: 'var(--primary)' }}>
+          Confirmed {formatDate(data.confirmed_at)}. You can still change decisions and re-confirm below.
+        </div>
+      )}
+
+      {data.sessions.map(s => (
+        <QaSessionCard
+          key={s.persona_id}
+          session={s}
+          decision={decisions[s.persona_id]?.decision}
+          reason={decisions[s.persona_id]?.reason}
+          onDecide={decision => setDecisions(d => ({ ...d, [s.persona_id]: { ...d[s.persona_id], decision } }))}
+          onReason={reason => setDecisions(d => ({ ...d, [s.persona_id]: { ...d[s.persona_id], reason } }))}
+        />
+      ))}
+
+      {submitError && (
+        <div style={{ fontSize: '12px', color: 'var(--red)', padding: '0.75rem', background: 'var(--red-lt)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>{submitError}</div>
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={!canSubmit}
+        style={{
+          padding: '0.6rem 1.4rem', border: 'none', borderRadius: 'var(--radius-sm)',
+          background: canSubmit ? 'var(--primary)' : 'var(--mute-soft)', color: 'var(--on-primary)',
+          fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 500,
+          cursor: canSubmit ? 'pointer' : 'default', marginTop: '0.5rem',
+        }}
+      >{submitting ? 'Confirming…' : data.confirmed_at ? 'Re-confirm QA review' : 'Confirm QA review'}</button>
+      {!allDecided && <div style={{ fontSize: '11px', color: 'var(--mute)', marginTop: '0.5rem' }}>Decide include/exclude for every session to confirm.</div>}
+
+      <SectionHead>Raw data exports</SectionHead>
+      <div style={{ fontSize: '12px', color: 'var(--mute)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+        XLSX and Word transcript, filtered by the decisions above — excluded sessions land on an audit tab/section instead of the main output.
+      </div>
+      <ExportButtons runId={run.id} />
+    </div>
+  );
+}
+
+function ExportButtons({ runId }) {
+  const [downloading, setDownloading] = useState(null); // 'xlsx' | 'docx' | null
+  const [exportError, setExportError] = useState('');
+
+  const download = async (type) => {
+    setDownloading(type);
+    setExportError('');
+    try {
+      await api.downloadExport(runId, type);
+    } catch (err) {
+      setExportError(err.message || `Failed to download ${type}`);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button
+          onClick={() => download('xlsx')}
+          disabled={!!downloading}
+          style={{ padding: '0.5rem 1rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)', background: '#fff', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--ink)', cursor: downloading ? 'default' : 'pointer' }}
+        >{downloading === 'xlsx' ? 'Preparing…' : '↓ Raw data (XLSX)'}</button>
+        <button
+          onClick={() => download('docx')}
+          disabled={!!downloading}
+          style={{ padding: '0.5rem 1rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)', background: '#fff', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--ink)', cursor: downloading ? 'default' : 'pointer' }}
+        >{downloading === 'docx' ? 'Preparing…' : '↓ Transcript (Word)'}</button>
+      </div>
+      {exportError && <div style={{ fontSize: '11px', color: 'var(--red)', marginTop: '0.5rem' }}>{exportError}</div>}
+    </div>
+  );
+}
+
+/* ── Tab: Analysis (Step 8 — Pass A/B, descriptive only) ─────────────────── */
+function SignalBadge({ strength }) {
+  const strong = strength === 'strong';
+  return (
+    <span style={{
+      fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em',
+      padding: '0.15rem 0.45rem', borderRadius: '3px', marginLeft: '0.5rem',
+      background: strong ? 'var(--teal-lt)' : 'var(--amber-lt)', color: strong ? 'var(--primary)' : 'var(--amber)',
+    }}>{strength}</span>
+  );
+}
+
+function FieldStat({ fieldKey, stat }) {
+  if (stat.type === 'numeric') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--hairline)' }}>
+        <span style={{ fontSize: '12px', color: 'var(--body)' }}>{humanizeKey(fieldKey)}<SignalBadge strength={stat.signal_strength} /></span>
+        <span style={{ fontSize: '12px', color: 'var(--ink)' }}>
+          {stat.mean !== null ? `mean ${stat.mean}` : '—'}{stat.median !== null ? ` · median ${stat.median}` : ''} <span style={{ color: 'var(--mute-soft)' }}>(n={stat.n})</span>
+        </span>
+      </div>
+    );
+  }
+  if (stat.type === 'categorical') {
+    const entries = Object.entries(stat.distribution || {});
+    return (
+      <div style={{ padding: '0.4rem 0', borderBottom: '1px solid var(--hairline)' }}>
+        <div style={{ fontSize: '12px', color: 'var(--body)', marginBottom: '0.2rem' }}>{humanizeKey(fieldKey)}<SignalBadge strength={stat.signal_strength} /></div>
+        <div style={{ fontSize: '11px', color: 'var(--mute)' }}>
+          {entries.length ? entries.map(([k, n]) => `${humanizeKey(k)}: ${n}`).join(' · ') : 'no signal recorded'}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--hairline)' }}>
+      <span style={{ fontSize: '12px', color: 'var(--body)' }}>{humanizeKey(fieldKey)}<SignalBadge strength={stat.signal_strength} /></span>
+      <span style={{ fontSize: '12px', color: 'var(--ink)' }}>
+        {stat.non_null_rate !== null ? `${Math.round(stat.non_null_rate * 100)}% of turns` : '—'} <span style={{ color: 'var(--mute-soft)' }}>(n={stat.n})</span>
+      </span>
+    </div>
+  );
+}
+
+function PassASlice({ title, slice }) {
+  if (!slice) return null;
+  return (
+    <div style={{ marginBottom: '1.25rem', padding: '0.9rem 1rem', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink)' }}>{title}</span>
+        <span style={{ fontSize: '11px', color: 'var(--mute)' }}>
+          {slice.session_count} session{slice.session_count === 1 ? '' : 's'} · {slice.task_completion_rate !== null ? `${Math.round(slice.task_completion_rate * 100)}% task completion` : 'no task data'}
+        </span>
+      </div>
+      {Object.entries(slice.fields || {}).map(([key, stat]) => <FieldStat key={key} fieldKey={key} stat={stat} />)}
+    </div>
+  );
+}
+
+function AnalysisTab({ run }) {
+  const [analysis,    setAnalysis]    = useState(null);
+  const [loading,     setLoading]     = useState(true);
+  const [notFound,    setNotFound]    = useState(false);
+  const [generating,  setGenerating]  = useState(false);
+  const [error,       setError]       = useState('');
+
+  const load = React.useCallback(() => {
+    setLoading(true);
+    setNotFound(false);
+    setError('');
+    api.getAnalysis(run.id)
+      .then(setAnalysis)
+      .catch(err => {
+        if (/not yet generated/i.test(err.message)) setNotFound(true);
+        else setError(err.message || 'Failed to load analysis');
+      })
+      .finally(() => setLoading(false));
+  }, [run.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const generate = async () => {
+    setGenerating(true);
+    setError('');
+    try {
+      await api.generateAnalysis(run.id);
+      load();
+    } catch (err) {
+      setError(err.message || 'Failed to generate analysis');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  if (loading) return <div style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--mute)', fontSize: '13px' }}>Loading…</div>;
+
+  if (notFound || !analysis) {
+    return (
+      <div>
+        <SectionHead>Cross-session analysis</SectionHead>
+        <div style={{ fontSize: '12px', color: 'var(--mute)', marginBottom: '1rem', lineHeight: 1.6 }}>
+          Runs the deterministic quant rollup (Pass A) and one LLM theme-clustering call over already-synthesized session findings (Pass B), using whatever the QA Review tab has confirmed as included. Descriptive only — no recommendations here (see the Research report tab for those).
+        </div>
+        {error && <div style={{ fontSize: '12px', color: 'var(--red)', padding: '0.75rem', background: 'var(--red-lt)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>{error}</div>}
+        <button
+          onClick={generate}
+          disabled={generating}
+          style={{ padding: '0.5rem 1.1rem', border: '1px solid var(--blue-md)', borderRadius: 'var(--radius-sm)', background: generating ? 'var(--blue-lt)' : 'var(--blue)', color: generating ? 'var(--blue)' : '#fff', fontFamily: 'var(--sans)', fontSize: '12px', fontWeight: 500, cursor: generating ? 'default' : 'pointer' }}
+        >{generating ? 'Generating…' : 'Generate analysis'}</button>
+      </div>
+    );
+  }
+
+  const { pass_a, pass_b, generated_at, based_on_session_count } = analysis;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <SectionHead>Cross-session analysis</SectionHead>
+        <button
+          onClick={generate}
+          disabled={generating}
+          style={{ padding: '0.4rem 0.9rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)', background: '#fff', fontFamily: 'var(--sans)', fontSize: '11px', color: 'var(--body)', cursor: generating ? 'default' : 'pointer' }}
+        >{generating ? 'Regenerating…' : 'Regenerate'}</button>
+      </div>
+      <div style={{ fontSize: '11px', color: 'var(--mute-soft)', marginBottom: '1rem' }}>
+        Generated {formatDate(generated_at)} · based on {based_on_session_count} included session{based_on_session_count === 1 ? '' : 's'}
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
+        <button
+          onClick={async () => {
+            setError('');
+            try { await api.downloadExport(run.id, 'analyzed_report_docx'); }
+            catch (err) { setError(err.message || 'Failed to download analyzed report'); }
+          }}
+          style={{ padding: '0.4rem 0.9rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)', background: '#fff', fontFamily: 'var(--sans)', fontSize: '11px', color: 'var(--ink)', cursor: 'pointer' }}
+        >↓ Analyzed report (Word)</button>
+        <button
+          onClick={async () => {
+            setError('');
+            try { await buildAnalysisPresentation(run, analysis); }
+            catch (err) { setError(err.message || 'Failed to build presentation'); }
+          }}
+          style={{ padding: '0.4rem 0.9rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)', background: '#fff', fontFamily: 'var(--sans)', fontSize: '11px', color: 'var(--ink)', cursor: 'pointer' }}
+        >↓ Analysis presentation</button>
+      </div>
+
+      {error && <div style={{ fontSize: '12px', color: 'var(--red)', padding: '0.75rem', background: 'var(--red-lt)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>{error}</div>}
+
+      <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '0.6rem' }}>Pass A — quantitative rollup</div>
+      <PassASlice title="Overall" slice={pass_a?.overall} />
+      {Object.entries(pass_a?.by_task || {}).map(([taskId, slice]) => (
+        <PassASlice key={taskId} title={`${taskId} — ${slice.task_name || ''}`} slice={slice} />
+      ))}
+      {Object.entries(pass_a?.by_persona_segment || {}).map(([segment, slice]) => (
+        <PassASlice key={segment} title={`${humanizeKey(segment)} segment`} slice={slice} />
+      ))}
+
+      <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--mute)', textTransform: 'uppercase', letterSpacing: '.07em', marginTop: '1.5rem', marginBottom: '0.6rem' }}>Pass B — cross-session themes</div>
+      {(!pass_b?.themes || pass_b.themes.length === 0) && (
+        <div style={{ fontSize: '12px', color: 'var(--mute)' }}>No themes surfaced from the included sessions.</div>
+      )}
+      {(pass_b?.themes || []).map((theme, i) => (
+        <div key={i} style={{ marginBottom: '1rem', padding: '0.9rem 1rem', background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '0.2rem' }}>
+            {theme.theme}<SignalBadge strength={theme.signal_strength} />
+          </div>
+          {theme.description && <div style={{ fontSize: '12px', color: 'var(--body)', marginBottom: '0.5rem' }}>{theme.description}</div>}
+          {(theme.citations || []).map((c, ci) => (
+            <div key={ci} style={{ fontSize: '11px', color: 'var(--mute)', marginBottom: '0.2rem' }}>
+              <span style={{ fontStyle: 'italic' }}>"{c.quote}"</span> — {c.persona_name}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ── Tab: Questionnaire ──────────────────────────────────────────────────── */
 function QuestionnaireTab({ intake }) {
   if (!intake) {
@@ -1086,6 +1607,8 @@ function ImagesTab({ run }) {
 
 /* ── RunDetail page ──────────────────────────────────────────────────────── */
 const TABS = [
+  { id: 'qa_review',     label: 'QA review'       },
+  { id: 'analysis',      label: 'Analysis'        },
   { id: 'report',        label: 'Research report' },
   { id: 'questionnaire', label: 'Questionnaire'   },
   { id: 'images',        label: 'Test materials'  },
@@ -1093,7 +1616,7 @@ const TABS = [
 
 export default function RunDetail({ goTo, runId }) {
   const [run,   setRun]   = useState(null);
-  const [tab,   setTab]   = useState('report');
+  const [tab,   setTab]   = useState('qa_review');
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -1128,6 +1651,9 @@ export default function RunDetail({ goTo, runId }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {run && run.sessions?.length > 0 && (
             <>
+              {!run.qa_review?.confirmed_at && (
+                <span title="QA review not yet confirmed — these exports include every session, flagged or not." style={{ fontSize: '13px', color: 'var(--amber)', cursor: 'help' }}>⚠</span>
+              )}
               <button
                 onClick={() => triggerDownload(buildCsv(run), `${run.id}_raw_data.csv`, 'text/csv')}
                 style={{ padding: '0.4rem 0.875rem', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-sm)', background: '#fff', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--ink)', cursor: 'pointer' }}
@@ -1182,7 +1708,9 @@ export default function RunDetail({ goTo, runId }) {
           </div>
         )}
 
-        {run && tab === 'report'        && <ReportTab        run={run} />}
+        {run && tab === 'qa_review'     && <QaReviewTab      run={run} />}
+        {run && tab === 'analysis'      && <AnalysisTab      run={run} />}
+        {run && tab === 'report'        && <ReportTab        run={run} onGoToQaReview={() => setTab('qa_review')} />}
         {run && tab === 'questionnaire' && <QuestionnaireTab intake={run.intake} />}
         {run && tab === 'images'        && <ImagesTab        run={run} />}
       </div>

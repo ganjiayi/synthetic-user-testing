@@ -70,8 +70,40 @@ export const api = {
     return req('GET', `/api/runs/${runId}/status`);
   },
 
+  getQaReview(runId) {
+    return req('GET', `/api/runs/${runId}/status?action=qa_review`);
+  },
+
+  submitQaReview(runId, decisions) {
+    return req('POST', `/api/runs/${runId}/status?action=qa_review`, { decisions });
+  },
+
+  async downloadExport(runId, type) {
+    const res = await fetch(`/api/runs/${runId}/export?type=${type}`);
+    if (!res.ok) {
+      const isJson = (res.headers.get('content-type') || '').includes('application/json');
+      const err = isJson ? await res.json().catch(() => ({})) : {};
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    const blob = await res.blob();
+    const match = (res.headers.get('content-disposition') || '').match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `${runId}.${type}`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  },
+
   getDeliverables(runId) {
     return req('GET', `/api/runs/${runId}/report`);
+  },
+
+  getAnalysis(runId) {
+    return req('GET', `/api/runs/${runId}/report?action=analysis`);
+  },
+
+  generateAnalysis(runId) {
+    return req('POST', `/api/runs/${runId}/report?action=analysis`);
   },
 
   chatWithAgent(agentKey, { messages, context }) {
@@ -84,6 +116,10 @@ export const api = {
 
   getPersonas() {
     return req('GET', '/api/personas');
+  },
+
+  getMethodologies() {
+    return req('GET', '/api/methodologies');
   },
 
   async uploadFiles(runId, files) {
@@ -180,6 +216,12 @@ export function buildIntake(form, runId) {
       methodology:   form.methodology || '',
       scenario:      form.scenario || '',
       tasks:         form.tasks || [],
+      variantB: {
+        urls:  form.variantB?.testMaterials?.urls || [],
+        files: (form.variantB?.testMaterials?.files || []).map(f => f.name).filter(Boolean),
+        notes: form.variantB?.notes || '',
+        is_interactive_prototype: !!form.variantB?.isInteractivePrototype,
+      },
     },
     q7_constraints: {
       forbidden_assumptions: form.forbiddenAssumptions || '',

@@ -14,20 +14,41 @@
  *   - ui/src/pages/RunDetail.js — drives CSV columns and per-task rendering.
  *
  * runner_type:
- *   'task_based'    — persona navigates a UI across multiple turns (click/scroll).
- *   'reaction_based' — persona reacts to a concept in one or two turns, no navigation.
- *   'impression_based' — persona gives a single-turn emotional/aesthetic reaction.
+ *   'task_based'             — persona navigates a UI across multiple turns (click/scroll).
+ *   'reaction_based'         — persona reacts to a concept in one or two turns, no navigation.
+ *   'impression_based'       — persona gives a single-turn emotional/aesthetic reaction.
+ *   'comparative_task_based' — persona attempts the same task on Variant A, then Variant B,
+ *                              then gives one comparison turn stating a preference. Still
+ *                              navigation-capable per variant attempt.
  *
- * navigation_required is derived from runner_type — only task_based methodologies
- * ask the persona for click_target/scroll_direction or get browser-driven turns.
+ * navigation_required is derived from runner_type — task_based and comparative_task_based
+ * methodologies ask the persona for click_target/scroll_direction or get browser-driven turns.
+ *
+ * qa_thresholds drives the Step 6.5 QA gate's automatic flagging (a session tripping
+ * one of these is surfaced to the researcher for an include/exclude call — never
+ * auto-dropped). Kept separate from data_integrity_rules, which govern what the
+ * report-writer LLM may claim, not which sessions get flagged for human review:
+ *   - min_turns_for_signal:        below this many turns, the session is too short to
+ *                                   carry reliable signal — flag as "limited data".
+ *   - early_abandon_turn:          an abandon at or before this turn number is flagged
+ *                                   as suspiciously early rather than a genuine struggle.
+ *   - max_consecutive_parse_errors: this many consecutive parse_error/model_error turns
+ *                                   flags the session as unreliable (model/harness issue,
+ *                                   not a real persona reaction).
+ *   - stuck_loop_tolerance:        this many stuck_loop_flags entries flags the session
+ *                                   for review (distinct from session_config's in-session
+ *                                   abandon threshold — this is a post-hoc QA signal).
  */
 
 const METHODOLOGY_CONFIGS = {
   'Usability Testing': {
     methodology_id: 'usability_testing',
     runner_type: 'task_based',
+    ui_description: 'Task-based — where do users get stuck or abandon?',
 
     session_config: { max_turns: 20, stuck_loop_threshold: 3, session_mode: 'multi_turn' },
+
+    qa_thresholds: { min_turns_for_signal: 3, early_abandon_turn: 2, max_consecutive_parse_errors: 2, stuck_loop_tolerance: 2 },
 
     eval_schema: {
       fields: [
@@ -67,140 +88,58 @@ const METHODOLOGY_CONFIGS = {
     ],
   },
 
-  'UX Testing': {
-    methodology_id: 'ux_testing',
-    runner_type: 'task_based',
+  'A/B Testing': {
+    methodology_id: 'ab_testing',
+    runner_type: 'comparative_task_based',
+    ui_description: 'Comparative — same task on two variants, then a stated preference.',
 
-    session_config: { max_turns: 20, stuck_loop_threshold: 3, session_mode: 'multi_turn' },
+    session_config: { max_turns: 20, stuck_loop_threshold: 3, session_mode: 'comparative' },
+
+    // Higher min_turns_for_signal than Usability Testing — a comparative
+    // session needs enough turns to cover both variant attempts plus the
+    // comparison turn before its preference signal is meaningful.
+    qa_thresholds: { min_turns_for_signal: 4, early_abandon_turn: 2, max_consecutive_parse_errors: 2, stuck_loop_tolerance: 2 },
 
     eval_schema: {
       fields: [
-        { key: 'friction_score',      type: 'number 0-10',   description: '0 = completely smooth, 10 = blocked entirely' },
-        { key: 'comprehension_signal',type: 'string or null',description: 'whether the persona correctly understood design intent at this step, null if not applicable' },
-        { key: 'confusion_signal',    type: 'string or null',description: 'short description of confusion, null if none' },
-        { key: 'trust_signal',        type: 'string or null',description: 'short description of trust/distrust reaction, null if none' },
-        { key: 'value_perception',    type: 'string or null',description: 'whether the persona perceives the product as relevant/valuable to them, null if not applicable' },
+        { key: 'friction_score',       type: 'number 0-10',    description: '0 = completely smooth, 10 = blocked entirely — score whichever variant is currently being attempted' },
+        { key: 'confusion_signal',     type: 'string or null', description: 'short description of confusion, null if none' },
+        { key: 'trust_signal',         type: 'string or null', description: 'short description of trust/distrust reaction, null if none' },
+        { key: 'preferred_variant',    type: 'categorical: A | B | no_preference', description: 'which variant is preferred — null on every turn except the final comparison turn for a task, where it is required' },
+        { key: 'preference_reasoning', type: 'string or null', description: 'why that variant was preferred, citing a specific difference actually observed — null on every turn except the final comparison turn' },
       ],
     },
 
     task_derivation: {
-      success_condition: 'User correctly understands and articulates the design intent, and navigates toward the intended outcome.',
-      abandon_condition: 'User fundamentally misinterprets the design after 2+ attempts and cannot self-correct.',
+      success_condition: 'User completes the described action and reaches the defined endpoint on both variants without external assistance.',
+      abandon_condition: 'User makes 3 or more attempts without forward progress on a variant, or explicitly expresses that they cannot continue on that variant.',
     },
 
-    persona_instruction_mode: 'Task-directed with comprehension probing. After each navigation turn, also report whether you understand what the product is offering and whether it feels relevant to you.',
+    persona_instruction_mode: 'Comparative. You will attempt the same task twice — first on Variant A, then on Variant B — reporting friction, confusion, and trust signals for whichever variant is currently in front of you. Leave preferred_variant and preference_reasoning null on every turn during those two attempts. Once you have attempted the task on both variants, you will be given one final comparison turn: state which variant you preferred and why, citing a specific difference between the two attempts. Do not state a preference without a concrete reason grounded in what you actually experienced on each variant. On that final comparison turn only, set friction_score to 0 and confusion_signal/trust_signal to null — you are reflecting on both attempts, not attempting the task again.',
 
-    planner_guidance: 'Focus the plan on whether the product communicates its value proposition clearly across the full experience — not just task completion but comprehension at each stage. Define what \'understood the product\' looks like for each persona. The primary metric is comprehension signal strength.',
+    planner_guidance: 'This study compares two variants of the same experience. Before defining tasks, write an explicit hypothesis using this structure: "Because [observation/data], we believe [the change from Variant A to Variant B] will cause [expected outcome] for [audience]. We will know this is true when [metric]." Define primary, secondary, and guardrail metrics: the primary metric is the preference distribution across personas and why; secondary metrics are the per-variant friction/confusion signals that explain the preference; guardrail metrics are any way a preferred variant introduces a new problem the other variant did not have. This is a qualitative, synthetic study, not a statistically powered experiment — do not calculate, state, or imply statistical significance, confidence intervals, or p-values from these sessions. If a real production A/B test would be the natural next step to validate the finding, note that as a follow-up in method.limitations rather than fabricating the sample size or baseline conversion data a real test would need — that data does not exist in a synthetic study.',
 
     data_integrity_rules: [
       'No finding may be fabricated or inferred beyond what session data directly supports.',
       'Every finding must be traceable to a specific session — cite as (PersonaName · TaskID).',
       'If fewer than 3 sessions produced signal on a metric, label it "limited signal" and do not draw conclusions from it.',
+      'A stated preference must cite a specific observed difference between the two variants — a preference with no supporting reason is not a valid finding.',
+      'Never state or imply statistical significance, confidence intervals, or p-values — this is a qualitative signal from synthetic sessions, not a powered experiment.',
     ],
 
     keyMoments: [
-      { key: 'comprehension_moments', label: 'Comprehension Moments', description: 'Where the persona correctly or incorrectly understood design intent, unprompted — quote + context' },
-      { key: 'navigation_moments',    label: 'Navigation Moments',    description: 'Unexpected navigation paths, dead ends, or wrong turns — quote + context' },
-      { key: 'design_observations',   label: 'Design Observations',   description: 'Notable comments about layout, labels, or visual hierarchy' },
-      { key: 'friction_moments',      label: 'Friction Moments',      description: 'Information overload, hesitation, or re-reading the same content' },
-      { key: 'trust_moments',         label: 'Trust Moments',         description: 'Trust or distrust reactions to the interface — quote + context' },
+      { key: 'preference_moments',  label: 'Preference Moments',  description: 'Where the persona stated a clear preference between variants and why — quote + context' },
+      { key: 'variant_a_friction',  label: 'Variant A Friction',  description: 'Friction, confusion, or hesitation moments specific to Variant A — quote + context' },
+      { key: 'variant_b_friction',  label: 'Variant B Friction',  description: 'Friction, confusion, or hesitation moments specific to Variant B — quote + context' },
+      { key: 'comparison_moments',  label: 'Comparison Moments',  description: 'Direct A-vs-B comparisons the persona articulated unprompted — quote + context' },
+      { key: 'design_observations', label: 'Design Observations', description: 'Notable usability comments about either variant' },
     ],
-    findingsKey: 'ux_findings',
+    findingsKey: 'ab_findings',
     findings: [
-      { key: 'intuitive_elements', label: 'Intuitive Elements',  description: 'Design elements, labels, or flows understood correctly without help' },
-      { key: 'misinterpretations', label: 'Misinterpretations',  description: 'Labels, icons, or flows interpreted incorrectly relative to design intent' },
-      { key: 'whats_missing',      label: "What's Missing",      description: 'Cues, labels, or affordances needed but absent' },
-    ],
-  },
-
-  'Concept Testing': {
-    methodology_id: 'concept_testing',
-    runner_type: 'reaction_based',
-
-    session_config: { max_turns: 2, stuck_loop_threshold: 3, session_mode: 'reaction_only' },
-
-    eval_schema: {
-      fields: [
-        { key: 'comprehension_rate',  type: 'binary',                                 description: 'whether the persona articulated the core value proposition unprompted' },
-        { key: 'appeal_rating',       type: 'number 0-10',                            description: '0 = no appeal, 10 = highly appealing' },
-        { key: 'preference_signal',   type: 'string or null',                         description: 'preference expressed relative to alternatives, null if none stated' },
-        { key: 'confusion_signal',    type: 'string or null',                         description: 'category confusion or feature misattribution, null if none' },
-        { key: 'adoption_likelihood', type: 'categorical: likely | unlikely | unsure', description: 'how likely the persona is to adopt this concept' },
-      ],
-    },
-
-    task_derivation: {
-      success_condition: 'User unprompted identifies the core value proposition or concept being communicated.',
-      abandon_condition: 'User cannot articulate the concept after direct engagement, or consistently attributes incorrect meaning.',
-    },
-
-    persona_instruction_mode: 'Reaction-based. You are shown the concept once and respond with your honest, immediate reaction in one or two turns. There is no UI to navigate — do not produce click_target or scroll_direction. Set task_completion to "completed" once you have given your full reaction.',
-
-    planner_guidance: 'There are no navigation tasks. Each scenario presents a concept and asks the persona to react. Focus the plan on defining what successful comprehension looks like and what the persona\'s honest adoption likelihood would be. The primary metric is comprehension rate and appeal rating.',
-
-    data_integrity_rules: [
-      'No finding may be fabricated or inferred beyond what session data directly supports.',
-      'Every finding must be traceable to a specific session — cite as (PersonaName · TaskID).',
-      'If fewer than 3 sessions produced signal on a metric, label it "limited signal" and do not draw conclusions from it.',
-    ],
-
-    keyMoments: [
-      { key: 'first_impression_moments', label: 'First Impression Moments', description: "The persona's immediate, unprompted reaction on first seeing the concept — quote + context" },
-      { key: 'value_prop_moments',       label: 'Value Proposition Moments', description: 'Where the core value proposition landed clearly — quote + context' },
-      { key: 'confusion_moments',        label: 'Confusion Moments',         description: 'Category confusion or feature misattribution — quote + context' },
-      { key: 'skepticism_moments',       label: 'Skepticism Moments',        description: 'Trust or skepticism reactions to the concept — quote + context' },
-      { key: 'comparison_moments',       label: 'Comparison Moments',        description: 'Comparisons to competitors or known alternatives' },
-    ],
-    findingsKey: 'concept_findings',
-    findings: [
-      { key: 'what_resonated',    label: 'What Resonated',     description: 'Aspects of the concept that were immediately understood or valued' },
-      { key: 'what_was_unclear',  label: 'What Was Unclear',   description: 'Aspects of the concept that confused or were misread' },
-      { key: 'whats_missing',     label: "What's Missing",     description: 'Information or framing needed to fully evaluate the concept' },
-    ],
-  },
-
-  'Desirability Testing': {
-    methodology_id: 'desirability_testing',
-    runner_type: 'impression_based',
-
-    session_config: { max_turns: 1, stuck_loop_threshold: 3, session_mode: 'impression_only' },
-
-    eval_schema: {
-      fields: [
-        { key: 'emotional_response', type: 'string or null',  description: "the persona's emotional reaction to the stimulus" },
-        { key: 'appeal_rating',      type: 'number 0-10',     description: '0 = no appeal, 10 = highly appealing' },
-        { key: 'word_association',  type: 'string',           description: '3-5 words the persona associates with the stimulus, comma-separated' },
-        { key: 'fit_signal',        type: 'string or null',   description: "whether the stimulus fits the persona's identity/values, null if no signal" },
-        { key: 'preference_signal', type: 'string or null',   description: 'preference expressed relative to alternatives, null if none stated' },
-      ],
-    },
-
-    task_derivation: {
-      success_condition: 'User expresses a clear emotional or aesthetic reaction aligned with the intended design tone.',
-      abandon_condition: 'User shows no engagement, or expresses a strong negative or opposite reaction to the intended tone.',
-    },
-
-    persona_instruction_mode: 'Impression-based. You are shown the stimulus once and report your immediate reaction in a single turn. There are no tasks and no navigation — do not produce click_target or scroll_direction. Set task_completion to "completed" once you have given your impression.',
-
-    planner_guidance: 'There are no tasks or navigation steps. Each scenario presents a stimulus — a visual, a piece of copy, or a brand expression — and asks the persona to report their immediate impression. Focus the plan on what emotional response and word associations are desirable for this product and segment. The primary metric is appeal rating and fit signal.',
-
-    data_integrity_rules: [
-      'No finding may be fabricated or inferred beyond what session data directly supports.',
-      'Every finding must be traceable to a specific session — cite as (PersonaName · TaskID).',
-      'If fewer than 3 sessions produced signal on a metric, label it "limited signal" and do not draw conclusions from it.',
-    ],
-
-    keyMoments: [
-      { key: 'emotional_highlights',    label: 'Emotional Highlights',    description: 'Positive emotional reactions — quote + context' },
-      { key: 'emotional_mismatches',    label: 'Emotional Mismatches',    description: 'Moments where the design evoked an unintended feeling — quote + context' },
-      { key: 'aesthetic_observations',  label: 'Aesthetic Observations',  description: 'Comments on visual design, tone, or style' },
-      { key: 'brand_alignment_moments', label: 'Brand Alignment Moments', description: "Where the design aligned or conflicted with the persona's brand expectations" },
-    ],
-    findingsKey: 'desirability_findings',
-    findings: [
-      { key: 'what_resonated_emotionally', label: 'What Resonated Emotionally', description: 'Design elements that evoked the intended feeling' },
-      { key: 'what_felt_off',              label: 'What Felt Off',              description: 'Elements that created emotional dissonance or mismatch' },
-      { key: 'whats_missing',              label: "What's Missing",             description: 'Emotional or brand cues needed but absent' },
+      { key: 'what_worked_in_a',   label: 'What Worked in Variant A', description: 'Elements of Variant A that were understood immediately or handled easily' },
+      { key: 'what_worked_in_b',   label: 'What Worked in Variant B', description: 'Elements of Variant B that were understood immediately or handled easily' },
+      { key: 'preference_drivers', label: 'Preference Drivers',       description: 'The specific differences that tipped personas toward one variant over the other' },
+      { key: 'whats_missing',      label: "What's Missing",           description: 'Cues, information, or affordances needed but absent from both variants' },
     ],
   },
 };
@@ -212,7 +151,18 @@ function getMethodologyConfig(methodology) {
 }
 
 function navigationRequired(methodologyConfig) {
-  return methodologyConfig.runner_type === 'task_based';
+  return methodologyConfig.runner_type === 'task_based' || methodologyConfig.runner_type === 'comparative_task_based';
+}
+
+// UI-facing listing (id + description only) for the methodology picker —
+// keeps the wizard's options sourced from this config instead of a
+// hardcoded array that can drift from what the backend actually supports.
+function listMethodologies() {
+  return Object.entries(METHODOLOGY_CONFIGS).map(([name, cfg]) => ({
+    id:          name,
+    desc:        cfg.ui_description || '',
+    runner_type: cfg.runner_type,
+  }));
 }
 
 module.exports = {
@@ -220,4 +170,5 @@ module.exports = {
   DEFAULT_METHODOLOGY,
   getMethodologyConfig,
   navigationRequired,
+  listMethodologies,
 };
